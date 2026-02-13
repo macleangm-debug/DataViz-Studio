@@ -1,5 +1,5 @@
 /**
- * DataPulse - Canva-inspired Layout
+ * DataViz Studio - Canva-inspired Layout
  * Rail + Expandable Panel navigation system
  */
 
@@ -8,11 +8,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   House,
-  Folder,
   Database,
-  MapPin,
-  Sparkles,
-  LayoutGrid,
+  LayoutDashboard,
+  BarChart3,
+  PieChart,
   Settings,
   LogOut,
   Menu,
@@ -20,28 +19,19 @@ import {
   Search,
   Bell,
   ChevronRight,
-  FileText,
-  Layout,
-  ClipboardList,
-  Briefcase,
+  Upload,
   Table2,
+  FileSpreadsheet,
   Download,
-  Phone,
-  ClipboardCheck,
-  Link2,
-  ArrowLeftRight,
-  Smartphone,
-  Brain,
-  Route,
-  BarChart3,
-  Puzzle,
-  Workflow,
   Users,
   Shield,
-  Languages,
   Key,
-  Crown,
-  Plus
+  Plus,
+  Sparkles,
+  Brain,
+  FileText,
+  Share2,
+  Plug
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
@@ -58,11 +48,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../components/ui/tooltip';
-import { useAuthStore, useOrgStore, useUIStore } from '../store';
+import { useAuthStore, useOrgStore } from '../store';
 import { cn } from '../lib/utils';
-import { OfflineStatusIndicator } from '../components/OfflineStatus';
 
-// Navigation structure - grouped for Canva-style rail
+// Navigation structure for DataViz Studio
 const NAVIGATION = [
   {
     id: 'home',
@@ -72,59 +61,41 @@ const NAVIGATION = [
     items: []
   },
   {
-    id: 'projects',
-    label: 'Projects',
-    icon: Folder,
-    items: [
-      { label: 'All Projects', path: '/projects', icon: Folder },
-      { label: 'Forms', path: '/forms', icon: FileText },
-      { label: 'Templates', path: '/templates', icon: Layout },
-      { label: 'Submissions', path: '/submissions', icon: ClipboardList }
-    ]
-  },
-  {
     id: 'data',
     label: 'Data',
     icon: Database,
     items: [
-      { label: 'Cases', path: '/cases', icon: Briefcase },
-      { label: 'Import Cases', path: '/cases/import', icon: Plus },
+      { label: 'Data Sources', path: '/data-sources', icon: Plug },
+      { label: 'Upload Data', path: '/upload', icon: Upload },
       { label: 'Datasets', path: '/datasets', icon: Table2 },
-      { label: 'Exports', path: '/exports', icon: Download }
     ]
   },
   {
-    id: 'field_ops',
-    label: 'Field Ops',
-    icon: MapPin,
+    id: 'visualize',
+    label: 'Visualize',
+    icon: BarChart3,
     items: [
-      { label: 'CATI Center', path: '/cati', icon: Phone },
-      { label: 'Back-check', path: '/backcheck', icon: ClipboardCheck },
-      { label: 'Token Surveys', path: '/token-surveys', icon: Link2 },
-      { label: 'Preload/Writeback', path: '/preload', icon: ArrowLeftRight },
-      { label: 'Devices', path: '/devices', icon: Smartphone }
+      { label: 'Dashboards', path: '/dashboards', icon: LayoutDashboard },
+      { label: 'Charts', path: '/charts', icon: PieChart },
     ]
   },
   {
-    id: 'quality',
-    label: 'Quality & AI',
+    id: 'analyze',
+    label: 'Analyze',
     icon: Sparkles,
     items: [
-      { label: 'Data Analysis', path: '/analysis', icon: BarChart3 },
-      { label: 'Quality AI', path: '/quality-ai', icon: Brain },
-      { label: 'Simulation', path: '/simulation', icon: Route },
-      { label: 'Analytics', path: '/analytics', icon: BarChart3 },
-      { label: 'Quality', path: '/quality', icon: Sparkles },
-      { label: 'GPS Map', path: '/map', icon: MapPin }
+      { label: 'AI Insights', path: '/ai-insights', icon: Brain },
+      { label: 'Statistics', path: '/statistics', icon: BarChart3 },
     ]
   },
   {
-    id: 'apps',
-    label: 'Apps',
-    icon: LayoutGrid,
+    id: 'export',
+    label: 'Export',
+    icon: Download,
     items: [
-      { label: 'Plugins', path: '/plugins', icon: Puzzle },
-      { label: 'Workflows', path: '/workflows', icon: Workflow }
+      { label: 'Reports', path: '/reports', icon: FileText },
+      { label: 'Share', path: '/share', icon: Share2 },
+      { label: 'Export Data', path: '/export', icon: FileSpreadsheet },
     ]
   },
   {
@@ -133,11 +104,9 @@ const NAVIGATION = [
     icon: Settings,
     items: [
       { label: 'Team', path: '/team', icon: Users },
-      { label: 'Roles', path: '/rbac', icon: Shield },
-      { label: 'Translations', path: '/translations', icon: Languages },
-      { label: 'API Security', path: '/security', icon: Key },
+      { label: 'Security', path: '/security', icon: Shield },
+      { label: 'API Keys', path: '/api-keys', icon: Key },
       { label: 'Settings', path: '/settings', icon: Settings },
-      { label: 'Super Admin', path: '/admin', icon: Crown }
     ]
   }
 ];
@@ -192,65 +161,41 @@ export function DashboardLayout({ children }) {
       <div className="flex h-screen bg-background">
         {/* Rail - Thin icon sidebar with labels */}
         <aside className="hidden lg:flex flex-col items-center w-[80px] bg-card border-r border-border py-4">
-          {/* Logo */}
-          <Link to="/dashboard" className="mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-sky-500/20">
-              <Sparkles className="w-5 h-5 text-white" />
+          {/* Logo - DataViz Studio with Chart Pie icon */}
+          <Link to="/dashboard" className="mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-violet-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <PieChart className="w-6 h-6 text-white" />
             </div>
           </Link>
 
-          {/* Online Status with Quick Links Dropdown */}
+          {/* Quick Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="cursor-pointer mb-2">
-                <OfflineStatusIndicator compact />
-              </div>
+              <button className="w-14 h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 mb-4 flex flex-col items-center justify-center gap-0.5 transition-colors">
+                <Plus className="w-5 h-5" />
+                <span className="text-[9px] font-medium">New</span>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-56">
-              <div className="px-3 py-2 border-b border-border">
-                <p className="text-xs font-medium text-muted-foreground">Quick Links</p>
-              </div>
-              <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-                <House className="w-4 h-4 mr-2" />
-                Dashboard
+              <DropdownMenuItem onClick={() => navigate('/upload')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Data
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/projects')}>
-                <Folder className="w-4 h-4 mr-2" />
-                Recent Projects
+              <DropdownMenuItem onClick={() => navigate('/dashboards/new')}>
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                New Dashboard
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/forms')}>
-                <FileText className="w-4 h-4 mr-2" />
-                Recent Forms
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/forms/new')}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Form
+              <DropdownMenuItem onClick={() => navigate('/charts/new')}>
+                <PieChart className="w-4 h-4 mr-2" />
+                New Chart
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/analysis')}>
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Data Analysis
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/submissions')}>
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Submissions
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
+              <DropdownMenuItem onClick={() => navigate('/data-sources/new')}>
+                <Plug className="w-4 h-4 mr-2" />
+                Connect Data Source
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Create Button */}
-          <button
-            onClick={() => navigate('/forms/new')}
-            className="w-14 h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 mb-4 flex flex-col items-center justify-center gap-0.5 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="text-[9px] font-medium">Create</span>
-          </button>
 
           {/* Navigation Rail Items with Labels */}
           <nav className="flex-1 flex flex-col items-center gap-1 overflow-y-auto">
@@ -266,7 +211,7 @@ export function DashboardLayout({ children }) {
                       className={cn(
                         "w-16 py-2 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors",
                         isActive 
-                          ? "bg-primary/10 text-primary" 
+                          ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400" 
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >
@@ -291,7 +236,7 @@ export function DashboardLayout({ children }) {
                 <button className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-muted">
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={user?.avatar} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    <AvatarFallback className="bg-violet-100 text-violet-700 text-xs">
                       {user?.name?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
@@ -347,7 +292,7 @@ export function DashboardLayout({ children }) {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                           isActive 
-                            ? "bg-primary/10 text-primary font-medium" 
+                            ? "bg-violet-100 text-violet-700 font-medium dark:bg-violet-900/30 dark:text-violet-400" 
                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                       >
@@ -367,12 +312,12 @@ export function DashboardLayout({ children }) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-left">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-medium text-xs">
+                          <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700 font-medium text-xs">
                             {currentOrg?.name?.charAt(0) || 'O'}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">
-                              {currentOrg?.name || 'Select Org'}
+                              {currentOrg?.name || 'Select Workspace'}
                             </p>
                           </div>
                           <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -384,20 +329,15 @@ export function DashboardLayout({ children }) {
                             key={org.id}
                             onClick={() => setCurrentOrg(org)}
                             className={cn(
-                              currentOrg?.id === org.id && "bg-primary/10"
+                              currentOrg?.id === org.id && "bg-violet-50 dark:bg-violet-900/20"
                             )}
                           >
-                            <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center text-primary text-xs mr-2">
+                            <div className="w-6 h-6 rounded bg-violet-100 flex items-center justify-center text-violet-700 text-xs mr-2">
                               {org.name?.charAt(0)}
                             </div>
                             {org.name}
                           </DropdownMenuItem>
                         ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate('/organizations/new')}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create Organization
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -429,14 +369,19 @@ export function DashboardLayout({ children }) {
               </button>
             )}
 
+            {/* Logo for header */}
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground hidden sm:block">DataViz Studio</span>
+            </div>
+
             {/* Search */}
-            <div className="flex-1 max-w-md">
+            <div className="flex-1 max-w-md ml-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Search..."
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-muted border-0 rounded-lg focus:bg-background focus:ring-2 focus:ring-ring transition-all text-foreground placeholder:text-muted-foreground"
+                  placeholder="Search datasets, dashboards..."
+                  className="w-full pl-9 pr-4 py-2 text-sm bg-muted border-0 rounded-lg focus:bg-background focus:ring-2 focus:ring-violet-500 transition-all text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -445,7 +390,6 @@ export function DashboardLayout({ children }) {
             <div className="flex items-center gap-2">
               <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground relative">
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
               </button>
 
               {/* Desktop Profile */}
@@ -483,10 +427,10 @@ export function DashboardLayout({ children }) {
               >
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-primary-foreground" />
+                    <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
+                      <PieChart className="w-4 h-4 text-white" />
                     </div>
-                    <span className="font-semibold text-foreground">DataPulse</span>
+                    <span className="font-semibold text-foreground">DataViz Studio</span>
                   </div>
                   <button onClick={() => setMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-muted">
                     <X className="w-5 h-5" />
@@ -511,7 +455,7 @@ export function DashboardLayout({ children }) {
                           }}
                           className={cn(
                             "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium",
-                            isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                            isActive ? "bg-violet-100 text-violet-700" : "text-foreground hover:bg-muted"
                           )}
                         >
                           <Icon className="w-5 h-5" />
@@ -528,7 +472,7 @@ export function DashboardLayout({ children }) {
                                 className={cn(
                                   "block px-3 py-2 rounded-lg text-sm",
                                   location.pathname === item.path
-                                    ? "bg-primary/10 text-primary"
+                                    ? "bg-violet-100 text-violet-700"
                                     : "text-muted-foreground hover:bg-muted"
                                 )}
                               >
@@ -547,7 +491,7 @@ export function DashboardLayout({ children }) {
                   <div className="flex items-center gap-3 mb-4">
                     <Avatar>
                       <AvatarImage src={user?.avatar} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
+                      <AvatarFallback className="bg-violet-100 text-violet-700">
                         {user?.name?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
@@ -573,9 +517,5 @@ export function DashboardLayout({ children }) {
     </TooltipProvider>
   );
 }
-
-// Named exports for backward compatibility
-export const Sidebar = () => null; // Deprecated - use DashboardLayout
-export const TopBar = () => null; // Deprecated - integrated into DashboardLayout
 
 export default DashboardLayout;
