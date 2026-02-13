@@ -148,12 +148,15 @@ export function AIInsightsPage() {
           
           {/* Dataset Selector */}
           <div className="w-full md:w-64">
-            <Select value={selectedDataset} onValueChange={setSelectedDataset}>
+            <Select 
+              value={selectedDataset || '__all__'} 
+              onValueChange={(v) => setSelectedDataset(v === '__all__' ? '' : v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select dataset (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All datasets</SelectItem>
+                <SelectItem value="__all__">All datasets</SelectItem>
                 {datasets.map((dataset) => (
                   <SelectItem key={dataset.id} value={dataset.id}>
                     {dataset.name}
