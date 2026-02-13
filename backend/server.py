@@ -809,6 +809,31 @@ async def list_charts(org_id: Optional[str] = None, dataset_id: Optional[str] = 
     charts = await db.charts.find(query, {"_id": 0}).to_list(100)
     return {"charts": charts}
 
+@api_router.get("/charts/{chart_id}")
+async def get_chart(chart_id: str):
+    """Get a single chart by ID"""
+    chart = await db.charts.find_one({"id": chart_id}, {"_id": 0})
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    return chart
+
+@api_router.put("/charts/{chart_id}")
+async def update_chart(chart_id: str, chart: ChartCreate):
+    """Update a chart"""
+    existing = await db.charts.find_one({"id": chart_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    
+    update_doc = {
+        "name": chart.name,
+        "type": chart.type,
+        "dataset_id": chart.dataset_id,
+        "config": chart.config,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.charts.update_one({"id": chart_id}, {"$set": update_doc})
+    return {"status": "updated", "id": chart_id}
+
 @api_router.get("/charts/{chart_id}/data")
 async def get_chart_data(chart_id: str):
     """Get chart data for rendering"""
@@ -836,22 +861,39 @@ async def get_chart_data(chart_id: str):
     
     chart_data = []
     
-    if x_field and x_field in df.columns:
-        if group_by and group_by in df.columns:
-            grouped = df.groupby([x_field, group_by])
-        else:
-            grouped = df.groupby(x_field)
-        
-        if aggregation == "count":
-            result = grouped.size().reset_index(name='value')
-        elif aggregation == "sum" and y_field:
-            result = grouped[y_field].sum().reset_index(name='value')
-        elif aggregation == "mean" and y_field:
-            result = grouped[y_field].mean().reset_index(name='value')
-        else:
-            result = grouped.size().reset_index(name='value')
-        
-        chart_data = result.to_dict(orient='records')
+    try:
+        if x_field and x_field in df.columns:
+            if group_by and group_by in df.columns:
+                grouped = df.groupby([x_field, group_by])
+            else:
+                grouped = df.groupby(x_field)
+            
+            if aggregation == "count":
+                result = grouped.size().reset_index(name='value')
+            elif aggregation == "sum" and y_field and y_field in df.columns:
+                result = grouped[y_field].sum().reset_index(name='value')
+            elif aggregation == "mean" and y_field and y_field in df.columns:
+                result = grouped[y_field].mean().reset_index(name='value')
+            elif aggregation == "max" and y_field and y_field in df.columns:
+                result = grouped[y_field].max().reset_index(name='value')
+            elif aggregation == "min" and y_field and y_field in df.columns:
+                result = grouped[y_field].min().reset_index(name='value')
+            else:
+                result = grouped.size().reset_index(name='value')
+            
+            # Rename x_field column to 'name' for consistent frontend handling
+            result = result.rename(columns={x_field: 'name'})
+            
+            # Sort by value descending and limit to top 20
+            result = result.sort_values('value', ascending=False).head(20)
+            
+            # Round numeric values
+            result['value'] = result['value'].round(2)
+            
+            chart_data = result.to_dict(orient='records')
+    except Exception as e:
+        logger.error(f"Error processing chart data: {str(e)}")
+        chart_data = []
     
     return {"chart": chart, "data": chart_data}
 
