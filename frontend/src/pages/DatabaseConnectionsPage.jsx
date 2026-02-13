@@ -340,6 +340,12 @@ export function DatabaseConnectionsPage() {
                             </div>
                             <div className="flex items-center gap-2 mt-2">
                               {getStatusBadge(conn.status)}
+                              {conn.schedule?.enabled && (
+                                <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                  <Timer className="w-3 h-3 mr-1" />
+                                  {conn.schedule.description}
+                                </Badge>
+                              )}
                               {conn.last_sync && (
                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
@@ -377,6 +383,15 @@ export function DatabaseConnectionsPage() {
                               <Play className="w-4 h-4" />
                             )}
                             <span className="ml-2">Sync</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openScheduleDialog(conn)}
+                            data-testid={`schedule-connection-${conn.id}`}
+                          >
+                            <Calendar className="w-4 h-4" />
+                            <span className="ml-2">Schedule</span>
                           </Button>
                           <Button
                             variant="ghost"
