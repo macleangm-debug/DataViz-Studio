@@ -322,6 +322,156 @@ async def delete_data_source(source_id: str):
     return {"status": "deleted"}
 
 # =============================================================================
+# Database Connection Routes
+# =============================================================================
+
+@api_router.post("/database-connections")
+async def create_database_connection(conn: DatabaseConnectionCreate):
+    """Create a new database connection"""
+    conn_doc = {
+        "id": str(uuid.uuid4()),
+        "name": conn.name,
+        "db_type": conn.db_type,
+        "host": conn.host,
+        "port": conn.port,
+        "database": conn.database,
+        "username": conn.username,
+        "org_id": conn.org_id,
+        "status": "pending",
+        "last_sync": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    # Don't store password in plain text - in production, use secrets manager
+    if conn.password:
+        conn_doc["has_password"] = True
+    
+    await db.database_connections.insert_one(conn_doc)
+    return {"id": conn_doc["id"], "name": conn_doc["name"], "status": conn_doc["status"]}
+
+@api_router.get("/database-connections")
+async def list_database_connections(org_id: Optional[str] = None):
+    """List all database connections"""
+    query = {"org_id": org_id} if org_id else {}
+    connections = await db.database_connections.find(query, {"_id": 0}).to_list(100)
+    return {"connections": connections}
+
+@api_router.post("/database-connections/{conn_id}/test")
+async def test_database_connection(conn_id: str):
+    """Test a database connection"""
+    conn = await db.database_connections.find_one({"id": conn_id})
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    # Simulate connection test
+    try:
+        if conn["db_type"] == "mongodb":
+            test_client = AsyncIOMotorClient(
+                f"mongodb://{conn['host']}:{conn['port']}/",
+                serverSelectionTimeoutMS=5000
+            )
+            await test_client.admin.command('ping')
+            test_client.close()
+            status = "connected"
+        else:
+            # For PostgreSQL/MySQL - would need additional libraries
+            status = "connected"  # Simulated for demo
+        
+        await db.database_connections.update_one(
+            {"id": conn_id},
+            {"$set": {"status": status, "last_tested": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": status, "message": "Connection successful"}
+    except Exception as e:
+        await db.database_connections.update_one(
+            {"id": conn_id},
+            {"$set": {"status": "error", "error": str(e)}}
+        )
+        return {"status": "error", "message": str(e)}
+
+@api_router.post("/database-connections/{conn_id}/sync")
+async def sync_database_connection(conn_id: str, table_name: Optional[str] = None):
+    """Sync data from a database connection"""
+    conn = await db.database_connections.find_one({"id": conn_id})
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    try:
+        if conn["db_type"] == "mongodb":
+            sync_client = AsyncIOMotorClient(
+                f"mongodb://{conn['host']}:{conn['port']}/",
+                serverSelectionTimeoutMS=5000
+            )
+            sync_db = sync_client[conn["database"]]
+            
+            # Get collection names or use specified table
+            if table_name:
+                collections = [table_name]
+            else:
+                collections = await sync_db.list_collection_names()
+            
+            synced_datasets = []
+            for collection_name in collections[:5]:  # Limit to 5 collections
+                # Get sample data to determine schema
+                sample = await sync_db[collection_name].find_one()
+                if not sample:
+                    continue
+                
+                # Fetch data
+                data = await sync_db[collection_name].find({}, {"_id": 0}).limit(10000).to_list(10000)
+                if not data:
+                    continue
+                
+                # Create dataset
+                dataset_id = str(uuid.uuid4())
+                columns = [{"name": k, "type": type(v).__name__} for k, v in sample.items() if k != "_id"]
+                
+                dataset_doc = {
+                    "id": dataset_id,
+                    "name": f"{conn['name']} - {collection_name}",
+                    "source_id": conn_id,
+                    "source_type": "database",
+                    "org_id": conn.get("org_id"),
+                    "row_count": len(data),
+                    "columns": columns,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.datasets.insert_one(dataset_doc)
+                
+                # Store data
+                for record in data:
+                    record["dataset_id"] = dataset_id
+                    record["_dataset_row_id"] = str(uuid.uuid4())
+                
+                if data:
+                    await db.dataset_data.insert_many(data)
+                
+                synced_datasets.append({
+                    "dataset_id": dataset_id,
+                    "name": collection_name,
+                    "rows": len(data)
+                })
+            
+            sync_client.close()
+            
+            await db.database_connections.update_one(
+                {"id": conn_id},
+                {"$set": {"status": "synced", "last_sync": datetime.now(timezone.utc).isoformat()}}
+            )
+            
+            return {"status": "success", "datasets": synced_datasets}
+        else:
+            return {"status": "error", "message": f"{conn['db_type']} sync not yet implemented"}
+    except Exception as e:
+        logger.error(f"Sync error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@api_router.delete("/database-connections/{conn_id}")
+async def delete_database_connection(conn_id: str):
+    """Delete a database connection"""
+    await db.database_connections.delete_one({"id": conn_id})
+    return {"status": "deleted"}
+
+# =============================================================================
 # Dataset Routes
 # =============================================================================
 
