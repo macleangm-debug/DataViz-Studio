@@ -66,6 +66,7 @@ const NAVIGATION = [
     icon: Database,
     items: [
       { label: 'Data Sources', path: '/data-sources', icon: Plug },
+      { label: 'Database Connections', path: '/database-connections', icon: Database },
       { label: 'Upload Data', path: '/upload', icon: Upload },
       { label: 'Datasets', path: '/datasets', icon: Table2 },
     ]
