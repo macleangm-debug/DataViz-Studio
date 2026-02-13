@@ -708,43 +708,42 @@ async def get_widget_data(widget_id: str):
                     aggregation = config.get("aggregation", "count")
                     
                     if field and field in df.columns:
-                    if aggregation == "sum":
-                        value = float(df[field].sum())
-                    elif aggregation == "mean":
-                        value = float(df[field].mean())
-                    elif aggregation == "max":
-                        value = float(df[field].max())
-                    elif aggregation == "min":
-                        value = float(df[field].min())
+                        if aggregation == "sum":
+                            value = float(df[field].sum())
+                        elif aggregation == "mean":
+                            value = float(df[field].mean())
+                        elif aggregation == "max":
+                            value = float(df[field].max())
+                        elif aggregation == "min":
+                            value = float(df[field].min())
+                        else:
+                            value = len(df)
                     else:
                         value = len(df)
-                else:
-                    value = len(df)
-                
-                result["data"] = {"value": value, "aggregation": aggregation}
-                
-            elif widget["type"] == "chart":
-                # Chart widget - return grouped data
-                x_field = config.get("x_field")
-                y_field = config.get("y_field")
-                
-                if x_field and x_field in df.columns:
-                    if y_field and y_field in df.columns:
-                        grouped = df.groupby(x_field)[y_field].sum().reset_index()
-                        grouped.columns = ["name", "value"]
-                    else:
-                        grouped = df.groupby(x_field).size().reset_index()
-                        grouped.columns = ["name", "value"]
-                    result["data"] = grouped.to_dict(orient="records")
-                else:
-                    result["data"] = []
                     
-            elif widget["type"] == "table":
+                    result["data"] = {"value": value, "aggregation": aggregation}
+                    
+                elif widget["type"] == "chart":
+                    # Chart widget - return grouped data
+                    x_field = config.get("x_field")
+                    y_field = config.get("y_field")
+                    
+                    if x_field and x_field in df.columns:
+                        if y_field and y_field in df.columns:
+                            grouped = df.groupby(x_field)[y_field].sum().reset_index()
+                            grouped.columns = ["name", "value"]
+                        else:
+                            grouped = df.groupby(x_field).size().reset_index()
+                            grouped.columns = ["name", "value"]
+                        result["data"] = grouped.to_dict(orient="records")
+                    else:
+                        result["data"] = []
+                        
+                elif widget["type"] == "table":
                     # Table widget - return paginated data
                     limit = config.get("limit", 10)
                     columns = config.get("columns")
                     if columns:
-                        # Filter to only existing columns
                         valid_cols = [c for c in columns if c in df.columns]
                         if valid_cols:
                             result["data"] = df[valid_cols].head(limit).to_dict(orient="records")
