@@ -915,13 +915,76 @@ export function ChartsPage() {
 
   const handleViewChart = async (chart) => {
     setViewChart(chart);
+    setDrillDownData(null);
+    setDrillBreadcrumb([]);
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API_URL}/api/charts/${chart.id}/data`, { headers });
-      setChartViewData(response.data.data || []);
+      const [dataRes, optionsRes] = await Promise.all([
+        axios.get(`${API_URL}/api/charts/${chart.id}/data`, { headers }),
+        axios.get(`${API_URL}/api/charts/${chart.id}/drill-options`, { headers })
+      ]);
+      setChartViewData(dataRes.data.data || []);
+      setDrillOptions(optionsRes.data.drill_options || []);
     } catch (error) {
       console.error('Error fetching chart data:', error);
       setChartViewData([]);
+      setDrillOptions([]);
+    }
+  };
+
+  const handleDrillDown = async (filterField, filterValue) => {
+    if (!viewChart) return;
+    
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.post(`${API_URL}/api/charts/${viewChart.id}/drill-down`, {
+        chart_id: viewChart.id,
+        filter_field: filterField,
+        filter_value: filterValue
+      }, { headers });
+      
+      setDrillDownData(response.data);
+      setChartViewData(response.data.data || []);
+      setDrillBreadcrumb(prev => [...prev, { field: filterField, value: filterValue }]);
+      setDrillOptions(response.data.drill_options || []);
+      toast.success(`Filtered by ${filterField}: ${filterValue}`);
+    } catch (error) {
+      toast.error('Failed to drill down');
+    }
+  };
+
+  const resetDrillDown = () => {
+    setDrillDownData(null);
+    setDrillBreadcrumb([]);
+    if (viewChart) {
+      handleViewChart(viewChart);
+    }
+  };
+
+  const handleExportPdf = async (chartIds = null) => {
+    setExportingPdf(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.post(`${API_URL}/api/reports/export/pdf`, {
+        chart_ids: chartIds || charts.map(c => c.id),
+        include_data_tables: true,
+        title: 'DataViz Studio Charts Report'
+      }, { headers });
+      
+      if (response.data.status === 'success') {
+        // Download PDF
+        const link = document.createElement('a');
+        link.href = `data:application/pdf;base64,${response.data.pdf_base64}`;
+        link.download = response.data.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('PDF exported successfully');
+      }
+    } catch (error) {
+      toast.error('Failed to export PDF');
+    } finally {
+      setExportingPdf(false);
     }
   };
 
