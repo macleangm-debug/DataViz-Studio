@@ -545,6 +545,121 @@ export function DatabaseConnectionsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Schedule Dialog */}
+        <Dialog open={!!scheduleDialog} onOpenChange={() => setScheduleDialog(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-violet-600" />
+                Schedule Auto-Refresh
+              </DialogTitle>
+              <DialogDescription>
+                Configure automatic data sync for "{scheduleDialog?.name}"
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="schedule-enabled">Enable Scheduled Refresh</Label>
+                <Switch
+                  id="schedule-enabled"
+                  checked={scheduleConfig.enabled}
+                  onCheckedChange={(checked) => setScheduleConfig({ ...scheduleConfig, enabled: checked })}
+                />
+              </div>
+              
+              {scheduleConfig.enabled && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Refresh Interval</Label>
+                    <Select 
+                      value={scheduleConfig.interval_type} 
+                      onValueChange={(v) => setScheduleConfig({ ...scheduleConfig, interval_type: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hourly">Hourly</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="custom">Custom (Cron)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {scheduleConfig.interval_type !== 'custom' && (
+                    <div className="space-y-2">
+                      <Label>Every</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="24"
+                          value={scheduleConfig.interval_value}
+                          onChange={(e) => setScheduleConfig({ ...scheduleConfig, interval_value: parseInt(e.target.value) || 1 })}
+                          className="w-20"
+                        />
+                        <span className="text-muted-foreground">
+                          {scheduleConfig.interval_type === 'hourly' && 'hour(s)'}
+                          {scheduleConfig.interval_type === 'daily' && 'day(s)'}
+                          {scheduleConfig.interval_type === 'weekly' && 'week(s)'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {scheduleConfig.interval_type === 'custom' && (
+                    <div className="space-y-2">
+                      <Label>Cron Expression</Label>
+                      <Input
+                        value={scheduleConfig.custom_cron}
+                        onChange={(e) => setScheduleConfig({ ...scheduleConfig, custom_cron: e.target.value })}
+                        placeholder="0 */6 * * *"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Example: "0 */6 * * *" runs every 6 hours
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
+                    <p className="text-sm text-violet-700 dark:text-violet-300">
+                      <Timer className="w-4 h-4 inline mr-1" />
+                      {scheduleConfig.interval_type === 'custom' 
+                        ? `Custom schedule: ${scheduleConfig.custom_cron || 'Not set'}`
+                        : `Data will sync every ${scheduleConfig.interval_value} ${scheduleConfig.interval_type.replace('ly', '')}(s)`
+                      }
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-between pt-4">
+                {scheduleDialog?.schedule?.enabled && (
+                  <Button 
+                    variant="outline" 
+                    className="text-destructive"
+                    onClick={() => {
+                      handleRemoveSchedule(scheduleDialog.id);
+                      setScheduleDialog(null);
+                    }}
+                  >
+                    Remove Schedule
+                  </Button>
+                )}
+                <div className="flex gap-2 ml-auto">
+                  <Button variant="outline" onClick={() => setScheduleDialog(null)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveSchedule} className="bg-violet-600 hover:bg-violet-700">
+                    Save Schedule
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
