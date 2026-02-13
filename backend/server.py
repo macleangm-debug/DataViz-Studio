@@ -1891,7 +1891,10 @@ async def get_drill_options(chart_id: str):
     # Find categorical columns suitable for drill-down
     drill_options = []
     for col in df.columns:
-        if df[col].dtype == 'object':
+        # Check for string-like dtypes (object, string, StringDtype)
+        col_dtype = str(df[col].dtype).lower()
+        is_string_type = col_dtype in ('object', 'str', 'string') or 'str' in col_dtype
+        if is_string_type:
             unique_values = df[col].unique()
             unique_count = len(unique_values)
             if 2 <= unique_count <= 50:
