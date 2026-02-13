@@ -93,6 +93,27 @@ class AIQueryRequest(BaseModel):
     dataset_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
 
+class DatabaseConnectionCreate(BaseModel):
+    name: str
+    db_type: str  # mongodb, postgresql, mysql
+    host: str
+    port: int
+    database: str
+    username: Optional[str] = None
+    password: Optional[str] = None
+    org_id: Optional[str] = None
+
+class WidgetCreate(BaseModel):
+    dashboard_id: str
+    type: str  # stat, chart, table, text
+    title: str
+    config: Dict[str, Any] = {}
+    position: Dict[str, Any] = {}  # x, y, w, h for grid layout
+    dataset_id: Optional[str] = None
+
+class DashboardLayoutUpdate(BaseModel):
+    widgets: List[Dict[str, Any]]
+
 # =============================================================================
 # Auth Routes
 # =============================================================================
