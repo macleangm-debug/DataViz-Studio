@@ -616,6 +616,156 @@ async def update_dashboard(dashboard_id: str, dashboard: DashboardCreate):
 async def delete_dashboard(dashboard_id: str):
     """Delete a dashboard"""
     await db.dashboards.delete_one({"id": dashboard_id})
+    # Also delete widgets
+    await db.widgets.delete_many({"dashboard_id": dashboard_id})
+    return {"status": "deleted"}
+
+@api_router.put("/dashboards/{dashboard_id}/layout")
+async def update_dashboard_layout(dashboard_id: str, layout: DashboardLayoutUpdate):
+    """Update dashboard widget layout"""
+    # Update widget positions
+    for widget_data in layout.widgets:
+        widget_id = widget_data.get("id")
+        if widget_id:
+            await db.widgets.update_one(
+                {"id": widget_id},
+                {"$set": {
+                    "position": {
+                        "x": widget_data.get("x", 0),
+                        "y": widget_data.get("y", 0),
+                        "w": widget_data.get("w", 4),
+                        "h": widget_data.get("h", 3)
+                    }
+                }}
+            )
+    
+    await db.dashboards.update_one(
+        {"id": dashboard_id},
+        {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"status": "updated"}
+
+# =============================================================================
+# Widget Routes
+# =============================================================================
+
+@api_router.post("/widgets")
+async def create_widget(widget: WidgetCreate):
+    """Create a new dashboard widget"""
+    widget_doc = {
+        "id": str(uuid.uuid4()),
+        "dashboard_id": widget.dashboard_id,
+        "type": widget.type,
+        "title": widget.title,
+        "config": widget.config,
+        "position": widget.position or {"x": 0, "y": 0, "w": 4, "h": 3},
+        "dataset_id": widget.dataset_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.widgets.insert_one(widget_doc)
+    return {
+        "id": widget_doc["id"],
+        "type": widget_doc["type"],
+        "title": widget_doc["title"],
+        "position": widget_doc["position"]
+    }
+
+@api_router.get("/dashboards/{dashboard_id}/widgets")
+async def get_dashboard_widgets(dashboard_id: str):
+    """Get all widgets for a dashboard"""
+    widgets = await db.widgets.find(
+        {"dashboard_id": dashboard_id},
+        {"_id": 0}
+    ).to_list(100)
+    return {"widgets": widgets}
+
+@api_router.get("/widgets/{widget_id}/data")
+async def get_widget_data(widget_id: str):
+    """Get data for a widget"""
+    widget = await db.widgets.find_one({"id": widget_id})
+    if not widget:
+        raise HTTPException(status_code=404, detail="Widget not found")
+    
+    result = {"widget": widget, "data": None}
+    
+    if widget.get("dataset_id"):
+        # Fetch data based on widget type
+        dataset_id = widget["dataset_id"]
+        config = widget.get("config", {})
+        
+        data = await db.dataset_data.find(
+            {"dataset_id": dataset_id},
+            {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+        ).limit(1000).to_list(1000)
+        
+        if data:
+            df = pd.DataFrame(data)
+            
+            if widget["type"] == "stat":
+                # Stat widget - show aggregate value
+                field = config.get("field")
+                aggregation = config.get("aggregation", "count")
+                
+                if field and field in df.columns:
+                    if aggregation == "sum":
+                        value = float(df[field].sum())
+                    elif aggregation == "mean":
+                        value = float(df[field].mean())
+                    elif aggregation == "max":
+                        value = float(df[field].max())
+                    elif aggregation == "min":
+                        value = float(df[field].min())
+                    else:
+                        value = len(df)
+                else:
+                    value = len(df)
+                
+                result["data"] = {"value": value, "aggregation": aggregation}
+                
+            elif widget["type"] == "chart":
+                # Chart widget - return grouped data
+                x_field = config.get("x_field")
+                y_field = config.get("y_field")
+                
+                if x_field and x_field in df.columns:
+                    if y_field and y_field in df.columns:
+                        grouped = df.groupby(x_field)[y_field].sum().reset_index()
+                        grouped.columns = ["name", "value"]
+                    else:
+                        grouped = df.groupby(x_field).size().reset_index()
+                        grouped.columns = ["name", "value"]
+                    result["data"] = grouped.to_dict(orient="records")
+                else:
+                    result["data"] = []
+                    
+            elif widget["type"] == "table":
+                # Table widget - return paginated data
+                limit = config.get("limit", 10)
+                columns = config.get("columns", list(df.columns)[:5])
+                result["data"] = df[columns].head(limit).to_dict(orient="records")
+            else:
+                result["data"] = data[:100]
+    
+    return result
+
+@api_router.put("/widgets/{widget_id}")
+async def update_widget(widget_id: str, widget: WidgetCreate):
+    """Update a widget"""
+    update_doc = {
+        "type": widget.type,
+        "title": widget.title,
+        "config": widget.config,
+        "position": widget.position,
+        "dataset_id": widget.dataset_id,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.widgets.update_one({"id": widget_id}, {"$set": update_doc})
+    return {"status": "updated"}
+
+@api_router.delete("/widgets/{widget_id}")
+async def delete_widget(widget_id: str):
+    """Delete a widget"""
+    await db.widgets.delete_one({"id": widget_id})
     return {"status": "deleted"}
 
 # =============================================================================
