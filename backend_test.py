@@ -308,6 +308,234 @@ Charlie Brown,32,Phoenix,58000"""
             
         return success
 
+    def test_database_connections(self):
+        """Test database connection creation, test, and sync"""
+        # Create database connection
+        conn_data = {
+            "name": f"Test MongoDB Connection {datetime.now().strftime('%H%M%S')}",
+            "db_type": "mongodb",
+            "host": "localhost",
+            "port": 27017,
+            "database": "test_db",
+            "username": "test_user",
+            "password": "test_pass",
+            "org_id": self.org_id
+        }
+        
+        success, response = self.run_test(
+            "Create Database Connection",
+            "POST",
+            "api/database-connections",
+            200,
+            data=conn_data
+        )
+        
+        if success:
+            conn_id = response.get('id')
+            self.test_data['db_connection'] = response
+            print(f"   🔗 Created connection: {response.get('name', 'Unknown')}")
+            
+            # Test the connection
+            test_success, test_response = self.run_test(
+                "Test Database Connection",
+                "POST",
+                f"api/database-connections/{conn_id}/test",
+                200
+            )
+            
+            if test_success:
+                status = test_response.get('status', 'unknown')
+                print(f"   🧪 Connection test status: {status}")
+            
+            # Try to sync data (this might fail if database is not available, which is expected)
+            sync_success, sync_response = self.run_test(
+                "Sync Database Connection",
+                "POST",
+                f"api/database-connections/{conn_id}/sync",
+                200
+            )
+            
+            if sync_success:
+                datasets = sync_response.get('datasets', [])
+                print(f"   🔄 Sync created {len(datasets)} datasets")
+            
+            # List database connections
+            org_param = f"?org_id={self.org_id}" if self.org_id else ""
+            list_success, list_response = self.run_test(
+                "List Database Connections",
+                "GET",
+                f"api/database-connections{org_param}",
+                200
+            )
+            
+            if list_success:
+                connections = list_response.get('connections', [])
+                print(f"   📋 Found {len(connections)} database connections")
+            
+            return success and test_success and list_success
+        
+        return success
+
+    def test_widgets(self):
+        """Test widget creation, retrieval, and management"""
+        if 'dashboard' not in self.test_data:
+            print("   ⚠️  Skipping widget tests - no dashboard created")
+            return True
+            
+        dashboard_id = self.test_data['dashboard']['id']
+        
+        # Create a stat widget
+        stat_widget = {
+            "dashboard_id": dashboard_id,
+            "type": "stat",
+            "title": "Total Records",
+            "config": {
+                "field": "age",
+                "aggregation": "count"
+            },
+            "position": {"x": 0, "y": 0, "w": 4, "h": 3},
+            "dataset_id": self.test_data.get('uploaded_dataset', {}).get('dataset_id')
+        }
+        
+        success, response = self.run_test(
+            "Create Stat Widget",
+            "POST",
+            "api/widgets",
+            200,
+            data=stat_widget
+        )
+        
+        if success:
+            stat_widget_id = response.get('id')
+            self.test_data['stat_widget'] = response
+            print(f"   📊 Created stat widget: {response.get('title', 'Unknown')}")
+            
+            # Create a chart widget
+            chart_widget = {
+                "dashboard_id": dashboard_id,
+                "type": "chart",
+                "title": "Salary by City",
+                "config": {
+                    "chart_type": "bar",
+                    "x_field": "city",
+                    "y_field": "salary"
+                },
+                "position": {"x": 4, "y": 0, "w": 8, "h": 6},
+                "dataset_id": self.test_data.get('uploaded_dataset', {}).get('dataset_id')
+            }
+            
+            chart_success, chart_response = self.run_test(
+                "Create Chart Widget",
+                "POST",
+                "api/widgets",
+                200,
+                data=chart_widget
+            )
+            
+            if chart_success:
+                chart_widget_id = chart_response.get('id')
+                self.test_data['chart_widget'] = chart_response
+                print(f"   📈 Created chart widget: {chart_response.get('title', 'Unknown')}")
+                
+                # Get dashboard widgets
+                widgets_success, widgets_response = self.run_test(
+                    "Get Dashboard Widgets",
+                    "GET",
+                    f"api/dashboards/{dashboard_id}/widgets",
+                    200
+                )
+                
+                if widgets_success:
+                    widgets = widgets_response.get('widgets', [])
+                    print(f"   🎛️  Dashboard has {len(widgets)} widgets")
+                
+                # Get widget data
+                data_success, data_response = self.run_test(
+                    "Get Widget Data",
+                    "GET",
+                    f"api/widgets/{stat_widget_id}/data",
+                    200
+                )
+                
+                if data_success:
+                    widget_data = data_response.get('data')
+                    print(f"   📊 Widget data: {str(widget_data)[:50]}...")
+                
+                # Update widget
+                updated_widget = {
+                    "dashboard_id": dashboard_id,
+                    "type": "stat",
+                    "title": "Updated Total Records",
+                    "config": {
+                        "field": "age",
+                        "aggregation": "mean"
+                    },
+                    "position": {"x": 0, "y": 0, "w": 4, "h": 3},
+                    "dataset_id": self.test_data.get('uploaded_dataset', {}).get('dataset_id')
+                }
+                
+                update_success, update_response = self.run_test(
+                    "Update Widget",
+                    "PUT",
+                    f"api/widgets/{stat_widget_id}",
+                    200,
+                    data=updated_widget
+                )
+                
+                if update_success:
+                    print(f"   ✏️  Updated widget title")
+                
+                # Delete widget
+                delete_success, delete_response = self.run_test(
+                    "Delete Widget",
+                    "DELETE",
+                    f"api/widgets/{chart_widget_id}",
+                    200
+                )
+                
+                if delete_success:
+                    print(f"   🗑️  Deleted chart widget")
+                
+                return success and chart_success and widgets_success and data_success and update_success and delete_success
+            
+            return success and chart_success
+        
+        return success
+
+    def test_dashboard_layout_update(self):
+        """Test dashboard layout update functionality"""
+        if 'dashboard' not in self.test_data or 'stat_widget' not in self.test_data:
+            print("   ⚠️  Skipping layout update test - no dashboard or widgets")
+            return True
+            
+        dashboard_id = self.test_data['dashboard']['id']
+        widget_id = self.test_data['stat_widget']['id']
+        
+        layout_data = {
+            "widgets": [
+                {
+                    "id": widget_id,
+                    "x": 2,
+                    "y": 1,
+                    "w": 6,
+                    "h": 4
+                }
+            ]
+        }
+        
+        success, response = self.run_test(
+            "Update Dashboard Layout",
+            "PUT",
+            f"api/dashboards/{dashboard_id}/layout",
+            200,
+            data=layout_data
+        )
+        
+        if success:
+            print(f"   📐 Updated dashboard layout")
+            
+        return success
+
     def test_ai_query(self):
         """Test AI query functionality"""
         if 'uploaded_dataset' not in self.test_data:
