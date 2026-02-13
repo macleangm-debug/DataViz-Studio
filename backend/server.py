@@ -837,7 +837,7 @@ async def update_chart(chart_id: str, chart: ChartCreate):
 @api_router.get("/charts/{chart_id}/data")
 async def get_chart_data(chart_id: str):
     """Get chart data for rendering"""
-    chart = await db.charts.find_one({"id": chart_id})
+    chart = await db.charts.find_one({"id": chart_id}, {"_id": 0})
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
     
