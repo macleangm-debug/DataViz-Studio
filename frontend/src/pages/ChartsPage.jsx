@@ -1178,20 +1178,73 @@ export function ChartsPage() {
           </Card>
         )}
 
-        {/* View Chart Dialog */}
-        <Dialog open={!!viewChart} onOpenChange={() => setViewChart(null)}>
-          <DialogContent className="max-w-4xl h-[80vh]">
+        {/* View Chart Dialog with Drill-Down */}
+        <Dialog open={!!viewChart} onOpenChange={() => {
+          setViewChart(null);
+          setDrillDownData(null);
+          setDrillBreadcrumb([]);
+        }}>
+          <DialogContent className="max-w-5xl h-[85vh]">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {viewChart && React.createElement(getChartIcon(viewChart.type), { className: 'w-5 h-5 text-violet-600' })}
-                {viewChart?.name}
-              </DialogTitle>
-              <DialogDescription>
-                {viewChart?.config?.x_field && `X: ${viewChart.config.x_field}`}
-                {viewChart?.config?.y_field && ` | Y: ${viewChart.config.y_field}`}
-              </DialogDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle className="flex items-center gap-2">
+                    {viewChart && React.createElement(getChartIcon(viewChart.type), { className: 'w-5 h-5 text-violet-600' })}
+                    {viewChart?.name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {viewChart?.config?.x_field && `X: ${viewChart.config.x_field}`}
+                    {viewChart?.config?.y_field && ` | Y: ${viewChart.config.y_field}`}
+                  </DialogDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExportPdf([viewChart?.id])}
+                    disabled={exportingPdf}
+                  >
+                    {exportingPdf ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileDown className="w-4 h-4" />
+                    )}
+                    <span className="ml-2">Export PDF</span>
+                  </Button>
+                </div>
+              </div>
             </DialogHeader>
-            <div className="flex-1 min-h-[400px]">
+            
+            {/* Drill-down breadcrumb */}
+            {drillBreadcrumb.length > 0 && (
+              <div className="flex items-center gap-2 py-2 px-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
+                <button 
+                  onClick={resetDrillDown}
+                  className="text-sm text-violet-600 hover:underline flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  Reset
+                </button>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                {drillBreadcrumb.map((crumb, idx) => (
+                  <React.Fragment key={idx}>
+                    <Badge variant="secondary">
+                      {crumb.field}: {crumb.value}
+                    </Badge>
+                    {idx < drillBreadcrumb.length - 1 && (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </React.Fragment>
+                ))}
+                {drillDownData?.total_rows && (
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {drillDownData.total_rows} rows
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="flex-1 min-h-[350px]">
               {viewChart && (
                 <ChartPreview
                   chartType={viewChart.type}
@@ -1201,6 +1254,42 @@ export function ChartsPage() {
                 />
               )}
             </div>
+
+            {/* Drill-down options */}
+            {drillOptions.length > 0 && (
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <ZoomIn className="w-4 h-4 text-violet-600" />
+                  <span className="text-sm font-medium">Click to Drill Down</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {drillOptions.map((option) => (
+                    <div key={option.field} className="flex flex-col gap-1">
+                      <span className="text-xs text-muted-foreground">{option.field}</span>
+                      <div className="flex flex-wrap gap-1">
+                        {option.values?.slice(0, 5).map((value) => (
+                          <Button
+                            key={value}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => handleDrillDown(option.field, value)}
+                          >
+                            <Filter className="w-3 h-3 mr-1" />
+                            {String(value).substring(0, 15)}
+                          </Button>
+                        ))}
+                        {option.values?.length > 5 && (
+                          <Badge variant="secondary" className="h-7">
+                            +{option.values.length - 5} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
