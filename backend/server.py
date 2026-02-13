@@ -1,6 +1,6 @@
 """DataViz Studio - Main FastAPI Application"""
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request, BackgroundTasks
+from fastapi.responses import JSONResponse, Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -12,8 +12,22 @@ import uuid
 import json
 import pandas as pd
 import io
-from datetime import datetime, timezone
+import base64
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
+import asyncio
+
+# Database drivers
+import asyncpg
+import aiomysql
+
+# Scheduler for data refresh
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
+
+# PDF generation
+from weasyprint import HTML, CSS
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
