@@ -1,51 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Database,
-  Plus,
-  Upload,
-  Download,
-  Search,
-  Edit2,
-  Trash2,
-  RefreshCw,
-  FileSpreadsheet,
   Table2,
-  MapPin,
-  Building2,
-  Users,
-  Package,
-  Globe,
-  Filter,
-  Copy,
-  ChevronRight,
+  Trash2,
+  Download,
+  BarChart3,
   Eye,
-  Wifi,
-  WifiOff
+  Search,
+  Plus,
+  FileSpreadsheet,
+  Columns,
+  Rows3
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Badge } from '../components/ui/badge';
-import { Switch } from '../components/ui/switch';
-import { Separator } from '../components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
 import {
   Table,
   TableBody,
@@ -54,352 +25,285 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { Textarea } from '../components/ui/textarea';
-import { ScrollArea } from '../components/ui/scroll-area';
-import { Skeleton } from '../components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog';
+import { Badge } from '../components/ui/badge';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { useOrgStore, useAuthStore } from '../store';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-const getAuthHeaders = () => ({
-  'Authorization': `Bearer ${useAuthStore.getState().token}`,
-  'Content-Type': 'application/json'
-});
-
-const DATASET_TYPES = [
-  { id: 'sampling_frame', name: 'Sampling Frame', icon: Users, description: 'Population or household sampling lists' },
-  { id: 'facility_list', name: 'Facility List', icon: Building2, description: 'Health facilities, clinics, hospitals' },
-  { id: 'school_list', name: 'School List', icon: Building2, description: 'Educational institutions' },
-  { id: 'location_hierarchy', name: 'Location Hierarchy', icon: MapPin, description: 'Geographic hierarchy (regions, districts)' },
-  { id: 'product_list', name: 'Product List', icon: Package, description: 'Products, items, or inventory' },
-  { id: 'custom', name: 'Custom Dataset', icon: Table2, description: 'Custom lookup table' },
-];
-
-const DatasetCard = ({ dataset, onView, onEdit, onDelete, onDownload }) => {
-  const TypeIcon = DATASET_TYPES.find(t => t.id === dataset.dataset_type)?.icon || Database;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="group"
-    >
-      <Card className="bg-card/50 border-border/50 hover:border-primary/50 transition-colors">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <TypeIcon className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">{dataset.name}</h3>
-                <p className="text-sm text-gray-400">{dataset.description || 'No description'}</p>
-              </div>
-            </div>
-            <Badge variant={dataset.is_active ? 'default' : 'secondary'}>
-              v{dataset.version}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
-            <span className="flex items-center gap-1">
-              <Table2 className="w-4 h-4" />
-              {dataset.record_count?.toLocaleString() || 0} records
-            </span>
-            <span className="flex items-center gap-1">
-              {dataset.enable_offline ? (
-                <>
-                  <Wifi className="w-4 h-4 text-green-500" />
-                  Offline enabled
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-4 h-4" />
-                  Online only
-                </>
-              )}
-            </span>
-          </div>
-
-          <div className="flex flex-wrap gap-1 mb-3">
-            {dataset.searchable_fields?.slice(0, 3).map((field) => (
-              <Badge key={field} variant="outline" className="text-xs">
-                {field}
-              </Badge>
-            ))}
-            {dataset.searchable_fields?.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{dataset.searchable_fields.length - 3} more
-              </Badge>
-            )}
-          </div>
-
-          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="outline" size="sm" onClick={() => onView(dataset)}>
-              <Eye className="w-4 h-4 mr-1" />
-              View
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => onDownload(dataset)}>
-              <Download className="w-4 h-4 mr-1" />
-              Export
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => onEdit(dataset)}>
-              <Edit2 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(dataset)}>
-              <Trash2 className="w-4 h-4 text-destructive" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-};
-
 export function DatasetsPage() {
+  const navigate = useNavigate();
+  const { datasetId } = useParams();
   const { currentOrg } = useOrgStore();
-  const [loading, setLoading] = useState(true);
+  const { token } = useAuthStore();
   const [datasets, setDatasets] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showViewDialog, setShowViewDialog] = useState(false);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState(null);
-  const [datasetRecords, setDatasetRecords] = useState([]);
-  const [recordsLoading, setRecordsLoading] = useState(false);
-
-  const [createForm, setCreateForm] = useState({
-    name: '',
-    description: '',
-    dataset_type: 'custom',
-    columns: [{ name: 'id', type: 'string', label: 'ID', searchable: true }],
-    searchable_fields: ['id'],
-    display_field: 'name',
-    value_field: 'id',
-    enable_offline: true,
-    offline_subset_field: ''
-  });
-
-  const [uploadData, setUploadData] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [datasetData, setDatasetData] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [deleteDialog, setDeleteDialog] = useState(null);
 
   useEffect(() => {
-    if (currentOrg?.id) {
-      loadDatasets();
-    }
-  }, [currentOrg?.id]);
+    fetchDatasets();
+  }, [currentOrg]);
 
-  const loadDatasets = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (datasetId) {
+      fetchDatasetDetails(datasetId);
+    } else {
+      setSelectedDataset(null);
+      setDatasetData([]);
+      setStats(null);
+    }
+  }, [datasetId]);
+
+  const fetchDatasets = async () => {
     try {
-      const response = await fetch(
-        `${API_URL}/api/datasets/${currentOrg.id}`,
-        { headers: getAuthHeaders() }
-      );
-      const data = await response.json();
-      setDatasets(data.datasets || []);
+      const headers = { Authorization: `Bearer ${token}` };
+      const orgParam = currentOrg?.id ? `?org_id=${currentOrg.id}` : '';
+      const response = await axios.get(`${API_URL}/api/datasets${orgParam}`, { headers });
+      setDatasets(response.data.datasets || []);
     } catch (error) {
-      console.error('Failed to load datasets:', error);
-      toast.error('Failed to load datasets');
+      console.error('Error fetching datasets:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateDataset = async () => {
-    if (!createForm.name.trim()) {
-      toast.error('Dataset name is required');
-      return;
-    }
-
-    setSaving(true);
+  const fetchDatasetDetails = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/api/datasets/`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          ...createForm,
-          org_id: currentOrg.id
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to create dataset');
+      const headers = { Authorization: `Bearer ${token}` };
+      const [datasetRes, dataRes, statsRes] = await Promise.all([
+        axios.get(`${API_URL}/api/datasets/${id}`, { headers }),
+        axios.get(`${API_URL}/api/datasets/${id}/data?page=${page}&limit=50`, { headers }),
+        axios.get(`${API_URL}/api/datasets/${id}/stats`, { headers })
+      ]);
       
-      const result = await response.json();
-      toast.success('Dataset created');
-      setShowCreateDialog(false);
-      setCreateForm({
-        name: '',
-        description: '',
-        dataset_type: 'custom',
-        columns: [{ name: 'id', type: 'string', label: 'ID', searchable: true }],
-        searchable_fields: ['id'],
-        display_field: 'name',
-        value_field: 'id',
-        enable_offline: true,
-        offline_subset_field: ''
-      });
-      loadDatasets();
+      setSelectedDataset(datasetRes.data);
+      setDatasetData(dataRes.data.data || []);
+      setTotalPages(dataRes.data.pages || 1);
+      setStats(statsRes.data);
     } catch (error) {
-      toast.error('Failed to create dataset');
-    } finally {
-      setSaving(false);
+      console.error('Error fetching dataset details:', error);
+      toast.error('Failed to load dataset');
     }
   };
 
-  const handleViewDataset = async (dataset) => {
-    setSelectedDataset(dataset);
-    setShowViewDialog(true);
-    setRecordsLoading(true);
-
+  const handleDelete = async (id) => {
     try {
-      const response = await fetch(
-        `${API_URL}/api/datasets/${currentOrg.id}/${dataset.id}/records?limit=100`,
-        { headers: getAuthHeaders() }
-      );
-      const data = await response.json();
-      setDatasetRecords(data.records || []);
-    } catch (error) {
-      toast.error('Failed to load records');
-    } finally {
-      setRecordsLoading(false);
-    }
-  };
-
-  const handleUploadRecords = async () => {
-    if (!uploadData.trim()) {
-      toast.error('Please paste CSV or JSON data');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      let records = [];
-      
-      // Try parsing as JSON first
-      try {
-        records = JSON.parse(uploadData);
-        if (!Array.isArray(records)) {
-          records = [records];
-        }
-      } catch {
-        // Parse as CSV
-        const lines = uploadData.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
-        records = lines.slice(1).map(line => {
-          const values = line.split(',').map(v => v.trim());
-          const record = {};
-          headers.forEach((h, i) => {
-            record[h] = values[i] || '';
-          });
-          return record;
-        });
-      }
-
-      const response = await fetch(
-        `${API_URL}/api/datasets/${currentOrg.id}/${selectedDataset.id}/records/bulk`,
-        {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ records, replace_existing: false })
-        }
-      );
-
-      if (!response.ok) throw new Error('Upload failed');
-      
-      const result = await response.json();
-      toast.success(result.message);
-      setShowUploadDialog(false);
-      setUploadData('');
-      loadDatasets();
-      handleViewDataset(selectedDataset);
-    } catch (error) {
-      toast.error('Failed to upload records');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteDataset = async (dataset) => {
-    if (!confirm(`Delete "${dataset.name}"? This cannot be undone.`)) return;
-
-    try {
-      await fetch(
-        `${API_URL}/api/datasets/${currentOrg.id}/${dataset.id}`,
-        { method: 'DELETE', headers: getAuthHeaders() }
-      );
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`${API_URL}/api/datasets/${id}`, { headers });
       toast.success('Dataset deleted');
-      loadDatasets();
+      setDeleteDialog(null);
+      fetchDatasets();
+      if (datasetId === id) {
+        navigate('/datasets');
+      }
     } catch (error) {
       toast.error('Failed to delete dataset');
     }
   };
 
-  const handleDownloadDataset = async (dataset) => {
+  const handleExport = async (format) => {
+    if (!selectedDataset) return;
+    
     try {
-      const response = await fetch(
-        `${API_URL}/api/datasets/${currentOrg.id}/${dataset.id}/offline-package`,
-        { headers: getAuthHeaders() }
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.get(
+        `${API_URL}/api/exports/${selectedDataset.id}/${format}`,
+        { headers }
       );
-      const data = await response.json();
       
-      // Download as JSON
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${dataset.name.replace(/\s+/g, '_')}_v${dataset.version}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
-      toast.success('Dataset exported');
+      if (format === 'csv') {
+        const blob = new Blob([response.data.csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${selectedDataset.name}.csv`;
+        a.click();
+        toast.success('Downloaded CSV');
+      } else {
+        const blob = new Blob([JSON.stringify(response.data.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${selectedDataset.name}.json`;
+        a.click();
+        toast.success('Downloaded JSON');
+      }
     } catch (error) {
-      toast.error('Failed to export dataset');
+      toast.error('Export failed');
     }
   };
 
-  const addColumn = () => {
-    setCreateForm(prev => ({
-      ...prev,
-      columns: [...prev.columns, { name: '', type: 'string', label: '', searchable: false }]
-    }));
-  };
+  const filteredDatasets = datasets.filter(d =>
+    d.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const updateColumn = (index, field, value) => {
-    setCreateForm(prev => ({
-      ...prev,
-      columns: prev.columns.map((col, i) => 
-        i === index ? { ...col, [field]: value } : col
-      )
-    }));
-  };
-
-  const removeColumn = (index) => {
-    setCreateForm(prev => ({
-      ...prev,
-      columns: prev.columns.filter((_, i) => i !== index)
-    }));
-  };
-
-  const filteredDatasets = datasets.filter(d => {
-    const matchesSearch = d.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          d.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || d.dataset_type === typeFilter;
-    return matchesSearch && matchesType;
-  });
-
-  if (loading) {
+  if (selectedDataset) {
     return (
       <DashboardLayout>
-        <div className="space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48" />)}
+        <div className="space-y-6" data-testid="dataset-detail-page">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/datasets')}
+                className="mb-2 -ml-2"
+              >
+                ← Back to Datasets
+              </Button>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                <FileSpreadsheet className="w-6 h-6 text-violet-600" />
+                {selectedDataset.name}
+              </h1>
+              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Rows3 className="w-4 h-4" />
+                  {selectedDataset.row_count || 0} rows
+                </span>
+                <span className="flex items-center gap-1">
+                  <Columns className="w-4 h-4" />
+                  {selectedDataset.columns?.length || 0} columns
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleExport('csv')}
+                data-testid="export-csv-btn"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExport('json')}
+                data-testid="export-json-btn"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export JSON
+              </Button>
+              <Button
+                onClick={() => navigate('/charts/new')}
+                className="bg-violet-600 hover:bg-violet-700"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Create Chart
+              </Button>
+            </div>
           </div>
+
+          {/* Column Stats */}
+          {stats && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Column Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(stats.stats || {}).map(([colName, colStats]) => (
+                    <div
+                      key={colName}
+                      className="p-4 rounded-lg bg-muted/50 border"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-foreground">{colName}</span>
+                        <Badge variant="secondary">{colStats.type}</Badge>
+                      </div>
+                      {colStats.mean !== undefined ? (
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Mean: {colStats.mean?.toFixed(2)}</p>
+                          <p>Min: {colStats.min} / Max: {colStats.max}</p>
+                          <p>Missing: {colStats.missing}</p>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Unique: {colStats.unique}</p>
+                          <p>Missing: {colStats.missing}</p>
+                          {colStats.top_values && (
+                            <p>Top: {Object.keys(colStats.top_values).slice(0, 3).join(', ')}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Data Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Data Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {selectedDataset.columns?.map((col) => (
+                        <TableHead key={col.name} className="whitespace-nowrap">
+                          {col.name}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {datasetData.map((row, idx) => (
+                      <TableRow key={idx}>
+                        {selectedDataset.columns?.map((col) => (
+                          <TableCell key={col.name} className="whitespace-nowrap">
+                            {String(row[col.name] ?? '')}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => setPage(p => p - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(p => p + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     );
@@ -411,316 +315,143 @@ export function DatasetsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="font-barlow text-3xl font-bold tracking-tight text-white">
-              Lookup Datasets
-            </h1>
-            <p className="text-gray-400">Manage reusable lookup tables for data collection</p>
+            <h1 className="text-3xl font-bold text-foreground">Datasets</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your imported data
+            </p>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)} data-testid="create-dataset-btn">
+          <Button
+            onClick={() => navigate('/upload')}
+            className="bg-violet-600 hover:bg-violet-700"
+          >
             <Plus className="w-4 h-4 mr-2" />
-            Create Dataset
+            Upload Data
           </Button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search datasets..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-48">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {DATASET_TYPES.map((type) => (
-                <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Search */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search datasets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="search-datasets-input"
+          />
         </div>
 
         {/* Datasets Grid */}
-        {filteredDatasets.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredDatasets.map((dataset) => (
-              <DatasetCard
+        {loading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6">
+                  <div className="h-5 bg-muted rounded w-3/4 mb-3" />
+                  <div className="h-4 bg-muted rounded w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredDatasets.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredDatasets.map((dataset, index) => (
+              <motion.div
                 key={dataset.id}
-                dataset={dataset}
-                onView={handleViewDataset}
-                onEdit={(d) => { setSelectedDataset(d); }}
-                onDelete={handleDeleteDataset}
-                onDownload={handleDownloadDataset}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card
+                  className="cursor-pointer hover:shadow-lg hover:border-violet-200 dark:hover:border-violet-800 transition-all group"
+                  data-testid={`dataset-card-${dataset.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div
+                        className="flex-1 min-w-0"
+                        onClick={() => navigate(`/datasets/${dataset.id}`)}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                            <FileSpreadsheet className="w-4 h-4 text-violet-600" />
+                          </div>
+                          <h3 className="font-semibold text-foreground truncate">{dataset.name}</h3>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span>{dataset.row_count || 0} rows</span>
+                          <span>{dataset.columns?.length || 0} cols</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/datasets/${dataset.id}`);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteDialog(dataset);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         ) : (
-          <Card className="bg-card/30 border-dashed">
-            <CardContent className="py-12 text-center">
-              <Database className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-white mb-2">No datasets yet</h3>
-              <p className="text-gray-400 mb-4">
-                Create lookup tables for schools, facilities, sampling frames, and more
+          <Card className="border-dashed">
+            <CardContent className="p-12 text-center">
+              <Database className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-semibold text-foreground mb-2">No datasets found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchQuery ? 'Try a different search term' : 'Upload your first dataset to get started'}
               </p>
-              <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Your First Dataset
-              </Button>
+              {!searchQuery && (
+                <Button onClick={() => navigate('/upload')} className="bg-violet-600 hover:bg-violet-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Upload Data
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Create Dataset Dialog */}
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create Lookup Dataset</DialogTitle>
-              <DialogDescription>
-                Define the structure of your lookup table
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Dataset Name</Label>
-                  <Input
-                    value={createForm.name}
-                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    placeholder="e.g., Schools List"
-                    data-testid="dataset-name-input"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select
-                    value={createForm.dataset_type}
-                    onValueChange={(v) => setCreateForm({ ...createForm, dataset_type: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DATASET_TYPES.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                  placeholder="Brief description of this dataset"
-                  rows={2}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Columns</Label>
-                  <Button variant="outline" size="sm" onClick={addColumn}>
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add Column
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  {createForm.columns.map((col, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 bg-card/30 rounded-lg">
-                      <Input
-                        placeholder="name"
-                        value={col.name}
-                        onChange={(e) => updateColumn(idx, 'name', e.target.value)}
-                        className="flex-1"
-                      />
-                      <Input
-                        placeholder="Label"
-                        value={col.label}
-                        onChange={(e) => updateColumn(idx, 'label', e.target.value)}
-                        className="flex-1"
-                      />
-                      <Select
-                        value={col.type}
-                        onValueChange={(v) => updateColumn(idx, 'type', v)}
-                      >
-                        <SelectTrigger className="w-28">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="string">Text</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="boolean">Boolean</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <label className="flex items-center gap-1 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={col.searchable}
-                          onChange={(e) => updateColumn(idx, 'searchable', e.target.checked)}
-                        />
-                        Search
-                      </label>
-                      {idx > 0 && (
-                        <Button variant="ghost" size="icon" onClick={() => removeColumn(idx)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Enable Offline</Label>
-                  <p className="text-xs text-gray-400">Allow download for offline use</p>
-                </div>
-                <Switch
-                  checked={createForm.enable_offline}
-                  onCheckedChange={(v) => setCreateForm({ ...createForm, enable_offline: v })}
-                />
-              </div>
-
-              {createForm.enable_offline && (
-                <div className="space-y-2">
-                  <Label>Offline Subset Field</Label>
-                  <Input
-                    value={createForm.offline_subset_field}
-                    onChange={(e) => setCreateForm({ ...createForm, offline_subset_field: e.target.value })}
-                    placeholder="e.g., region (to filter by enumerator's region)"
-                  />
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateDataset} disabled={saving} data-testid="save-dataset-btn">
-                {saving ? 'Creating...' : 'Create Dataset'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* View Dataset Dialog */}
-        <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-          <DialogContent className="max-w-4xl max-h-[85vh]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {selectedDataset?.name}
-                <Badge variant="outline">v{selectedDataset?.version}</Badge>
-              </DialogTitle>
-              <DialogDescription>
-                {selectedDataset?.record_count?.toLocaleString()} records
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex gap-2 mb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowUploadDialog(true);
-                }}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Records
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDownloadDataset(selectedDataset)}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export All
-              </Button>
-            </div>
-
-            {recordsLoading ? (
-              <div className="h-64 flex items-center justify-center">
-                <RefreshCw className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : (
-              <ScrollArea className="h-[400px] border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {selectedDataset?.columns?.map((col) => (
-                        <TableHead key={col.name}>{col.label || col.name}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {datasetRecords.map((record, idx) => (
-                      <TableRow key={idx}>
-                        {selectedDataset?.columns?.map((col) => (
-                          <TableCell key={col.name}>
-                            {String(record[col.name] ?? '')}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            )}
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowViewDialog(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Upload Records Dialog */}
-        <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        {/* Delete Dialog */}
+        <Dialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Upload Records</DialogTitle>
+              <DialogTitle>Delete Dataset</DialogTitle>
               <DialogDescription>
-                Paste CSV or JSON data to add records
+                Are you sure you want to delete "{deleteDialog?.name}"? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <Textarea
-                value={uploadData}
-                onChange={(e) => setUploadData(e.target.value)}
-                placeholder={`Paste CSV data:\nid,name,district,region\nSCH001,School Name,District,Region\n\nOr JSON:\n[{"id": "SCH001", "name": "School Name"}]`}
-                rows={10}
-                className="font-mono text-sm"
-                data-testid="upload-data-input"
-              />
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setDeleteDialog(null)}>
                 Cancel
               </Button>
-              <Button onClick={handleUploadRecords} disabled={saving} data-testid="upload-records-btn">
-                {saving ? 'Uploading...' : 'Upload Records'}
+              <Button
+                variant="destructive"
+                onClick={() => handleDelete(deleteDialog?.id)}
+                data-testid="confirm-delete-btn"
+              >
+                Delete
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
