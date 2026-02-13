@@ -1027,15 +1027,32 @@ export function ChartsPage() {
               Create powerful visualizations with AI-powered suggestions
             </p>
           </div>
-          <Button
-            onClick={() => navigate('/charts/new')}
-            className="bg-violet-600 hover:bg-violet-700"
-            disabled={datasets.length === 0}
-            data-testid="create-chart-btn"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Chart
-          </Button>
+          <div className="flex gap-2">
+            {charts.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => handleExportPdf()}
+                disabled={exportingPdf}
+                data-testid="export-all-pdf-btn"
+              >
+                {exportingPdf ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 mr-2" />
+                )}
+                Export All to PDF
+              </Button>
+            )}
+            <Button
+              onClick={() => navigate('/charts/new')}
+              className="bg-violet-600 hover:bg-violet-700"
+              disabled={datasets.length === 0}
+              data-testid="create-chart-btn"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Chart
+            </Button>
+          </div>
         </div>
 
         {datasets.length === 0 && !loading && (
