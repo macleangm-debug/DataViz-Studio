@@ -1345,6 +1345,577 @@ async def export_json(dataset_id: str):
     return {"data": data, "rows": len(data)}
 
 # =============================================================================
+# Scheduled Data Refresh Routes
+# =============================================================================
+
+# Initialize scheduler
+scheduler = AsyncIOScheduler()
+_scheduled_jobs: Dict[str, str] = {}  # conn_id -> job_id mapping
+
+async def _execute_scheduled_sync(conn_id: str):
+    """Execute scheduled sync for a connection"""
+    logger.info(f"Executing scheduled sync for connection: {conn_id}")
+    try:
+        conn = await db.database_connections.find_one({"id": conn_id})
+        if not conn:
+            logger.error(f"Connection {conn_id} not found for scheduled sync")
+            return
+        
+        password = _connection_passwords.get(conn_id, "")
+        
+        # Remove old datasets from this source before sync
+        old_datasets = await db.datasets.find({"source_id": conn_id}).to_list(100)
+        for ds in old_datasets:
+            await db.dataset_data.delete_many({"dataset_id": ds["id"]})
+            await db.datasets.delete_one({"id": ds["id"]})
+        
+        # Sync based on database type
+        if conn["db_type"] == "postgresql":
+            synced = await _sync_postgresql(conn, password)
+        elif conn["db_type"] == "mysql":
+            synced = await _sync_mysql(conn, password)
+        elif conn["db_type"] == "mongodb":
+            # Simplified MongoDB sync for scheduled job
+            if conn.get("username"):
+                uri = f"mongodb://{conn['username']}:{password}@{conn['host']}:{conn['port']}/"
+            else:
+                uri = f"mongodb://{conn['host']}:{conn['port']}/"
+            sync_client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
+            sync_db = sync_client[conn["database"]]
+            collections = await sync_db.list_collection_names()
+            
+            synced = []
+            for coll in collections[:5]:
+                data = await sync_db[coll].find({}, {"_id": 0}).limit(10000).to_list(10000)
+                if data:
+                    dataset_id = str(uuid.uuid4())
+                    sample = data[0] if data else {}
+                    columns = [{"name": k, "type": type(v).__name__} for k, v in sample.items()]
+                    
+                    await db.datasets.insert_one({
+                        "id": dataset_id, "name": f"{conn['name']} - {coll}",
+                        "source_id": conn_id, "source_type": "mongodb",
+                        "org_id": conn.get("org_id"), "row_count": len(data),
+                        "columns": columns, "created_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    
+                    for record in data:
+                        record["dataset_id"] = dataset_id
+                        record["_dataset_row_id"] = str(uuid.uuid4())
+                    await db.dataset_data.insert_many(data)
+                    synced.append({"name": coll, "rows": len(data)})
+            sync_client.close()
+        else:
+            synced = []
+        
+        await db.database_connections.update_one(
+            {"id": conn_id},
+            {"$set": {"status": "synced", "last_sync": datetime.now(timezone.utc).isoformat()}}
+        )
+        logger.info(f"Scheduled sync completed for {conn_id}: {len(synced)} datasets")
+        
+    except Exception as e:
+        logger.error(f"Scheduled sync error for {conn_id}: {str(e)}")
+        await db.database_connections.update_one(
+            {"id": conn_id},
+            {"$set": {"status": "error", "error": str(e)}}
+        )
+
+@api_router.post("/database-connections/{conn_id}/schedule")
+async def set_refresh_schedule(conn_id: str, config: ScheduleConfig):
+    """Set up scheduled data refresh for a connection"""
+    conn = await db.database_connections.find_one({"id": conn_id})
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    # Remove existing schedule if any
+    if conn_id in _scheduled_jobs:
+        try:
+            scheduler.remove_job(_scheduled_jobs[conn_id])
+        except:
+            pass
+    
+    if not config.enabled:
+        await db.database_connections.update_one(
+            {"id": conn_id},
+            {"$set": {"schedule": None}}
+        )
+        if conn_id in _scheduled_jobs:
+            del _scheduled_jobs[conn_id]
+        return {"status": "disabled", "message": "Schedule disabled"}
+    
+    # Create new schedule
+    job_id = f"sync_{conn_id}"
+    
+    if config.interval_type == "hourly":
+        trigger = IntervalTrigger(hours=config.interval_value)
+        schedule_desc = f"Every {config.interval_value} hour(s)"
+    elif config.interval_type == "daily":
+        trigger = IntervalTrigger(days=config.interval_value)
+        schedule_desc = f"Every {config.interval_value} day(s)"
+    elif config.interval_type == "weekly":
+        trigger = IntervalTrigger(weeks=config.interval_value)
+        schedule_desc = f"Every {config.interval_value} week(s)"
+    elif config.interval_type == "custom" and config.custom_cron:
+        trigger = CronTrigger.from_crontab(config.custom_cron)
+        schedule_desc = f"Custom: {config.custom_cron}"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid schedule configuration")
+    
+    # Add job to scheduler
+    scheduler.add_job(
+        _execute_scheduled_sync,
+        trigger=trigger,
+        args=[conn_id],
+        id=job_id,
+        replace_existing=True
+    )
+    _scheduled_jobs[conn_id] = job_id
+    
+    # Store schedule in database
+    schedule_doc = {
+        "interval_type": config.interval_type,
+        "interval_value": config.interval_value,
+        "custom_cron": config.custom_cron,
+        "enabled": True,
+        "description": schedule_desc,
+        "next_run": scheduler.get_job(job_id).next_run_time.isoformat() if scheduler.get_job(job_id) else None
+    }
+    
+    await db.database_connections.update_one(
+        {"id": conn_id},
+        {"$set": {"schedule": schedule_doc}}
+    )
+    
+    return {
+        "status": "scheduled",
+        "schedule": schedule_desc,
+        "next_run": schedule_doc["next_run"]
+    }
+
+@api_router.get("/database-connections/{conn_id}/schedule")
+async def get_refresh_schedule(conn_id: str):
+    """Get the current refresh schedule for a connection"""
+    conn = await db.database_connections.find_one({"id": conn_id}, {"_id": 0})
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    schedule = conn.get("schedule")
+    if not schedule:
+        return {"status": "not_scheduled", "schedule": None}
+    
+    # Update next run time
+    if conn_id in _scheduled_jobs:
+        job = scheduler.get_job(_scheduled_jobs[conn_id])
+        if job:
+            schedule["next_run"] = job.next_run_time.isoformat() if job.next_run_time else None
+    
+    return {"status": "scheduled", "schedule": schedule}
+
+@api_router.delete("/database-connections/{conn_id}/schedule")
+async def delete_refresh_schedule(conn_id: str):
+    """Remove scheduled refresh for a connection"""
+    conn = await db.database_connections.find_one({"id": conn_id})
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if conn_id in _scheduled_jobs:
+        try:
+            scheduler.remove_job(_scheduled_jobs[conn_id])
+            del _scheduled_jobs[conn_id]
+        except:
+            pass
+    
+    await db.database_connections.update_one(
+        {"id": conn_id},
+        {"$set": {"schedule": None}}
+    )
+    
+    return {"status": "removed"}
+
+# =============================================================================
+# PDF Report Export Routes
+# =============================================================================
+
+def _generate_chart_svg(chart_data: List[dict], chart_type: str, config: dict) -> str:
+    """Generate SVG representation of a chart for PDF"""
+    if not chart_data:
+        return '<svg width="400" height="200"><text x="200" y="100" text-anchor="middle">No data</text></svg>'
+    
+    width, height = 500, 300
+    padding = 50
+    chart_width = width - 2 * padding
+    chart_height = height - 2 * padding
+    
+    max_value = max(d.get('value', 0) for d in chart_data) or 1
+    
+    if chart_type in ['bar', 'column']:
+        bar_width = chart_width / len(chart_data) * 0.8
+        gap = chart_width / len(chart_data) * 0.2
+        
+        bars = []
+        labels = []
+        for i, d in enumerate(chart_data[:10]):
+            bar_height = (d.get('value', 0) / max_value) * chart_height
+            x = padding + i * (bar_width + gap)
+            y = padding + chart_height - bar_height
+            bars.append(f'<rect x="{x}" y="{y}" width="{bar_width}" height="{bar_height}" fill="#8b5cf6" rx="4"/>')
+            labels.append(f'<text x="{x + bar_width/2}" y="{height - 10}" text-anchor="middle" font-size="10">{str(d.get("name", ""))[:8]}</text>')
+        
+        return f'''<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="{width}" height="{height}" fill="#f8fafc"/>
+            {"".join(bars)}
+            {"".join(labels)}
+        </svg>'''
+    
+    elif chart_type == 'pie':
+        cx, cy, r = width/2, height/2, min(chart_width, chart_height)/2 - 20
+        total = sum(d.get('value', 0) for d in chart_data)
+        if total == 0:
+            total = 1
+        
+        colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
+        slices = []
+        start_angle = 0
+        
+        for i, d in enumerate(chart_data[:6]):
+            value = d.get('value', 0)
+            angle = (value / total) * 360
+            end_angle = start_angle + angle
+            
+            large_arc = 1 if angle > 180 else 0
+            start_rad = start_angle * 3.14159 / 180
+            end_rad = end_angle * 3.14159 / 180
+            
+            x1 = cx + r * round(1000 * (0 if start_angle == 0 else __import__('math').cos(start_rad))) / 1000
+            y1 = cy + r * round(1000 * (0 if start_angle == 0 else __import__('math').sin(start_rad))) / 1000
+            x2 = cx + r * round(1000 * __import__('math').cos(end_rad)) / 1000
+            y2 = cy + r * round(1000 * __import__('math').sin(end_rad)) / 1000
+            
+            path = f'M {cx} {cy} L {x1} {y1} A {r} {r} 0 {large_arc} 1 {x2} {y2} Z'
+            slices.append(f'<path d="{path}" fill="{colors[i % len(colors)]}"/>')
+            start_angle = end_angle
+        
+        return f'''<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="{width}" height="{height}" fill="#f8fafc"/>
+            {"".join(slices)}
+        </svg>'''
+    
+    else:  # line chart
+        points = []
+        for i, d in enumerate(chart_data[:10]):
+            x = padding + (i / max(len(chart_data) - 1, 1)) * chart_width
+            y = padding + chart_height - (d.get('value', 0) / max_value) * chart_height
+            points.append(f'{x},{y}')
+        
+        return f'''<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="{width}" height="{height}" fill="#f8fafc"/>
+            <polyline points="{' '.join(points)}" fill="none" stroke="#8b5cf6" stroke-width="3"/>
+        </svg>'''
+
+@api_router.post("/reports/export/pdf")
+async def export_report_pdf(request: ReportExportRequest):
+    """Export dashboard or charts as PDF report"""
+    charts_to_export = []
+    
+    if request.dashboard_id:
+        # Get dashboard and its widgets
+        dashboard = await db.dashboards.find_one({"id": request.dashboard_id}, {"_id": 0})
+        if not dashboard:
+            raise HTTPException(status_code=404, detail="Dashboard not found")
+        
+        # Get chart widgets
+        widgets = await db.widgets.find(
+            {"dashboard_id": request.dashboard_id, "type": "chart"},
+            {"_id": 0}
+        ).to_list(50)
+        
+        for widget in widgets:
+            if widget.get("dataset_id"):
+                chart_info = {
+                    "title": widget.get("title", "Chart"),
+                    "type": widget.get("config", {}).get("chart_type", "bar"),
+                    "dataset_id": widget["dataset_id"],
+                    "config": widget.get("config", {})
+                }
+                charts_to_export.append(chart_info)
+    
+    if request.chart_ids:
+        for chart_id in request.chart_ids:
+            chart = await db.charts.find_one({"id": chart_id}, {"_id": 0})
+            if chart:
+                charts_to_export.append({
+                    "title": chart.get("name", "Chart"),
+                    "type": chart.get("type", "bar"),
+                    "dataset_id": chart.get("dataset_id"),
+                    "config": chart.get("config", {})
+                })
+    
+    if not charts_to_export:
+        raise HTTPException(status_code=400, detail="No charts to export")
+    
+    # Build HTML for PDF
+    report_title = request.title or "DataViz Studio Report"
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    
+    html_parts = [f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Helvetica', 'Arial', sans-serif; margin: 40px; color: #1e293b; }}
+            h1 {{ color: #7c3aed; border-bottom: 3px solid #7c3aed; padding-bottom: 10px; }}
+            h2 {{ color: #475569; margin-top: 30px; }}
+            .chart-container {{ margin: 20px 0; page-break-inside: avoid; }}
+            .chart-svg {{ background: #f8fafc; border-radius: 8px; padding: 20px; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 12px; }}
+            th {{ background: #7c3aed; color: white; padding: 10px; text-align: left; }}
+            td {{ border: 1px solid #e2e8f0; padding: 8px; }}
+            tr:nth-child(even) {{ background: #f8fafc; }}
+            .timestamp {{ color: #94a3b8; font-size: 12px; }}
+            .footer {{ margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; }}
+        </style>
+    </head>
+    <body>
+        <h1>{report_title}</h1>
+        <p class="timestamp">Generated: {timestamp}</p>
+    ''']
+    
+    for idx, chart_info in enumerate(charts_to_export):
+        # Get chart data
+        data = await db.dataset_data.find(
+            {"dataset_id": chart_info["dataset_id"]},
+            {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+        ).to_list(1000)
+        
+        if not data:
+            continue
+        
+        df = pd.DataFrame(data)
+        config = chart_info.get("config", {})
+        x_field = config.get("x_field")
+        y_field = config.get("y_field")
+        
+        # Aggregate data for chart
+        chart_data = []
+        if x_field and x_field in df.columns:
+            if y_field and y_field in df.columns:
+                grouped = df.groupby(x_field)[y_field].sum().reset_index()
+                grouped.columns = ["name", "value"]
+            else:
+                grouped = df.groupby(x_field).size().reset_index()
+                grouped.columns = ["name", "value"]
+            chart_data = grouped.head(10).to_dict(orient='records')
+        
+        # Generate SVG chart
+        svg = _generate_chart_svg(chart_data, chart_info["type"], config)
+        
+        html_parts.append(f'''
+        <div class="chart-container">
+            <h2>{idx + 1}. {chart_info["title"]}</h2>
+            <div class="chart-svg">{svg}</div>
+        ''')
+        
+        # Add data table if requested
+        if request.include_data_tables and len(chart_data) > 0:
+            html_parts.append('<table><thead><tr><th>Category</th><th>Value</th></tr></thead><tbody>')
+            for row in chart_data:
+                html_parts.append(f'<tr><td>{row.get("name", "")}</td><td>{row.get("value", 0):,.2f}</td></tr>')
+            html_parts.append('</tbody></table>')
+        
+        html_parts.append('</div>')
+    
+    html_parts.append('''
+        <div class="footer">
+            <p>Report generated by DataViz Studio | Interactive Analytics & Visualization Platform</p>
+        </div>
+    </body>
+    </html>
+    ''')
+    
+    html_content = ''.join(html_parts)
+    
+    # Generate PDF
+    try:
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+        
+        return {
+            "status": "success",
+            "pdf_base64": pdf_base64,
+            "filename": f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            "charts_included": len(charts_to_export)
+        }
+    except Exception as e:
+        logger.error(f"PDF generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+@api_router.get("/reports/export/pdf/{dashboard_id}")
+async def export_dashboard_pdf(dashboard_id: str, include_tables: bool = True):
+    """Quick endpoint to export a dashboard as PDF"""
+    return await export_report_pdf(ReportExportRequest(
+        dashboard_id=dashboard_id,
+        include_data_tables=include_tables
+    ))
+
+# =============================================================================
+# Chart Drill-Down Routes
+# =============================================================================
+
+@api_router.post("/charts/{chart_id}/drill-down")
+async def drill_down_chart(chart_id: str, request: DrillDownRequest):
+    """Drill down into chart data by filtering"""
+    chart = await db.charts.find_one({"id": chart_id}, {"_id": 0})
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    
+    # Get filtered data
+    query = {
+        "dataset_id": chart["dataset_id"],
+        request.filter_field: request.filter_value
+    }
+    
+    data = await db.dataset_data.find(
+        query,
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).to_list(10000)
+    
+    if not data:
+        return {
+            "chart": chart,
+            "filter": {"field": request.filter_field, "value": request.filter_value},
+            "data": [],
+            "drill_options": []
+        }
+    
+    df = pd.DataFrame(data)
+    config = chart.get("config", {})
+    
+    # If drill_to_field specified, aggregate by that field
+    drill_field = request.drill_to_field or config.get("x_field")
+    y_field = config.get("y_field")
+    
+    if drill_field and drill_field in df.columns:
+        if y_field and y_field in df.columns:
+            result = df.groupby(drill_field)[y_field].sum().reset_index()
+            result.columns = ["name", "value"]
+        else:
+            result = df.groupby(drill_field).size().reset_index()
+            result.columns = ["name", "value"]
+        
+        chart_data = result.sort_values('value', ascending=False).head(20).to_dict(orient='records')
+    else:
+        chart_data = data[:100]
+    
+    # Determine possible drill options (other categorical columns)
+    drill_options = []
+    for col in df.columns:
+        if df[col].dtype == 'object' and col not in [request.filter_field, drill_field]:
+            unique_count = df[col].nunique()
+            if 2 <= unique_count <= 50:
+                drill_options.append({
+                    "field": col,
+                    "unique_values": unique_count,
+                    "sample_values": df[col].unique()[:5].tolist()
+                })
+    
+    return {
+        "chart": chart,
+        "filter": {"field": request.filter_field, "value": request.filter_value},
+        "data": chart_data,
+        "total_rows": len(data),
+        "drill_options": drill_options[:5],
+        "breadcrumb": [
+            {"field": request.filter_field, "value": request.filter_value}
+        ]
+    }
+
+@api_router.get("/charts/{chart_id}/drill-options")
+async def get_drill_options(chart_id: str):
+    """Get available drill-down options for a chart"""
+    chart = await db.charts.find_one({"id": chart_id}, {"_id": 0})
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    
+    # Get sample data
+    data = await db.dataset_data.find(
+        {"dataset_id": chart["dataset_id"]},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).limit(1000).to_list(1000)
+    
+    if not data:
+        return {"drill_options": []}
+    
+    df = pd.DataFrame(data)
+    config = chart.get("config", {})
+    x_field = config.get("x_field")
+    
+    # Find categorical columns suitable for drill-down
+    drill_options = []
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            unique_values = df[col].unique()
+            unique_count = len(unique_values)
+            if 2 <= unique_count <= 50:
+                drill_options.append({
+                    "field": col,
+                    "unique_values": unique_count,
+                    "values": unique_values[:10].tolist(),
+                    "is_current_x_axis": col == x_field
+                })
+    
+    return {
+        "chart_id": chart_id,
+        "chart_type": chart.get("type"),
+        "drill_options": drill_options
+    }
+
+@api_router.get("/datasets/{dataset_id}/drill-hierarchy")
+async def get_dataset_drill_hierarchy(dataset_id: str):
+    """Analyze dataset and suggest drill-down hierarchy"""
+    dataset = await db.datasets.find_one({"id": dataset_id}, {"_id": 0})
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    data = await db.dataset_data.find(
+        {"dataset_id": dataset_id},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).limit(1000).to_list(1000)
+    
+    if not data:
+        return {"hierarchy": [], "suggested_path": []}
+    
+    df = pd.DataFrame(data)
+    
+    # Analyze columns for hierarchy
+    column_info = []
+    for col in df.columns:
+        unique_count = df[col].nunique()
+        col_type = str(df[col].dtype)
+        
+        if df[col].dtype == 'object' and 2 <= unique_count <= 100:
+            column_info.append({
+                "field": col,
+                "unique_values": unique_count,
+                "type": col_type,
+                "sample_values": df[col].unique()[:5].tolist()
+            })
+    
+    # Sort by unique count (fewer unique = higher level in hierarchy)
+    column_info.sort(key=lambda x: x["unique_values"])
+    
+    # Suggest hierarchy path
+    suggested_path = [c["field"] for c in column_info[:4]]
+    
+    return {
+        "hierarchy": column_info,
+        "suggested_path": suggested_path,
+        "total_columns": len(df.columns),
+        "categorical_columns": len(column_info)
+    }
+
+# =============================================================================
 # Health & Root
 # =============================================================================
 
