@@ -854,6 +854,10 @@ export function ChartsPage() {
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [viewChart, setViewChart] = useState(null);
   const [chartViewData, setChartViewData] = useState([]);
+  const [drillDownData, setDrillDownData] = useState(null);
+  const [drillBreadcrumb, setDrillBreadcrumb] = useState([]);
+  const [drillOptions, setDrillOptions] = useState([]);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   // Check if we're in studio mode (creating new chart)
   const isStudioMode = location.pathname === '/charts/new';
