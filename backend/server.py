@@ -1655,33 +1655,35 @@ async def export_report_pdf(request: ReportExportRequest):
     if not charts_to_export:
         raise HTTPException(status_code=400, detail="No charts to export")
     
-    # Build HTML for PDF
+    # Build PDF using fpdf2
     report_title = request.title or "DataViz Studio Report"
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     
-    html_parts = [f'''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: 'Helvetica', 'Arial', sans-serif; margin: 40px; color: #1e293b; }}
-            h1 {{ color: #7c3aed; border-bottom: 3px solid #7c3aed; padding-bottom: 10px; }}
-            h2 {{ color: #475569; margin-top: 30px; }}
-            .chart-container {{ margin: 20px 0; page-break-inside: avoid; }}
-            .chart-svg {{ background: #f8fafc; border-radius: 8px; padding: 20px; }}
-            table {{ width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 12px; }}
-            th {{ background: #7c3aed; color: white; padding: 10px; text-align: left; }}
-            td {{ border: 1px solid #e2e8f0; padding: 8px; }}
-            tr:nth-child(even) {{ background: #f8fafc; }}
-            .timestamp {{ color: #94a3b8; font-size: 12px; }}
-            .footer {{ margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; }}
-        </style>
-    </head>
-    <body>
-        <h1>{report_title}</h1>
-        <p class="timestamp">Generated: {timestamp}</p>
-    ''']
+    class DataVizPDF(FPDF):
+        def header(self):
+            self.set_font('Helvetica', 'B', 16)
+            self.set_text_color(124, 58, 237)  # Violet
+            self.cell(0, 10, 'DataViz Studio Report', align='C', new_x='LMARGIN', new_y='NEXT')
+            self.set_font('Helvetica', '', 10)
+            self.set_text_color(148, 163, 184)
+            self.cell(0, 5, f'Generated: {timestamp}', align='C', new_x='LMARGIN', new_y='NEXT')
+            self.ln(5)
+            
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('Helvetica', 'I', 8)
+            self.set_text_color(148, 163, 184)
+            self.cell(0, 10, f'Page {self.page_no()} | DataViz Studio', align='C')
+    
+    pdf = DataVizPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    
+    # Report Title
+    pdf.set_font('Helvetica', 'B', 20)
+    pdf.set_text_color(30, 41, 59)
+    pdf.cell(0, 15, report_title, align='C', new_x='LMARGIN', new_y='NEXT')
+    pdf.ln(10)
     
     for idx, chart_info in enumerate(charts_to_export):
         # Get chart data
@@ -1707,39 +1709,73 @@ async def export_report_pdf(request: ReportExportRequest):
             else:
                 grouped = df.groupby(x_field).size().reset_index()
                 grouped.columns = ["name", "value"]
-            chart_data = grouped.head(10).to_dict(orient='records')
+            chart_data = grouped.sort_values('value', ascending=False).head(10).to_dict(orient='records')
         
-        # Generate SVG chart
-        svg = _generate_chart_svg(chart_data, chart_info["type"], config)
+        # Chart Title
+        pdf.set_font('Helvetica', 'B', 14)
+        pdf.set_text_color(71, 85, 105)
+        pdf.cell(0, 10, f"{idx + 1}. {chart_info['title']}", new_x='LMARGIN', new_y='NEXT')
+        pdf.ln(3)
         
-        html_parts.append(f'''
-        <div class="chart-container">
-            <h2>{idx + 1}. {chart_info["title"]}</h2>
-            <div class="chart-svg">{svg}</div>
-        ''')
+        # Draw simple bar chart
+        if chart_data:
+            chart_x = 20
+            chart_y = pdf.get_y()
+            chart_width = 170
+            chart_height = 60
+            
+            max_val = max(d.get('value', 0) for d in chart_data) or 1
+            bar_width = chart_width / len(chart_data) * 0.7
+            gap = chart_width / len(chart_data) * 0.3
+            
+            # Draw bars
+            colors = [(139, 92, 246), (6, 182, 212), (16, 185, 129), (245, 158, 11), (239, 68, 68)]
+            
+            for i, d in enumerate(chart_data):
+                bar_height = (d.get('value', 0) / max_val) * chart_height
+                x = chart_x + i * (bar_width + gap)
+                y = chart_y + chart_height - bar_height
+                
+                color = colors[i % len(colors)]
+                pdf.set_fill_color(*color)
+                pdf.rect(x, y, bar_width, bar_height, style='F')
+                
+                # Label
+                pdf.set_font('Helvetica', '', 7)
+                pdf.set_text_color(100, 116, 139)
+                label = str(d.get('name', ''))[:10]
+                pdf.set_xy(x, chart_y + chart_height + 2)
+                pdf.cell(bar_width, 4, label, align='C')
+            
+            pdf.set_y(chart_y + chart_height + 15)
         
         # Add data table if requested
-        if request.include_data_tables and len(chart_data) > 0:
-            html_parts.append('<table><thead><tr><th>Category</th><th>Value</th></tr></thead><tbody>')
-            for row in chart_data:
-                html_parts.append(f'<tr><td>{row.get("name", "")}</td><td>{row.get("value", 0):,.2f}</td></tr>')
-            html_parts.append('</tbody></table>')
+        if request.include_data_tables and chart_data:
+            pdf.ln(5)
+            pdf.set_font('Helvetica', 'B', 10)
+            pdf.set_fill_color(124, 58, 237)
+            pdf.set_text_color(255, 255, 255)
+            pdf.cell(95, 8, 'Category', border=1, fill=True, align='C')
+            pdf.cell(95, 8, 'Value', border=1, fill=True, align='C', new_x='LMARGIN', new_y='NEXT')
+            
+            pdf.set_font('Helvetica', '', 9)
+            pdf.set_text_color(30, 41, 59)
+            
+            for i, row in enumerate(chart_data):
+                fill = i % 2 == 0
+                pdf.set_fill_color(248, 250, 252) if fill else pdf.set_fill_color(255, 255, 255)
+                pdf.cell(95, 7, str(row.get('name', ''))[:40], border=1, fill=fill)
+                pdf.cell(95, 7, f"{row.get('value', 0):,.2f}", border=1, fill=fill, align='R', new_x='LMARGIN', new_y='NEXT')
         
-        html_parts.append('</div>')
+        pdf.ln(10)
+        
+        # Add new page if needed
+        if pdf.get_y() > 240:
+            pdf.add_page()
     
-    html_parts.append('''
-        <div class="footer">
-            <p>Report generated by DataViz Studio | Interactive Analytics & Visualization Platform</p>
-        </div>
-    </body>
-    </html>
-    ''')
-    
-    html_content = ''.join(html_parts)
-    
-    # Generate PDF
+    # Generate PDF bytes
     try:
-        pdf_bytes = HTML(string=html_content).write_pdf()
+        pdf_bytes = bytes(pdf.output())
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
         return {
