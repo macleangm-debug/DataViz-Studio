@@ -616,6 +616,9 @@ Charlie Brown,32,Phoenix,58000"""
             ("Dataset Data Retrieval", self.test_get_dataset_data),
             ("Dataset Statistics", self.test_dataset_statistics),
             ("Dashboard Creation", self.test_create_dashboard),
+            ("Database Connections", self.test_database_connections),
+            ("Widget Management", self.test_widgets),
+            ("Dashboard Layout Update", self.test_dashboard_layout_update),
             ("Chart Creation", self.test_create_chart),
             ("Data Source Operations", self.test_data_source_operations),
             ("AI Query", self.test_ai_query)
