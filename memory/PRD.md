@@ -21,33 +21,46 @@ DataViz Studio is an interactive analytics and visualization platform built by t
 - Data export (CSV, JSON)
 - User authentication and organization management
 
-## What's Been Implemented (Feb 13, 2026)
+## What's Been Implemented
 
-### Backend API (FastAPI)
-- [x] Authentication (register, login, token-based)
-- [x] Data source management (file, database, API)
-- [x] File upload with CSV/Excel/JSON parsing
-- [x] Dataset management with pagination
-- [x] Statistical analysis per dataset
-- [x] Dashboard CRUD operations
-- [x] Chart creation and configuration
-- [x] AI query endpoint (GPT-5.2 via Emergent)
-- [x] AI chart suggestions
+### Session 1 (Feb 13, 2026) - Initial MVP
+- [x] Complete rebranding from DataPulse to DataViz Studio
+- [x] Authentication system (register/login)
+- [x] Data upload support (CSV, Excel, JSON)
+- [x] Dataset management with statistics
+- [x] Dashboard & Chart creation
+- [x] AI-powered insights using GPT-5.2
 - [x] Data export (CSV, JSON)
 
-### Frontend (React)
-- [x] Login/Register pages with DataViz Studio branding
-- [x] Dashboard home page with stats and quick actions
-- [x] Upload page with drag-drop support
-- [x] Datasets page with detail view and stats
-- [x] Data Sources management page
-- [x] Dashboards page
-- [x] Charts page with AI suggestions
-- [x] AI Insights chat interface
-- [x] Settings page
+### Session 2 (Feb 13, 2026) - Dashboard Builder & Database Connections
+- [x] **Dashboard Widget Drag-Drop Builder**
+  - Stat Card widgets (count, sum, mean, max, min)
+  - Chart widgets (bar, line, pie)
+  - Table widgets with column selection
+  - Text block widgets
+  - Drag-and-drop repositioning via react-grid-layout
+  - Real-time data binding to datasets
+  
+- [x] **Real-time Database Connections**
+  - MongoDB, PostgreSQL, MySQL support
+  - Connection testing functionality
+  - Data sync from database to datasets
+  - Automatic schema detection
+  - Live sync creates datasets from collections/tables
+
+### Backend API Endpoints
+- Auth: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
+- Data Sources: `/api/data-sources`, `/api/data-sources/upload`
+- Database Connections: `/api/database-connections`, `/{id}/test`, `/{id}/sync`
+- Datasets: `/api/datasets`, `/{id}/data`, `/{id}/stats`
+- Dashboards: `/api/dashboards`, `/{id}/layout`, `/{id}/widgets`
+- Widgets: `/api/widgets`, `/{id}/data`
+- Charts: `/api/charts`, `/{id}/data`
+- AI: `/api/ai/query`, `/api/ai/suggest-charts`
+- Export: `/api/exports/{id}/csv`, `/api/exports/{id}/json`
 
 ### Tech Stack
-- Frontend: React, TailwindCSS, shadcn/ui, Framer Motion, Recharts
+- Frontend: React, TailwindCSS, shadcn/ui, Framer Motion, Recharts, react-grid-layout
 - Backend: FastAPI, Motor (async MongoDB), pandas
 - AI: GPT-5.2 via Emergent LLM key
 - Database: MongoDB
@@ -55,35 +68,30 @@ DataViz Studio is an interactive analytics and visualization platform built by t
 ## Prioritized Backlog
 
 ### P0 (Critical)
-- [ ] Fix external preview URL routing (infrastructure issue)
-- [ ] Add dashboard widget builder with drag-drop
+- [x] Dashboard widget drag-drop builder ✅
+- [x] Real-time database connections ✅
+- [ ] Fix external preview URL routing
 
 ### P1 (High Priority)
-- [ ] Real-time database connections
-- [ ] API data source polling
-- [ ] Chart drill-down capabilities
+- [ ] PostgreSQL/MySQL actual connection (currently simulated)
+- [ ] Scheduled data refreshes
 - [ ] Report builder with PDF export
+- [ ] Chart drill-down capabilities
 
 ### P2 (Medium Priority)
 - [ ] Team collaboration features
 - [ ] Data transformation/cleaning tools
-- [ ] Scheduled data refreshes
 - [ ] Custom chart themes
+- [ ] Dashboard templates
 
 ### P3 (Nice to Have)
-- [ ] Embedding/sharing dashboards
+- [ ] Public dashboard sharing
 - [ ] White-labeling options
 - [ ] Mobile app version
 - [ ] Integrations marketplace
 
 ## Next Tasks
 1. Resolve external URL routing issue
-2. Add dashboard widget drag-drop functionality
-3. Implement real-time database connection support
-4. Add more chart types and customization options
-
-## Architecture Notes
-- Single FastAPI server for all backend routes
-- MongoDB for data storage (users, orgs, datasets, dashboards, charts)
-- React frontend with zustand for state management
-- Emergent LLM integration for AI features
+2. Implement PostgreSQL/MySQL actual connections
+3. Add scheduled data refresh
+4. Build report export to PDF
