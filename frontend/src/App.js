@@ -8,6 +8,8 @@ import { DataSourcesPage } from './pages/DataSourcesPage';
 import { UploadPage } from './pages/UploadPage';
 import { DatasetsPage } from './pages/DatasetsPage';
 import { DashboardsPage } from './pages/DashboardsPage';
+import { DashboardBuilderPage } from './pages/DashboardBuilderPage';
+import { DatabaseConnectionsPage } from './pages/DatabaseConnectionsPage';
 import { ChartsPage } from './pages/ChartsPage';
 import { AIInsightsPage } from './pages/AIInsightsPage';
 import { SettingsPage } from './pages/SettingsPage';
