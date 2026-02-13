@@ -628,7 +628,11 @@ export function DatabaseConnectionsPage() {
                       <Timer className="w-4 h-4 inline mr-1" />
                       {scheduleConfig.interval_type === 'custom' 
                         ? `Custom schedule: ${scheduleConfig.custom_cron || 'Not set'}`
-                        : `Data will sync every ${scheduleConfig.interval_value} ${scheduleConfig.interval_type.replace('ly', '')}(s)`
+                        : `Data will sync every ${scheduleConfig.interval_value} ${
+                            scheduleConfig.interval_type === 'hourly' ? 'hour' :
+                            scheduleConfig.interval_type === 'daily' ? 'day' :
+                            scheduleConfig.interval_type === 'weekly' ? 'week' : 'interval'
+                          }(s)`
                       }
                     </p>
                   </div>
