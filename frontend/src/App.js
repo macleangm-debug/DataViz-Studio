@@ -1,56 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore, useUIStore } from './store';
-import { LoginPage, RegisterPage, AuthCallbackPage } from './pages/AuthPages';
+import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { DashboardPage } from './pages/DashboardPage';
-import { ProjectsPage } from './pages/ProjectsPage';
-import { FormsPage } from './pages/FormsPage';
-import { FormBuilderPage } from './pages/FormBuilderPage';
-import { FormPreviewPage } from './pages/FormPreviewPage';
-import { FormTemplatesPage } from './pages/FormTemplatesPage';
-import { SubmissionsPage } from './pages/SubmissionsPage';
-import { TeamPage, CreateOrganizationPage } from './pages/TeamPage';
-import { CasesPage } from './pages/CasesPage';
-import { CaseImportPage } from './pages/CaseImportPage';
-import { QualityPage } from './pages/QualityPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { GPSMapPage } from './pages/GPSMapPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { RBACPage } from './pages/RBACPage';
-import { WorkflowsPage } from './pages/WorkflowsPage';
-import { TranslationsPage } from './pages/TranslationsPage';
-import { SecurityPage } from './pages/SecurityPage';
-import { SuperAdminPage } from './pages/SuperAdminPage';
+import { DataSourcesPage } from './pages/DataSourcesPage';
+import { UploadPage } from './pages/UploadPage';
 import { DatasetsPage } from './pages/DatasetsPage';
-import { TokenSurveysPage } from './pages/TokenSurveysPage';
-import { CATIPage } from './pages/CATIPage';
-import { BackcheckPage } from './pages/BackcheckPage';
-import { PreloadWritebackPage } from './pages/PreloadWritebackPage';
-import { QualityAIPage } from './pages/QualityAIPage';
-import { PluginsPage } from './pages/PluginsPage';
-import { CAWISurveyPage, SurveyCompletePage } from './pages/CAWISurveyPage';
-import { SimulationPage } from './pages/SimulationPage';
-import { DeviceManagementPage } from './pages/DeviceManagementPage';
-import { DataAnalysisPage } from './pages/DataAnalysisPage';
-import { PWAInstallPrompt, NetworkStatus } from './components/PWAComponents';
-import { NetworkStatusBanner, SyncStatusPanel } from './components/OfflineSync';
+import { DashboardsPage } from './pages/DashboardsPage';
+import { ChartsPage } from './pages/ChartsPage';
+import { AIInsightsPage } from './pages/AIInsightsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import '@/App.css';
-
-// Register service worker
-const registerServiceWorker = async () => {
-  if ('serviceWorker' in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker registered:', registration);
-      
-      // Store registration for background sync
-      window.registration = registration;
-    } catch (error) {
-      console.error('Service Worker registration failed:', error);
-    }
-  }
-};
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -77,11 +38,6 @@ const PublicRoute = ({ children }) => {
 function App() {
   const { theme } = useUIStore();
 
-  // Register service worker on mount
-  useEffect(() => {
-    registerServiceWorker();
-  }, []);
-
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
       <BrowserRouter>
@@ -97,7 +53,6 @@ function App() {
               <RegisterPage />
             </PublicRoute>
           } />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={
@@ -105,114 +60,21 @@ function App() {
               <DashboardPage />
             </ProtectedRoute>
           } />
-          <Route path="/projects" element={
+          
+          {/* Data Routes */}
+          <Route path="/data-sources" element={
             <ProtectedRoute>
-              <ProjectsPage />
+              <DataSourcesPage />
             </ProtectedRoute>
           } />
-          <Route path="/projects/:projectId" element={
+          <Route path="/data-sources/new" element={
             <ProtectedRoute>
-              <ProjectsPage />
+              <DataSourcesPage />
             </ProtectedRoute>
           } />
-          <Route path="/forms" element={
+          <Route path="/upload" element={
             <ProtectedRoute>
-              <FormsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/new" element={
-            <ProtectedRoute>
-              <FormsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/:formId" element={
-            <ProtectedRoute>
-              <FormBuilderPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/:formId/edit" element={
-            <ProtectedRoute>
-              <FormBuilderPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/:formId/preview" element={
-            <ProtectedRoute>
-              <FormPreviewPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/submissions" element={
-            <ProtectedRoute>
-              <SubmissionsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/cases" element={
-            <ProtectedRoute>
-              <CasesPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/cases/import" element={
-            <ProtectedRoute>
-              <CaseImportPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/quality" element={
-            <ProtectedRoute>
-              <QualityPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/map" element={
-            <ProtectedRoute>
-              <GPSMapPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/templates" element={
-            <ProtectedRoute>
-              <FormTemplatesPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/exports" element={
-            <ProtectedRoute>
-              <SubmissionsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/team" element={
-            <ProtectedRoute>
-              <TeamPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/analytics" element={
-            <ProtectedRoute>
-              <AnalyticsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/rbac" element={
-            <ProtectedRoute>
-              <RBACPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/workflows" element={
-            <ProtectedRoute>
-              <WorkflowsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/translations" element={
-            <ProtectedRoute>
-              <TranslationsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/security" element={
-            <ProtectedRoute>
-              <SecurityPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <SuperAdminPage />
+              <UploadPage />
             </ProtectedRoute>
           } />
           <Route path="/datasets" element={
@@ -220,57 +82,87 @@ function App() {
               <DatasetsPage />
             </ProtectedRoute>
           } />
-          <Route path="/token-surveys" element={
+          <Route path="/datasets/:datasetId" element={
             <ProtectedRoute>
-              <TokenSurveysPage />
+              <DatasetsPage />
             </ProtectedRoute>
           } />
-          <Route path="/cati" element={
+          
+          {/* Visualization Routes */}
+          <Route path="/dashboards" element={
             <ProtectedRoute>
-              <CATIPage />
+              <DashboardsPage />
             </ProtectedRoute>
           } />
-          <Route path="/backcheck" element={
+          <Route path="/dashboards/new" element={
             <ProtectedRoute>
-              <BackcheckPage />
+              <DashboardsPage />
             </ProtectedRoute>
           } />
-          <Route path="/preload" element={
+          <Route path="/dashboards/:dashboardId" element={
             <ProtectedRoute>
-              <PreloadWritebackPage />
+              <DashboardsPage />
             </ProtectedRoute>
           } />
-          <Route path="/quality-ai" element={
+          <Route path="/charts" element={
             <ProtectedRoute>
-              <QualityAIPage />
+              <ChartsPage />
             </ProtectedRoute>
           } />
-          <Route path="/plugins" element={
+          <Route path="/charts/new" element={
             <ProtectedRoute>
-              <PluginsPage />
+              <ChartsPage />
             </ProtectedRoute>
           } />
-          <Route path="/simulation" element={
+          
+          {/* Analysis Routes */}
+          <Route path="/ai-insights" element={
             <ProtectedRoute>
-              <SimulationPage />
+              <AIInsightsPage />
             </ProtectedRoute>
           } />
-          <Route path="/devices" element={
+          <Route path="/statistics" element={
             <ProtectedRoute>
-              <DeviceManagementPage />
+              <AIInsightsPage />
             </ProtectedRoute>
           } />
-          <Route path="/analysis" element={
+          
+          {/* Export Routes */}
+          <Route path="/reports" element={
             <ProtectedRoute>
-              <DataAnalysisPage />
+              <DashboardsPage />
             </ProtectedRoute>
           } />
-          {/* Public CAWI Survey Routes */}
-          <Route path="/survey/:formId" element={<CAWISurveyPage />} />
-          <Route path="/survey/complete" element={<SurveyCompletePage />} />
-          <Route path="/organizations/new" element={
+          <Route path="/share" element={
             <ProtectedRoute>
-              <CreateOrganizationPage />
+              <DashboardsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/export" element={
+            <ProtectedRoute>
+              <DatasetsPage />
+            </ProtectedRoute>
+          } />
+          
+          {/* Settings Routes */}
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/team" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/security" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/api-keys" element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           } />
 
@@ -278,12 +170,6 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-        
-        {/* PWA Components */}
-        <PWAInstallPrompt />
-        
-        {/* Offline Sync Status */}
-        <NetworkStatusBanner />
       </BrowserRouter>
       
       <Toaster 
