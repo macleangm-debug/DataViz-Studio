@@ -1848,7 +1848,9 @@ async def drill_down_chart(chart_id: str, request: DrillDownRequest):
     # Determine possible drill options (other categorical columns)
     drill_options = []
     for col in df.columns:
-        if df[col].dtype == 'object' and col not in [request.filter_field, drill_field]:
+        col_dtype = str(df[col].dtype).lower()
+        is_string_type = col_dtype in ('object', 'str', 'string') or 'str' in col_dtype
+        if is_string_type and col not in [request.filter_field, drill_field]:
             unique_count = df[col].nunique()
             if 2 <= unique_count <= 50:
                 drill_options.append({
