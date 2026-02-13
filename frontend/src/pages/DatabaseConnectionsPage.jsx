@@ -172,6 +172,60 @@ export function DatabaseConnectionsPage() {
     }
   };
 
+  const openScheduleDialog = (conn) => {
+    setScheduleDialog(conn);
+    if (conn.schedule) {
+      setScheduleConfig({
+        interval_type: conn.schedule.interval_type || 'daily',
+        interval_value: conn.schedule.interval_value || 1,
+        custom_cron: conn.schedule.custom_cron || '',
+        enabled: conn.schedule.enabled !== false
+      });
+    } else {
+      setScheduleConfig({
+        interval_type: 'daily',
+        interval_value: 1,
+        custom_cron: '',
+        enabled: true
+      });
+    }
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!scheduleDialog) return;
+    
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.post(
+        `${API_URL}/api/database-connections/${scheduleDialog.id}/schedule`,
+        { conn_id: scheduleDialog.id, ...scheduleConfig },
+        { headers }
+      );
+      
+      if (response.data.status === 'scheduled') {
+        toast.success(`Schedule set: ${response.data.schedule}`);
+      } else if (response.data.status === 'disabled') {
+        toast.success('Schedule disabled');
+      }
+      
+      setScheduleDialog(null);
+      fetchConnections();
+    } catch (error) {
+      toast.error('Failed to set schedule');
+    }
+  };
+
+  const handleRemoveSchedule = async (connId) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`${API_URL}/api/database-connections/${connId}/schedule`, { headers });
+      toast.success('Schedule removed');
+      fetchConnections();
+    } catch (error) {
+      toast.error('Failed to remove schedule');
+    }
+  };
+
   const handleDbTypeChange = (dbType) => {
     const dbInfo = DB_TYPES.find(d => d.value === dbType);
     setNewConnection({
