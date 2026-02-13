@@ -66,6 +66,13 @@ export function DatabaseConnectionsPage() {
     username: '',
     password: ''
   });
+  const [scheduleDialog, setScheduleDialog] = useState(null);
+  const [scheduleConfig, setScheduleConfig] = useState({
+    interval_type: 'daily',
+    interval_value: 1,
+    custom_cron: '',
+    enabled: true
+  });
 
   useEffect(() => {
     fetchConnections();
