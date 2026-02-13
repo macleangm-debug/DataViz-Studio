@@ -699,14 +699,15 @@ async def get_widget_data(widget_id: str):
         ).limit(1000).to_list(1000)
         
         if data:
-            df = pd.DataFrame(data)
-            
-            if widget["type"] == "stat":
-                # Stat widget - show aggregate value
-                field = config.get("field")
-                aggregation = config.get("aggregation", "count")
+            try:
+                df = pd.DataFrame(data)
                 
-                if field and field in df.columns:
+                if widget["type"] == "stat":
+                    # Stat widget - show aggregate value
+                    field = config.get("field")
+                    aggregation = config.get("aggregation", "count")
+                    
+                    if field and field in df.columns:
                     if aggregation == "sum":
                         value = float(df[field].sum())
                     elif aggregation == "mean":
