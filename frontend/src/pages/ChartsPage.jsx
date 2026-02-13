@@ -662,12 +662,15 @@ const ChartStudio = ({
 
                   <div className="space-y-2">
                     <Label>Y-Axis Field (Value)</Label>
-                    <Select value={yField} onValueChange={setYField}>
+                    <Select 
+                      value={yField || '__count__'} 
+                      onValueChange={(v) => setYField(v === '__count__' ? '' : v)}
+                    >
                       <SelectTrigger data-testid="y-field-select">
                         <SelectValue placeholder="Count (default)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Count</SelectItem>
+                        <SelectItem value="__count__">Count (default)</SelectItem>
                         {currentDataset.columns
                           ?.filter(c => c.type.includes('int') || c.type.includes('float') || c.type === 'number')
                           .map((col) => (
