@@ -103,7 +103,12 @@ function App() {
           } />
           <Route path="/dashboards/:dashboardId" element={
             <ProtectedRoute>
-              <DashboardsPage />
+              <DashboardBuilderPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/database-connections" element={
+            <ProtectedRoute>
+              <DatabaseConnectionsPage />
             </ProtectedRoute>
           } />
           <Route path="/charts" element={
