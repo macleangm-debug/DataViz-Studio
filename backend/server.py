@@ -28,7 +28,7 @@ client = AsyncIOMotorClient(
     maxIdleTimeMS=30000,
     serverSelectionTimeoutMS=5000
 )
-db = client[os.environ.get('DB_NAME', 'dataviz_studio')]
+db = client[os.environ.get('DB_NAME')]
 
 # Create the main app
 app = FastAPI(
