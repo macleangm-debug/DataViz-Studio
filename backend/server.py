@@ -27,7 +27,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 
 # PDF generation
-from weasyprint import HTML, CSS
+from fpdf import FPDF
+import math
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
