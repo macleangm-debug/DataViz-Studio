@@ -1,20 +1,26 @@
-"""DataPulse - Main FastAPI Application"""
-from fastapi import FastAPI, APIRouter, Request
+"""DataViz Studio - Main FastAPI Application"""
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 import os
 import logging
+import uuid
+import json
+import pandas as pd
+import io
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection with connection pooling
-mongo_url = os.environ['MONGO_URL']
+# MongoDB connection
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(
     mongo_url,
     minPoolSize=5,
@@ -22,140 +28,659 @@ client = AsyncIOMotorClient(
     maxIdleTimeMS=30000,
     serverSelectionTimeoutMS=5000
 )
-db = client[os.environ['DB_NAME']]
+db = client[os.environ.get('DB_NAME', 'dataviz_studio')]
 
 # Create the main app
 app = FastAPI(
-    title="DataPulse API",
-    description="Modern data collection platform for research, M&E, and field surveys",
+    title="DataViz Studio API",
+    description="Interactive Analytics & Visualization Platform",
     version="1.0.0"
 )
 
 # Store db in app state for route access
 app.state.db = db
 
-# Setup rate limiting
-from utils.rate_limiter import limiter, rate_limit_exceeded_handler
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
-
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Import routes
-from routes.auth_routes import router as auth_router
-from routes.org_routes import router as org_router
-from routes.project_routes import router as project_router
-from routes.form_routes import router as form_router
-from routes.submission_routes import router as submission_router
-from routes.case_routes import router as case_router
-from routes.export_routes import router as export_router
-from routes.dashboard_routes import router as dashboard_router
-from routes.media_routes import router as media_router
-from routes.gps_routes import router as gps_router
-from routes.template_routes import router as template_router
-from routes.logic_routes import router as logic_router
-from routes.widget_routes import router as widget_router
-from routes.case_import_routes import router as case_import_router
-from routes.collaboration_routes import router as collaboration_router
-from routes.duplicate_routes import router as duplicate_router
-from routes.versioning_routes import router as versioning_router
-from routes.analytics_routes import router as analytics_router
-from routes.rbac_routes import router as rbac_router
-from routes.workflow_routes import router as workflow_router
-from routes.translation_routes import router as translation_router
-from routes.security_routes import router as security_router
-from routes.admin_routes import router as admin_router
-from routes.paradata_routes import router as paradata_router
-from routes.revision_routes import router as revision_router
-from routes.dataset_routes import router as dataset_router
-from routes.survey_routes import router as survey_router
-from routes.cati_routes import router as cati_router
-from routes.backcheck_routes import router as backcheck_router
-from routes.preload_routes import router as preload_router
-from routes.quality_ai_routes import router as quality_ai_router
-from routes.cawi_routes import router as cawi_router
-from routes.simulation_routes import router as simulation_router
-from routes.device_routes import router as device_router
-from routes.analysis_routes import router as analysis_router
-from routes.stats_routes import router as stats_router
-from routes.statistics import router as statistics_modular_router
-from routes.ai_copilot_routes import router as ai_copilot_router
-from routes.analysis_export_routes import router as analysis_export_router
-from routes.report_routes import router as report_router
-from routes.reproducibility_routes import router as reproducibility_router
-from routes.survey_stats_routes import router as survey_stats_router
-from routes.advanced_models_routes import router as advanced_models_router
-from routes.dashboard_builder_routes import router as dashboard_builder_router
-from routes.audit_routes import router as audit_router
-from routes.job_routes import router as job_router
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# Include all route modules
-api_router.include_router(auth_router)
-api_router.include_router(org_router)
-api_router.include_router(project_router)
-api_router.include_router(form_router)
-api_router.include_router(submission_router)
-api_router.include_router(case_router)
-api_router.include_router(export_router)
-api_router.include_router(dashboard_router)
-api_router.include_router(media_router)
-api_router.include_router(gps_router)
-api_router.include_router(template_router)
-api_router.include_router(logic_router)
-api_router.include_router(widget_router)
-api_router.include_router(case_import_router)
-api_router.include_router(collaboration_router)
-api_router.include_router(duplicate_router)
-api_router.include_router(versioning_router)
-api_router.include_router(analytics_router)
-api_router.include_router(rbac_router)
-api_router.include_router(workflow_router)
-api_router.include_router(translation_router)
-api_router.include_router(security_router)
-api_router.include_router(admin_router)
-api_router.include_router(paradata_router)
-api_router.include_router(revision_router)
-api_router.include_router(dataset_router)
-api_router.include_router(survey_router)
-api_router.include_router(cati_router)
-api_router.include_router(backcheck_router)
-api_router.include_router(preload_router)
-api_router.include_router(quality_ai_router)
-api_router.include_router(cawi_router)
-api_router.include_router(simulation_router)
-api_router.include_router(device_router)
-api_router.include_router(analysis_router)
-api_router.include_router(stats_router)
-api_router.include_router(statistics_modular_router)  # New modular statistics routes
-api_router.include_router(job_router)  # Background job management
-api_router.include_router(ai_copilot_router)
-api_router.include_router(analysis_export_router)
-api_router.include_router(report_router)
-api_router.include_router(reproducibility_router)
-api_router.include_router(survey_stats_router)
-api_router.include_router(advanced_models_router)
-api_router.include_router(dashboard_builder_router)
-api_router.include_router(audit_router)
-api_router.include_router(rbac_router)
+# =============================================================================
+# Models
+# =============================================================================
 
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    name: str
 
-# Health check endpoint
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class DataSourceCreate(BaseModel):
+    name: str
+    type: str  # file, database, api
+    config: Dict[str, Any] = {}
+    org_id: Optional[str] = None
+
+class DatasetCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    source_id: Optional[str] = None
+    org_id: Optional[str] = None
+
+class DashboardCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    org_id: Optional[str] = None
+    widgets: List[Dict[str, Any]] = []
+
+class ChartCreate(BaseModel):
+    name: str
+    type: str  # bar, line, pie, scatter, etc.
+    dataset_id: str
+    config: Dict[str, Any] = {}
+    org_id: Optional[str] = None
+
+class AIQueryRequest(BaseModel):
+    query: str
+    dataset_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+
+# =============================================================================
+# Auth Routes
+# =============================================================================
+
+import bcrypt
+import jwt
+
+JWT_SECRET = os.environ.get('JWT_SECRET', 'dataviz-studio-secret')
+
+@api_router.post("/auth/register")
+async def register(user: UserCreate):
+    """Register a new user"""
+    # Check if user exists
+    existing = await db.users.find_one({"email": user.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Hash password
+    hashed = bcrypt.hashpw(user.password.encode(), bcrypt.gensalt())
+    
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "email": user.email,
+        "name": user.name,
+        "password_hash": hashed.decode(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "role": "user"
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    # Create default org
+    org_doc = {
+        "id": str(uuid.uuid4()),
+        "name": f"{user.name}'s Workspace",
+        "slug": user.email.split('@')[0],
+        "owner_id": user_doc["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.organizations.insert_one(org_doc)
+    
+    # Generate token
+    token = jwt.encode(
+        {"user_id": user_doc["id"], "email": user.email},
+        JWT_SECRET,
+        algorithm="HS256"
+    )
+    
+    return {
+        "token": token,
+        "user": {"id": user_doc["id"], "email": user.email, "name": user.name},
+        "organization": {"id": org_doc["id"], "name": org_doc["name"]}
+    }
+
+@api_router.post("/auth/login")
+async def login(credentials: UserLogin):
+    """Login user"""
+    user = await db.users.find_one({"email": credentials.email})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not bcrypt.checkpw(credentials.password.encode(), user["password_hash"].encode()):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Get user's org
+    org = await db.organizations.find_one({"owner_id": user["id"]})
+    
+    token = jwt.encode(
+        {"user_id": user["id"], "email": user["email"]},
+        JWT_SECRET,
+        algorithm="HS256"
+    )
+    
+    return {
+        "token": token,
+        "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
+        "organization": {"id": org["id"], "name": org["name"]} if org else None
+    }
+
+@api_router.get("/auth/me")
+async def get_current_user(request: Request):
+    """Get current user info"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = auth_header.split(" ")[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user = await db.users.find_one({"id": payload["user_id"]})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        orgs = await db.organizations.find({"owner_id": user["id"]}).to_list(100)
+        
+        return {
+            "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
+            "organizations": [{"id": o["id"], "name": o["name"], "slug": o.get("slug", "")} for o in orgs]
+        }
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# =============================================================================
+# Data Source Routes
+# =============================================================================
+
+@api_router.post("/data-sources")
+async def create_data_source(source: DataSourceCreate):
+    """Create a new data source connection"""
+    source_doc = {
+        "id": str(uuid.uuid4()),
+        "name": source.name,
+        "type": source.type,
+        "config": source.config,
+        "org_id": source.org_id,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.data_sources.insert_one(source_doc)
+    return {"id": source_doc["id"], "name": source_doc["name"], "type": source_doc["type"]}
+
+@api_router.get("/data-sources")
+async def list_data_sources(org_id: Optional[str] = None):
+    """List all data sources"""
+    query = {"org_id": org_id} if org_id else {}
+    sources = await db.data_sources.find(query, {"_id": 0}).to_list(100)
+    return {"sources": sources}
+
+@api_router.post("/data-sources/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    name: Optional[str] = Form(None),
+    org_id: Optional[str] = Form(None)
+):
+    """Upload a file (CSV, Excel, JSON) as a data source"""
+    content = await file.read()
+    filename = file.filename or "uploaded_file"
+    
+    # Parse file based on type
+    try:
+        if filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(content))
+        elif filename.endswith(('.xlsx', '.xls')):
+            df = pd.read_excel(io.BytesIO(content))
+        elif filename.endswith('.json'):
+            df = pd.read_json(io.BytesIO(content))
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error parsing file: {str(e)}")
+    
+    # Create data source
+    source_id = str(uuid.uuid4())
+    source_doc = {
+        "id": source_id,
+        "name": name or filename,
+        "type": "file",
+        "config": {"filename": filename, "rows": len(df), "columns": list(df.columns)},
+        "org_id": org_id,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.data_sources.insert_one(source_doc)
+    
+    # Create dataset from file
+    dataset_id = str(uuid.uuid4())
+    
+    # Convert data to records
+    records = df.to_dict(orient='records')
+    
+    # Store dataset metadata
+    dataset_doc = {
+        "id": dataset_id,
+        "name": name or filename,
+        "source_id": source_id,
+        "org_id": org_id,
+        "row_count": len(records),
+        "columns": [
+            {"name": col, "type": str(df[col].dtype)} 
+            for col in df.columns
+        ],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.datasets.insert_one(dataset_doc)
+    
+    # Store data records
+    for record in records:
+        record["dataset_id"] = dataset_id
+        record["_dataset_row_id"] = str(uuid.uuid4())
+    
+    if records:
+        await db.dataset_data.insert_many(records)
+    
+    return {
+        "source_id": source_id,
+        "dataset_id": dataset_id,
+        "name": name or filename,
+        "rows": len(records),
+        "columns": list(df.columns)
+    }
+
+@api_router.delete("/data-sources/{source_id}")
+async def delete_data_source(source_id: str):
+    """Delete a data source"""
+    await db.data_sources.delete_one({"id": source_id})
+    return {"status": "deleted"}
+
+# =============================================================================
+# Dataset Routes
+# =============================================================================
+
+@api_router.get("/datasets")
+async def list_datasets(org_id: Optional[str] = None):
+    """List all datasets"""
+    query = {"org_id": org_id} if org_id else {}
+    datasets = await db.datasets.find(query, {"_id": 0}).to_list(100)
+    return {"datasets": datasets}
+
+@api_router.get("/datasets/{dataset_id}")
+async def get_dataset(dataset_id: str):
+    """Get dataset details"""
+    dataset = await db.datasets.find_one({"id": dataset_id}, {"_id": 0})
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    return dataset
+
+@api_router.get("/datasets/{dataset_id}/data")
+async def get_dataset_data(
+    dataset_id: str,
+    page: int = 1,
+    limit: int = 100
+):
+    """Get dataset data with pagination"""
+    dataset = await db.datasets.find_one({"id": dataset_id})
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    skip = (page - 1) * limit
+    data = await db.dataset_data.find(
+        {"dataset_id": dataset_id},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).skip(skip).limit(limit).to_list(limit)
+    
+    total = await db.dataset_data.count_documents({"dataset_id": dataset_id})
+    
+    return {
+        "data": data,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit
+    }
+
+@api_router.get("/datasets/{dataset_id}/stats")
+async def get_dataset_stats(dataset_id: str):
+    """Get basic statistics for a dataset"""
+    dataset = await db.datasets.find_one({"id": dataset_id})
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    # Get all data
+    data = await db.dataset_data.find(
+        {"dataset_id": dataset_id},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).to_list(10000)
+    
+    if not data:
+        return {"stats": {}, "row_count": 0}
+    
+    df = pd.DataFrame(data)
+    stats = {}
+    
+    for col in df.columns:
+        col_stats = {"name": col, "type": str(df[col].dtype)}
+        
+        if pd.api.types.is_numeric_dtype(df[col]):
+            col_stats.update({
+                "min": float(df[col].min()) if not pd.isna(df[col].min()) else None,
+                "max": float(df[col].max()) if not pd.isna(df[col].max()) else None,
+                "mean": float(df[col].mean()) if not pd.isna(df[col].mean()) else None,
+                "std": float(df[col].std()) if not pd.isna(df[col].std()) else None,
+                "missing": int(df[col].isna().sum())
+            })
+        else:
+            value_counts = df[col].value_counts().head(10).to_dict()
+            col_stats.update({
+                "unique": int(df[col].nunique()),
+                "top_values": {str(k): int(v) for k, v in value_counts.items()},
+                "missing": int(df[col].isna().sum())
+            })
+        
+        stats[col] = col_stats
+    
+    return {"stats": stats, "row_count": len(df)}
+
+@api_router.delete("/datasets/{dataset_id}")
+async def delete_dataset(dataset_id: str):
+    """Delete a dataset"""
+    await db.datasets.delete_one({"id": dataset_id})
+    await db.dataset_data.delete_many({"dataset_id": dataset_id})
+    return {"status": "deleted"}
+
+# =============================================================================
+# Dashboard Routes
+# =============================================================================
+
+@api_router.post("/dashboards")
+async def create_dashboard(dashboard: DashboardCreate):
+    """Create a new dashboard"""
+    dashboard_doc = {
+        "id": str(uuid.uuid4()),
+        "name": dashboard.name,
+        "description": dashboard.description,
+        "org_id": dashboard.org_id,
+        "widgets": dashboard.widgets,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.dashboards.insert_one(dashboard_doc)
+    return {"id": dashboard_doc["id"], "name": dashboard_doc["name"]}
+
+@api_router.get("/dashboards")
+async def list_dashboards(org_id: Optional[str] = None):
+    """List all dashboards"""
+    query = {"org_id": org_id} if org_id else {}
+    dashboards = await db.dashboards.find(query, {"_id": 0}).to_list(100)
+    return {"dashboards": dashboards}
+
+@api_router.get("/dashboards/{dashboard_id}")
+async def get_dashboard(dashboard_id: str):
+    """Get dashboard details"""
+    dashboard = await db.dashboards.find_one({"id": dashboard_id}, {"_id": 0})
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    return dashboard
+
+@api_router.put("/dashboards/{dashboard_id}")
+async def update_dashboard(dashboard_id: str, dashboard: DashboardCreate):
+    """Update a dashboard"""
+    update_doc = {
+        "name": dashboard.name,
+        "description": dashboard.description,
+        "widgets": dashboard.widgets,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.dashboards.update_one({"id": dashboard_id}, {"$set": update_doc})
+    return {"status": "updated"}
+
+@api_router.delete("/dashboards/{dashboard_id}")
+async def delete_dashboard(dashboard_id: str):
+    """Delete a dashboard"""
+    await db.dashboards.delete_one({"id": dashboard_id})
+    return {"status": "deleted"}
+
+# =============================================================================
+# Chart Routes
+# =============================================================================
+
+@api_router.post("/charts")
+async def create_chart(chart: ChartCreate):
+    """Create a new chart"""
+    chart_doc = {
+        "id": str(uuid.uuid4()),
+        "name": chart.name,
+        "type": chart.type,
+        "dataset_id": chart.dataset_id,
+        "config": chart.config,
+        "org_id": chart.org_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.charts.insert_one(chart_doc)
+    return {"id": chart_doc["id"], "name": chart_doc["name"]}
+
+@api_router.get("/charts")
+async def list_charts(org_id: Optional[str] = None, dataset_id: Optional[str] = None):
+    """List all charts"""
+    query = {}
+    if org_id:
+        query["org_id"] = org_id
+    if dataset_id:
+        query["dataset_id"] = dataset_id
+    charts = await db.charts.find(query, {"_id": 0}).to_list(100)
+    return {"charts": charts}
+
+@api_router.get("/charts/{chart_id}/data")
+async def get_chart_data(chart_id: str):
+    """Get chart data for rendering"""
+    chart = await db.charts.find_one({"id": chart_id})
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    
+    # Get dataset data
+    data = await db.dataset_data.find(
+        {"dataset_id": chart["dataset_id"]},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).to_list(10000)
+    
+    if not data:
+        return {"chart": chart, "data": []}
+    
+    df = pd.DataFrame(data)
+    config = chart.get("config", {})
+    
+    # Prepare chart data based on config
+    x_field = config.get("x_field")
+    y_field = config.get("y_field")
+    group_by = config.get("group_by")
+    aggregation = config.get("aggregation", "count")
+    
+    chart_data = []
+    
+    if x_field and x_field in df.columns:
+        if group_by and group_by in df.columns:
+            grouped = df.groupby([x_field, group_by])
+        else:
+            grouped = df.groupby(x_field)
+        
+        if aggregation == "count":
+            result = grouped.size().reset_index(name='value')
+        elif aggregation == "sum" and y_field:
+            result = grouped[y_field].sum().reset_index(name='value')
+        elif aggregation == "mean" and y_field:
+            result = grouped[y_field].mean().reset_index(name='value')
+        else:
+            result = grouped.size().reset_index(name='value')
+        
+        chart_data = result.to_dict(orient='records')
+    
+    return {"chart": chart, "data": chart_data}
+
+@api_router.delete("/charts/{chart_id}")
+async def delete_chart(chart_id: str):
+    """Delete a chart"""
+    await db.charts.delete_one({"id": chart_id})
+    return {"status": "deleted"}
+
+# =============================================================================
+# AI Copilot Routes
+# =============================================================================
+
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+@api_router.post("/ai/query")
+async def ai_query(request: AIQueryRequest):
+    """Query AI for data insights"""
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    
+    # Get dataset context if provided
+    context_str = ""
+    if request.dataset_id:
+        dataset = await db.datasets.find_one({"id": request.dataset_id})
+        if dataset:
+            columns = dataset.get("columns", [])
+            context_str = f"Dataset: {dataset['name']}\nColumns: {json.dumps(columns)}\nRows: {dataset.get('row_count', 0)}"
+            
+            # Get sample data
+            sample = await db.dataset_data.find(
+                {"dataset_id": request.dataset_id},
+                {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+            ).limit(5).to_list(5)
+            if sample:
+                context_str += f"\nSample data: {json.dumps(sample[:3])}"
+    
+    system_message = """You are DataViz Studio AI Assistant, an expert in data analysis and visualization.
+Help users understand their data, suggest visualizations, and provide insights.
+When analyzing data, be specific and actionable. Suggest appropriate chart types for the data.
+If asked about statistics, provide clear explanations."""
+    
+    if context_str:
+        system_message += f"\n\nCurrent data context:\n{context_str}"
+    
+    try:
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"dataviz-{uuid.uuid4()}",
+            system_message=system_message
+        ).with_model("openai", "gpt-5.2")
+        
+        user_message = UserMessage(text=request.query)
+        response = await chat.send_message(user_message)
+        
+        return {"response": response, "query": request.query}
+    except Exception as e:
+        logger.error(f"AI query error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+
+@api_router.post("/ai/suggest-charts")
+async def suggest_charts(dataset_id: str):
+    """Get AI suggestions for charts based on dataset"""
+    dataset = await db.datasets.find_one({"id": dataset_id})
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    
+    columns = dataset.get("columns", [])
+    
+    # Get sample data
+    sample = await db.dataset_data.find(
+        {"dataset_id": dataset_id},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).limit(10).to_list(10)
+    
+    prompt = f"""Analyze this dataset and suggest 3-5 useful visualizations.
+
+Dataset: {dataset['name']}
+Columns: {json.dumps(columns)}
+Row count: {dataset.get('row_count', 0)}
+Sample data: {json.dumps(sample[:5] if sample else [])}
+
+Return suggestions as JSON array with format:
+[{{"type": "bar|line|pie|scatter|area", "title": "Chart Title", "x_field": "column_name", "y_field": "column_name", "description": "Why this chart is useful"}}]
+
+Only return the JSON array, no other text."""
+
+    try:
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"dataviz-suggest-{uuid.uuid4()}",
+            system_message="You are a data visualization expert. Return only valid JSON."
+        ).with_model("openai", "gpt-5.2")
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        
+        # Parse JSON response
+        try:
+            suggestions = json.loads(response)
+        except:
+            suggestions = []
+        
+        return {"suggestions": suggestions, "dataset_id": dataset_id}
+    except Exception as e:
+        logger.error(f"AI suggest error: {str(e)}")
+        return {"suggestions": [], "error": str(e)}
+
+# =============================================================================
+# Export Routes
+# =============================================================================
+
+@api_router.get("/exports/{dataset_id}/csv")
+async def export_csv(dataset_id: str):
+    """Export dataset as CSV"""
+    data = await db.dataset_data.find(
+        {"dataset_id": dataset_id},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).to_list(100000)
+    
+    if not data:
+        raise HTTPException(status_code=404, detail="No data found")
+    
+    df = pd.DataFrame(data)
+    csv_content = df.to_csv(index=False)
+    
+    return JSONResponse(
+        content={"csv": csv_content, "rows": len(df)},
+        headers={"Content-Type": "application/json"}
+    )
+
+@api_router.get("/exports/{dataset_id}/json")
+async def export_json(dataset_id: str):
+    """Export dataset as JSON"""
+    data = await db.dataset_data.find(
+        {"dataset_id": dataset_id},
+        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+    ).to_list(100000)
+    
+    return {"data": data, "rows": len(data)}
+
+# =============================================================================
+# Health & Root
+# =============================================================================
+
 @api_router.get("/")
 async def root():
-    return {"message": "DataPulse API is running", "version": "1.0.0"}
-
+    return {"message": "DataViz Studio API is running", "version": "1.0.0"}
 
 @api_router.get("/health")
 async def health_check():
     """Health check endpoint"""
     try:
-        # Test database connection
         await db.command("ping")
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}
-
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -169,166 +694,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-
 @app.on_event("startup")
 async def startup_db_client():
     """Initialize database indexes on startup"""
-    logger.info("DataPulse API starting up...")
+    logger.info("DataViz Studio API starting up...")
     
-    # Create indexes for better query performance
     try:
         # Users
         await db.users.create_index("email", unique=True)
         await db.users.create_index("id", unique=True)
         
         # Organizations
-        await db.organizations.create_index("slug", unique=True)
         await db.organizations.create_index("id", unique=True)
         
-        # Org Members
-        await db.org_members.create_index([("org_id", 1), ("user_id", 1)], unique=True)
+        # Data Sources
+        await db.data_sources.create_index("id", unique=True)
+        await db.data_sources.create_index("org_id")
         
-        # Projects
-        await db.projects.create_index("id", unique=True)
-        await db.projects.create_index([("org_id", 1), ("status", 1)])
+        # Datasets
+        await db.datasets.create_index("id", unique=True)
+        await db.datasets.create_index("org_id")
         
-        # Forms
-        await db.forms.create_index("id", unique=True)
-        await db.forms.create_index([("project_id", 1), ("status", 1)])
+        # Dataset Data
+        await db.dataset_data.create_index("dataset_id")
         
-        # Submissions
-        await db.submissions.create_index("id", unique=True)
-        await db.submissions.create_index([("form_id", 1), ("submitted_at", -1)])
-        await db.submissions.create_index([("org_id", 1), ("submitted_at", -1)])
-        await db.submissions.create_index([("project_id", 1), ("status", 1)])
+        # Dashboards
+        await db.dashboards.create_index("id", unique=True)
+        await db.dashboards.create_index("org_id")
         
-        # Cases
-        await db.cases.create_index("id", unique=True)
-        await db.cases.create_index([("project_id", 1), ("respondent_id", 1)], unique=True)
-        
-        # Audit Logs
-        await db.audit_logs.create_index([("org_id", 1), ("timestamp", -1)])
-        
-        # API Keys
-        await db.api_keys.create_index("key_hash", unique=True)
-        await db.api_keys.create_index([("org_id", 1), ("is_active", 1)])
-        
-        # API Audit Logs
-        await db.api_audit_logs.create_index([("org_id", 1), ("timestamp", -1)])
-        await db.api_audit_logs.create_index([("timestamp", -1)])
-        
-        # Invoices
-        await db.invoices.create_index("id", unique=True)
-        await db.invoices.create_index([("org_id", 1), ("created_at", -1)])
-        
-        # Billing Events
-        await db.billing_events.create_index([("org_id", 1), ("timestamp", -1)])
-        
-        # Paradata Sessions
-        await db.paradata_sessions.create_index("id", unique=True)
-        await db.paradata_sessions.create_index([("submission_id", 1)])
-        await db.paradata_sessions.create_index([("enumerator_id", 1), ("session_start", -1)])
-        await db.paradata_sessions.create_index([("form_id", 1), ("session_start", -1)])
-        
-        # Submission Revisions
-        await db.submission_revisions.create_index("id", unique=True)
-        await db.submission_revisions.create_index([("submission_id", 1), ("version", 1)])
-        
-        # Revision Audit Trail
-        await db.revision_audit_trail.create_index([("submission_id", 1), ("timestamp", 1)])
-        
-        # Correction Requests
-        await db.correction_requests.create_index("id", unique=True)
-        await db.correction_requests.create_index([("enumerator_id", 1), ("status", 1)])
-        
-        # Lookup Datasets
-        await db.lookup_datasets.create_index("id", unique=True)
-        await db.lookup_datasets.create_index([("org_id", 1), ("is_active", 1)])
-        
-        # Dataset Write-back Log
-        await db.dataset_write_back_log.create_index([("dataset_id", 1), ("timestamp", -1)])
-        
-        # Survey Distributions (Token/Panel Surveys)
-        await db.survey_distributions.create_index("id", unique=True)
-        await db.survey_distributions.create_index([("org_id", 1), ("status", 1)])
-        await db.survey_invites.create_index("id", unique=True)
-        await db.survey_invites.create_index("token_hash", unique=True)
-        await db.survey_invites.create_index([("distribution_id", 1), ("status", 1)])
-        await db.survey_panels.create_index("id", unique=True)
-        await db.panel_members.create_index("id", unique=True)
-        await db.panel_members.create_index([("panel_id", 1), ("status", 1)])
-        
-        # CATI (Computer-Assisted Telephone Interviewing)
-        await db.cati_projects.create_index("id", unique=True)
-        await db.cati_projects.create_index([("org_id", 1), ("status", 1)])
-        await db.cati_queue.create_index("id", unique=True)
-        await db.cati_queue.create_index([("project_id", 1), ("status", 1), ("priority", -1)])
-        await db.cati_queue.create_index([("locked_by", 1), ("status", 1)])
-        await db.cati_calls.create_index("id", unique=True)
-        await db.cati_calls.create_index([("project_id", 1), ("start_time", -1)])
-        await db.cati_calls.create_index([("interviewer_id", 1), ("start_time", -1)])
-        
-        # Back-check Module
-        await db.backcheck_configs.create_index("id", unique=True)
-        await db.backcheck_configs.create_index([("org_id", 1), ("project_id", 1)])
-        await db.backchecks.create_index("id", unique=True)
-        await db.backchecks.create_index([("config_id", 1), ("status", 1)])
-        await db.backchecks.create_index([("assigned_to", 1), ("status", 1)])
-        await db.backchecks.create_index([("original_enumerator_id", 1)])
-        await db.enumerator_quality.create_index("enumerator_id", unique=True)
-        
-        # Preload/Write-back
-        await db.preload_configs.create_index("id", unique=True)
-        await db.preload_configs.create_index([("org_id", 1), ("form_id", 1)])
-        await db.writeback_configs.create_index("id", unique=True)
-        await db.writeback_configs.create_index([("org_id", 1), ("form_id", 1)])
-        await db.preload_logs.create_index([("form_id", 1), ("timestamp", -1)])
-        await db.writeback_logs.create_index([("form_id", 1), ("timestamp", -1)])
-        await db.external_api_configs.create_index("id", unique=True)
-        
-        # Quality AI Monitoring
-        await db.speeding_configs.create_index("id", unique=True)
-        await db.speeding_configs.create_index([("org_id", 1), ("form_id", 1)])
-        await db.audio_audit_configs.create_index("id", unique=True)
-        await db.audio_audit_configs.create_index([("org_id", 1), ("form_id", 1)])
-        await db.ai_monitoring_configs.create_index("id", unique=True)
-        await db.ai_monitoring_configs.create_index("org_id")
-        await db.quality_alerts.create_index("id", unique=True)
-        await db.quality_alerts.create_index([("org_id", 1), ("status", 1)])
-        await db.quality_alerts.create_index([("submission_id", 1), ("alert_type", 1)])
-        await db.ai_analyses.create_index([("submission_id", 1)])
-        
-        # CAWI Sessions
-        await db.cawi_sessions.create_index("id", unique=True)
-        await db.cawi_sessions.create_index([("form_id", 1), ("token", 1)])
-        await db.cawi_sessions.create_index([("form_id", 1), ("status", 1)])
-        
-        # AI Field Simulation
-        await db.simulation_reports.create_index("id", unique=True)
-        await db.simulation_reports.create_index([("org_id", 1), ("form_id", 1)])
-        await db.simulation_reports.create_index([("created_at", -1)])
-        
-        # Device Management & Remote Wipe
-        await db.devices.create_index("id", unique=True)
-        await db.devices.create_index([("org_id", 1), ("user_id", 1)])
-        await db.devices.create_index([("org_id", 1), ("status", 1)])
-        await db.device_activity_logs.create_index([("device_id", 1), ("timestamp", -1)])
-        await db.device_activity_logs.create_index([("org_id", 1), ("timestamp", -1)])
+        # Charts
+        await db.charts.create_index("id", unique=True)
+        await db.charts.create_index("dataset_id")
         
         logger.info("Database indexes created successfully")
     except Exception as e:
         logger.error(f"Error creating indexes: {e}")
 
-
 @app.on_event("shutdown")
 async def shutdown_db_client():
     """Cleanup on shutdown"""
-    logger.info("DataPulse API shutting down...")
+    logger.info("DataViz Studio API shutting down...")
     client.close()
