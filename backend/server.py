@@ -128,6 +128,26 @@ class WidgetCreate(BaseModel):
 class DashboardLayoutUpdate(BaseModel):
     widgets: List[Dict[str, Any]]
 
+class ScheduleConfig(BaseModel):
+    conn_id: str
+    interval_type: str  # hourly, daily, weekly, custom
+    interval_value: int = 1  # e.g., every 2 hours
+    custom_cron: Optional[str] = None  # for custom schedules
+    enabled: bool = True
+
+class DrillDownRequest(BaseModel):
+    chart_id: str
+    filter_field: str
+    filter_value: str
+    drill_to_field: Optional[str] = None
+
+class ReportExportRequest(BaseModel):
+    dashboard_id: Optional[str] = None
+    chart_ids: Optional[List[str]] = None
+    include_data_tables: bool = True
+    title: Optional[str] = None
+
+
 # =============================================================================
 # Auth Routes
 # =============================================================================
