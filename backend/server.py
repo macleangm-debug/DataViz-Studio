@@ -1946,7 +1946,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_db_client():
-    """Initialize database indexes on startup"""
+    """Initialize database indexes and scheduler on startup"""
     logger.info("DataViz Studio API starting up...")
     
     try:
@@ -1976,12 +1976,63 @@ async def startup_db_client():
         await db.charts.create_index("id", unique=True)
         await db.charts.create_index("dataset_id")
         
+        # Database Connections
+        await db.database_connections.create_index("id", unique=True)
+        await db.database_connections.create_index("org_id")
+        
         logger.info("Database indexes created successfully")
+        
+        # Start the scheduler for scheduled data refreshes
+        scheduler.start()
+        logger.info("APScheduler started for scheduled data refreshes")
+        
+        # Restore any existing schedules from database
+        connections_with_schedules = await db.database_connections.find(
+            {"schedule.enabled": True}, {"_id": 0}
+        ).to_list(100)
+        
+        for conn in connections_with_schedules:
+            try:
+                schedule = conn.get("schedule", {})
+                if schedule.get("enabled"):
+                    job_id = f"sync_{conn['id']}"
+                    interval_type = schedule.get("interval_type")
+                    interval_value = schedule.get("interval_value", 1)
+                    
+                    if interval_type == "hourly":
+                        trigger = IntervalTrigger(hours=interval_value)
+                    elif interval_type == "daily":
+                        trigger = IntervalTrigger(days=interval_value)
+                    elif interval_type == "weekly":
+                        trigger = IntervalTrigger(weeks=interval_value)
+                    elif interval_type == "custom" and schedule.get("custom_cron"):
+                        trigger = CronTrigger.from_crontab(schedule["custom_cron"])
+                    else:
+                        continue
+                    
+                    scheduler.add_job(
+                        _execute_scheduled_sync,
+                        trigger=trigger,
+                        args=[conn["id"]],
+                        id=job_id,
+                        replace_existing=True
+                    )
+                    _scheduled_jobs[conn["id"]] = job_id
+                    logger.info(f"Restored schedule for connection: {conn['name']}")
+            except Exception as e:
+                logger.error(f"Error restoring schedule for {conn.get('name')}: {e}")
+        
     except Exception as e:
-        logger.error(f"Error creating indexes: {e}")
+        logger.error(f"Error during startup: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     """Cleanup on shutdown"""
     logger.info("DataViz Studio API shutting down...")
+    
+    # Shutdown scheduler gracefully
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
+        logger.info("APScheduler stopped")
+    
     client.close()
