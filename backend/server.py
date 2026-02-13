@@ -740,12 +740,23 @@ async def get_widget_data(widget_id: str):
                     result["data"] = []
                     
             elif widget["type"] == "table":
-                # Table widget - return paginated data
-                limit = config.get("limit", 10)
-                columns = config.get("columns", list(df.columns)[:5])
-                result["data"] = df[columns].head(limit).to_dict(orient="records")
-            else:
-                result["data"] = data[:100]
+                    # Table widget - return paginated data
+                    limit = config.get("limit", 10)
+                    columns = config.get("columns")
+                    if columns:
+                        # Filter to only existing columns
+                        valid_cols = [c for c in columns if c in df.columns]
+                        if valid_cols:
+                            result["data"] = df[valid_cols].head(limit).to_dict(orient="records")
+                        else:
+                            result["data"] = df.head(limit).to_dict(orient="records")
+                    else:
+                        result["data"] = df.head(limit).to_dict(orient="records")
+                else:
+                    result["data"] = data[:100]
+            except Exception as e:
+                logger.error(f"Widget data processing error: {str(e)}")
+                result["data"] = data[:100] if data else []
     
     return result
 
