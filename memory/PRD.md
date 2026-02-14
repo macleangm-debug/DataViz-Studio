@@ -203,8 +203,10 @@ Exports:
 - [x] Scheduled data refresh
 - [x] PDF report export
 - [x] Chart drill-down
+- [x] **Report Builder with Infographic Layout** (Feb 14, 2026)
 
 ### P2 (Medium Priority)
+- [ ] Custom Color Picker for Report Builder themes
 - [ ] Dashboard templates
 - [ ] Chart annotations
 - [ ] Data transformation/cleaning tools
