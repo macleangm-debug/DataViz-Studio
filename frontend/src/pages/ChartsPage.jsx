@@ -503,6 +503,22 @@ const ChartStudio = ({
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [fullscreen, setFullscreen] = useState(false);
+  
+  // Annotations state
+  const [annotations, setAnnotations] = useState(initialChart?.config?.annotations || []);
+  const [showAnnotationDialog, setShowAnnotationDialog] = useState(false);
+  const [newAnnotation, setNewAnnotation] = useState({
+    type: 'line',
+    label: '',
+    axis: 'y',
+    value: '',
+    color: '#f59e0b',
+    lineStyle: 'dashed',
+    xValue: '',
+    yValue: '',
+    startX: '',
+    endX: ''
+  });
 
   const currentDataset = datasets.find(d => d.id === selectedDataset);
 
