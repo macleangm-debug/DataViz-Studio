@@ -231,14 +231,25 @@ export function DashboardsPage() {
               Create and manage interactive dashboards
             </p>
           </div>
-          <Button
-            onClick={() => setShowCreateDialog(true)}
-            className="bg-violet-600 hover:bg-violet-700"
-            data-testid="create-dashboard-btn"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Dashboard
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplatesDialog(true)}
+              className="border-violet-200 hover:bg-violet-50"
+              data-testid="templates-btn"
+            >
+              <Sparkles className="w-4 h-4 mr-2 text-violet-500" />
+              Templates
+            </Button>
+            <Button
+              onClick={() => setShowCreateDialog(true)}
+              className="bg-violet-600 hover:bg-violet-700"
+              data-testid="create-dashboard-btn"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Dashboard
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
