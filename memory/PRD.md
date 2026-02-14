@@ -231,11 +231,49 @@ Exports:
 - [x] **Custom Color Picker for Report Builder** (Feb 14, 2026)
 - [x] **Dashboard Templates** (Feb 14, 2026)
 
-### P2 (Medium Priority)
+### Session 8 (Feb 14, 2026) - Chart Annotations & Data Transformation
+- [x] **Chart Annotations**
+  - Annotation types: Text Label, Reference Line, Highlight Region
+  - Supported on bar, line, and area charts
+  - Annotation dialog with type selection, label, color picker
+  - Reference lines: horizontal (Y value) or vertical (X category)
+  - Text labels: pin markers on specific data points
+  - Highlight regions: shaded areas between X categories
+  - Annotations stored in chart config and rendered via ECharts markLine/markPoint/markArea
+  
+  **UI Components:**
+  - Annotations section in Chart Studio (after "Show Area Fill" toggle)
+  - Add Annotation button
+  - List of annotations with color indicator, label, type, toggle, and delete
+  - Full annotation dialog with type-specific configuration
+
+- [x] **Data Transformation Tools**
+  - New page: `/datasets/:datasetId/transform`
+  - Access via "Transform" button on dataset detail page
+  - 7 transformation types:
+    1. **Filter Rows** - Remove rows based on conditions (10+ operators)
+    2. **Rename Column** - Change column names
+    3. **Change Type** - Convert data types (string, int, float, date, bool)
+    4. **Calculate Field** - Create calculated columns using formula
+    5. **Fill Missing** - Handle null values (value, mean, median, mode, forward/backward fill, drop)
+    6. **Drop Column** - Remove columns
+    7. **Sort Data** - Order by column (asc/desc)
+  - Transformation steps can be toggled on/off and deleted
+  - Preview button to see changes before saving
+  - Save Changes button to apply transformations permanently
+  - Columns panel shows column types and null counts
+  
+  **Files Created:**
+  - `/app/frontend/src/pages/DataTransformPage.jsx` - Full transformation UI
+  
+  **Backend Endpoints:**
+  - `POST /api/datasets/:id/transform/preview` - Preview transformations
+  - `POST /api/datasets/:id/transform/apply` - Apply and save transformations
+
+### P2 (Medium Priority) - COMPLETED
 - [x] **Template widget rendering on dashboard detail page** (FIXED - Feb 14, 2026)
-- [ ] Chart annotations
-- [ ] Data transformation/cleaning tools
-- [ ] Scheduled report delivery via email
+- [x] **Chart Annotations** (COMPLETED - Feb 14, 2026)
+- [x] **Data Transformation/Cleaning Tools** (COMPLETED - Feb 14, 2026)
 
 ### P3 (Nice to Have)
 - [ ] Team collaboration features
