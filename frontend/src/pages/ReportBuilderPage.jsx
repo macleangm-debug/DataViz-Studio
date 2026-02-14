@@ -672,9 +672,19 @@ const ReportBuilderPage = () => {
   const [isPreview, setIsPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showSettings, setShowSettings] = useState(true);
+  const [customColors, setCustomColors] = useState({ primary: '#3B82F6', accent: '#EF4444' });
   
-  // Get current theme
-  const theme = THEMES.find(t => t.id === reportConfig.theme) || THEMES[0];
+  // Get current theme (supports custom colors)
+  const theme = reportConfig.theme === 'custom' 
+    ? { 
+        id: 'custom', 
+        name: 'Custom', 
+        primary: customColors.primary, 
+        accent: customColors.accent,
+        secondary: customColors.primary + '99',
+        light: customColors.primary + '20'
+      }
+    : (THEMES.find(t => t.id === reportConfig.theme) || THEMES[0]);
   
   // Section management functions
   const handleUpdateSection = (index, updatedSection) => {
