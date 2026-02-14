@@ -93,6 +93,44 @@ DataViz Studio is an interactive analytics and visualization platform that enabl
   .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="rounded-lg border my-4 shadow-lg" />')
   ```
 
+### Session 6 (Feb 14, 2026) - Report Builder with Infographic Layout
+- [x] **Professional Report Builder UI**
+  - Modern infographic-style layout matching user's design reference
+  - Customizable report header (title, subtitle, company name)
+  - Live preview panel showing PDF layout in real-time
+  - Footer with centered DataViz Studio logo
+
+- [x] **Infographic Components**
+  - Key Metrics: 4 colorful stat cards with percentages, icons, descriptions
+  - Bar Chart section with blue/coral theme colors
+  - Pie Chart with legend (Primary/Secondary/Other percentages)
+  - Line Chart with trend visualization
+  - Data Table with Category/Value/Share columns
+  - Introduction and Conclusion text sections
+
+- [x] **Theme System**
+  - 6 preset color themes: Blue & Coral, Purple & Teal, Green & Orange, Slate & Amber, Indigo & Rose, Cyan & Pink
+  - Themes apply to header, stat cards, charts, section headers, footer
+  - Theme selector dropdown with color preview
+
+- [x] **Section Management**
+  - Add any of 7 section types: Stat Cards, Introduction, Bar Chart, Pie Chart, Line Chart, Data Table, Conclusion
+  - Reorder sections with up/down arrow buttons
+  - Delete sections with trash button
+  - Charts default to 50% width for side-by-side layout
+  - Full-width sections for text content
+
+- [x] **PDF Export (Client-Side)**
+  - Using html2canvas + jsPDF for client-side PDF generation
+  - Captures the exact visual layout from the preview
+  - Auto-switches to preview mode for clean export
+  - Downloads as PDF with timestamped filename
+  - High-quality 2x scale rendering
+
+**Files Created/Modified:**
+- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Complete rewrite with infographic layout
+- Installed: `html2canvas`, `jspdf` via yarn
+
 ### Backend API Endpoints (Complete List)
 ```
 Authentication:
