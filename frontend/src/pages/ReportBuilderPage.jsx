@@ -674,6 +674,15 @@ const ReportBuilderPage = () => {
   const [showSettings, setShowSettings] = useState(true);
   const [customColors, setCustomColors] = useState({ primary: '#3B82F6', accent: '#EF4444' });
   
+  // Helper to generate lighter shade
+  const getLighterHex = (hex, opacity) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const lighter = (c) => Math.round(c + (255 - c) * (1 - opacity));
+    return `#${lighter(r).toString(16).padStart(2, '0')}${lighter(g).toString(16).padStart(2, '0')}${lighter(b).toString(16).padStart(2, '0')}`;
+  };
+  
   // Get current theme (supports custom colors)
   const theme = reportConfig.theme === 'custom' 
     ? { 
@@ -681,8 +690,8 @@ const ReportBuilderPage = () => {
         name: 'Custom', 
         primary: customColors.primary, 
         accent: customColors.accent,
-        secondary: customColors.primary + '99',
-        light: customColors.primary + '20'
+        secondary: getLighterHex(customColors.primary, 0.7),
+        light: getLighterHex(customColors.primary, 0.15)
       }
     : (THEMES.find(t => t.id === reportConfig.theme) || THEMES[0]);
   
