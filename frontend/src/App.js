@@ -142,6 +142,11 @@ function App() {
               <DashboardsPage />
             </ProtectedRoute>
           } />
+          <Route path="/report-builder" element={
+            <ProtectedRoute>
+              <ReportBuilderPage />
+            </ProtectedRoute>
+          } />
           <Route path="/share" element={
             <ProtectedRoute>
               <DashboardsPage />
