@@ -287,6 +287,9 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           smooth: true,
           areaStyle: { opacity: 0.6 },
           lineStyle: { width: 2 },
+          markLine: annotationConfig.markLine,
+          markPoint: annotationConfig.markPoint,
+          markArea: annotationConfig.markArea,
         }],
       };
 
