@@ -232,7 +232,7 @@ Exports:
 - [x] **Dashboard Templates** (Feb 14, 2026)
 
 ### P2 (Medium Priority)
-- [ ] Template widget rendering on dashboard detail page (widgets store correctly but may not render)
+- [x] **Template widget rendering on dashboard detail page** (FIXED - Feb 14, 2026)
 - [ ] Chart annotations
 - [ ] Data transformation/cleaning tools
 - [ ] Scheduled report delivery via email
