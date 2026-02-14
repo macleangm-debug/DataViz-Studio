@@ -14,7 +14,7 @@ import { ChartsPage } from './pages/ChartsPage';
 import { AIInsightsPage } from './pages/AIInsightsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { HelpCenterPage } from './pages/HelpCenterPage';
-import ReportBuilderPage from './pages/ReportBuilderPage';
+import ReportBuilderPage from './pages/ReportBuilderPage.jsx';
 import '@/App.css';
 
 // Protected Route wrapper
