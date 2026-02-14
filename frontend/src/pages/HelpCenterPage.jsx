@@ -78,7 +78,7 @@ const HELP_ARTICLES = {
 
 Welcome to DataViz Studio! This guide will help you get up and running quickly.
 
-![DataViz Studio Dashboard](/images/docs/dashboard-overview.png)
+![DataViz Studio Dashboard](/images/docs/dashboard-overview.svg)
 
 ## What is DataViz Studio?
 
@@ -100,7 +100,7 @@ Navigate to **Data > Upload** to import your first dataset. We support:
 - Excel spreadsheets (.xlsx)
 - JSON files
 
-![Upload Data Page](/images/docs/upload-data.png)
+![Upload Data Page](/images/docs/upload-data.svg)
 
 ### 2. Create Your First Chart
 
@@ -126,7 +126,7 @@ Visit **Analyze > AI Insights** to ask questions about your data using natural l
 
 The Chart Studio is your creative workspace for building powerful visualizations.
 
-![Chart Studio Interface](/images/docs/chart-studio.png)
+![Chart Studio Interface](/images/docs/chart-studio.svg)
 
 ## Available Chart Types
 
@@ -148,7 +148,7 @@ DataViz Studio offers 9 professional chart types powered by Apache ECharts:
 
 Navigate to **Visualize > Charts** and click the **Create Chart** button.
 
-![Create Chart Button](/images/docs/create-chart-btn.png)
+![Create Chart Button](/images/docs/create-chart-btn.svg)
 
 ### Step 2: Configure Your Chart
 
@@ -161,7 +161,7 @@ Navigate to **Visualize > Charts** and click the **Create Chart** button.
 
 ### Step 3: Customize Appearance
 
-![Chart Style Options](/images/docs/chart-style-options.png)
+![Chart Style Options](/images/docs/chart-style-options.svg)
 
 - Choose from 6 **Color Themes**: Violet, Ocean, Forest, Sunset, Berry, Mono
 - Toggle **Show Legend** and **Show Labels**
@@ -188,7 +188,7 @@ Click **Get AI Suggestions** after selecting a dataset to receive intelligent ch
 
 Connect DataViz Studio to your external databases for real-time data synchronization.
 
-![Database Connections Page](/images/docs/database-connections.png)
+![Database Connections Page](/images/docs/database-connections.svg)
 
 ## Supported Databases
 
@@ -204,7 +204,7 @@ Go to **Data > Database Connections** and click **Add Connection**.
 
 ### Step 2: Enter Connection Details
 
-![Add Connection Dialog](/images/docs/add-connection-dialog.png)
+![Add Connection Dialog](/images/docs/add-connection-dialog.svg)
 
 Fill in the required fields:
 - **Connection Name** - A friendly name for this connection
@@ -225,7 +225,7 @@ After adding the connection, click **Sync** to import data from your database ta
 
 ## Scheduled Data Refresh
 
-![Schedule Dialog](/images/docs/schedule-dialog.png)
+![Schedule Dialog](/images/docs/schedule-dialog.svg)
 
 Set up automatic data synchronization:
 
@@ -248,7 +248,7 @@ Your data will automatically refresh at the configured intervals.
 
 DataViz Studio integrates GPT-5.2 to provide intelligent analysis of your data.
 
-![AI Insights Page](/images/docs/ai-insights.png)
+![AI Insights Page](/images/docs/ai-insights.svg)
 
 ## How It Works
 
@@ -301,7 +301,7 @@ The AI will analyze your data and provide detailed insights with actionable reco
 
 Create powerful, interactive dashboards with our drag-and-drop builder.
 
-![Dashboard Builder](/images/docs/dashboard-builder.png)
+![Dashboard Builder](/images/docs/dashboard-builder.svg)
 
 ## Widget Types
 
@@ -322,7 +322,7 @@ Go to **Visualize > Dashboards** and click **Create Dashboard**.
 
 Click **Add Widget** and select the widget type:
 
-![Add Widget](/images/docs/add-widget.png)
+![Add Widget](/images/docs/add-widget.svg)
 
 ### Step 3: Configure Widget
 
@@ -345,7 +345,7 @@ Each widget has specific configuration options:
 
 Drag widgets to reposition them. Resize by dragging the corners.
 
-![Dashboard Layout](/images/docs/dashboard-layout.png)
+![Dashboard Layout](/images/docs/dashboard-layout.svg)
 
 ### Step 5: Save Dashboard
 
@@ -363,7 +363,7 @@ Click **Save** to preserve your dashboard layout.
 
 Drill-down allows you to explore data hierarchically by clicking on chart elements.
 
-![Drill-Down Feature](/images/docs/drill-down.png)
+![Drill-Down Feature](/images/docs/drill-down.svg)
 
 ## How Drill-Down Works
 
@@ -385,7 +385,7 @@ Click on any chart card in the Charts page to open the detailed view.
 
 Below the chart, you'll see **"Click to Drill Down"** with available filter fields.
 
-![Drill Options](/images/docs/drill-options.png)
+![Drill Options](/images/docs/drill-options.svg)
 
 ### Step 3: Click a Filter
 
@@ -417,7 +417,7 @@ Click **Reset** to return to the original view.
 
 Generate professional PDF reports containing your charts and data tables.
 
-![PDF Export](/images/docs/pdf-export.png)
+![PDF Export](/images/docs/pdf-export.svg)
 
 ## Export Options
 
@@ -468,7 +468,7 @@ When exporting, you can choose to:
 
 Import your data files to create datasets for visualization.
 
-![Upload Page](/images/docs/upload-page.png)
+![Upload Page](/images/docs/upload-page.svg)
 
 ## Supported Formats
 
