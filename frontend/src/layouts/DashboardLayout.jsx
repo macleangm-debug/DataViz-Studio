@@ -97,6 +97,7 @@ const NAVIGATION = [
     icon: Download,
     items: [
       { label: 'Reports', path: '/reports', icon: FileText },
+      { label: 'Report Builder', path: '/report-builder', icon: FileText },
       { label: 'Share', path: '/share', icon: Share2 },
       { label: 'Export Data', path: '/export', icon: FileSpreadsheet },
     ]
