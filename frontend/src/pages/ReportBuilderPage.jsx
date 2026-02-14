@@ -1,525 +1,845 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FileText, Download, Settings, Eye, Palette, GripVertical, Plus, Trash2, Type, BarChart3, Table, ChevronDown, Check, Maximize2, Minimize2 } from 'lucide-react';
+import { 
+  FileText, Download, Settings, Eye, Palette, GripVertical, Plus, Trash2, 
+  Type, BarChart3, Table, ChevronDown, Check, Maximize2, Minimize2, 
+  PieChart, TrendingUp, LineChart, LayoutGrid, Move, ArrowUp, ArrowDown,
+  RefreshCw, Percent, Hash, Users, DollarSign, ShoppingCart
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../layouts/DashboardLayout';
+import { toast } from 'sonner';
 
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Color themes matching the infographic style
 const THEMES = [
-  { id: 'blue_coral', name: 'Blue & Coral', primary: '#3B82F6', accent: '#EF4444' },
-  { id: 'purple_teal', name: 'Purple & Teal', primary: '#8B5CF6', accent: '#14B8A6' },
-  { id: 'green_orange', name: 'Green & Orange', primary: '#10B981', accent: '#F59E0B' },
-  { id: 'slate_amber', name: 'Slate & Amber', primary: '#475569', accent: '#F59E0B' },
-  { id: 'indigo_rose', name: 'Indigo & Rose', primary: '#6366F1', accent: '#F43F5E' },
-  { id: 'cyan_pink', name: 'Cyan & Pink', primary: '#06B6D4', accent: '#EC4899' },
+  { id: 'blue_coral', name: 'Blue & Coral', primary: '#3B82F6', accent: '#EF4444', secondary: '#60A5FA', light: '#DBEAFE' },
+  { id: 'purple_teal', name: 'Purple & Teal', primary: '#8B5CF6', accent: '#14B8A6', secondary: '#A78BFA', light: '#EDE9FE' },
+  { id: 'green_orange', name: 'Green & Orange', primary: '#10B981', accent: '#F59E0B', secondary: '#34D399', light: '#D1FAE5' },
+  { id: 'slate_amber', name: 'Slate & Amber', primary: '#475569', accent: '#F59E0B', secondary: '#64748B', light: '#F1F5F9' },
+  { id: 'indigo_rose', name: 'Indigo & Rose', primary: '#6366F1', accent: '#F43F5E', secondary: '#818CF8', light: '#E0E7FF' },
+  { id: 'cyan_pink', name: 'Cyan & Pink', primary: '#06B6D4', accent: '#EC4899', secondary: '#22D3EE', light: '#CFFAFE' },
 ];
 
+// Section types for the report
 const SECTION_TYPES = [
-  { id: 'intro', name: 'Introduction', icon: Type },
-  { id: 'chart', name: 'Chart', icon: BarChart3 },
-  { id: 'table', name: 'Data Table', icon: Table },
-  { id: 'conclusion', name: 'Conclusion', icon: FileText },
+  { id: 'stat_cards', name: 'Stat Cards', icon: LayoutGrid, description: 'Key metrics with icons' },
+  { id: 'intro', name: 'Introduction', icon: Type, description: 'Text section' },
+  { id: 'bar_chart', name: 'Bar Chart', icon: BarChart3, description: 'Vertical bars' },
+  { id: 'pie_chart', name: 'Pie Chart', icon: PieChart, description: 'Circular chart' },
+  { id: 'line_chart', name: 'Line Chart', icon: TrendingUp, description: 'Trend lines' },
+  { id: 'data_table', name: 'Data Table', icon: Table, description: 'Tabular data' },
+  { id: 'conclusion', name: 'Conclusion', icon: FileText, description: 'Summary text' },
 ];
 
-// Draggable & Resizable Section Component
-const DraggableSection = ({ section, index, onUpdate, onDelete, onResize, onDragStart, onDragOver, onDrop, isPreview, theme }) => {
-  const [isResizing, setIsResizing] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-  const [startSize, setStartSize] = useState({ w: 0, h: 0 });
-  const sectionRef = useRef(null);
+// Stat icons for infographic cards
+const STAT_ICONS = [
+  { id: 'percent', icon: Percent, name: 'Percentage' },
+  { id: 'users', icon: Users, name: 'Users' },
+  { id: 'dollar', icon: DollarSign, name: 'Revenue' },
+  { id: 'cart', icon: ShoppingCart, name: 'Sales' },
+  { id: 'trending', icon: TrendingUp, name: 'Growth' },
+  { id: 'hash', icon: Hash, name: 'Count' },
+];
 
-  const handleResizeStart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsResizing(true);
-    setStartPos({ x: e.clientX, y: e.clientY });
-    setStartSize({ w: section.width || 100, h: section.height || 150 });
-  };
+// Sample data for charts preview
+const SAMPLE_BAR_DATA = [
+  { name: 'Q1', value: 65 },
+  { name: 'Q2', value: 85 },
+  { name: 'Q3', value: 45 },
+  { name: 'Q4', value: 75 },
+  { name: 'Q5', value: 55 },
+];
 
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isResizing) return;
-      
-      const deltaX = e.clientX - startPos.x;
-      const deltaY = e.clientY - startPos.y;
-      
-      const newWidth = Math.max(50, Math.min(100, startSize.w + (deltaX / 5)));
-      const newHeight = Math.max(100, startSize.h + deltaY);
-      
-      onResize(index, newWidth, newHeight);
-    };
+// ========================================
+// COMPONENTS
+// ========================================
 
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing, startPos, startSize, index, onResize]);
-
-  const getSectionIcon = () => {
-    const type = SECTION_TYPES.find(t => t.id === section.type);
-    return type ? type.icon : FileText;
-  };
-
-  const Icon = getSectionIcon();
-  const primaryColor = theme?.primary || '#3B82F6';
-  const accentColor = theme?.accent || '#EF4444';
-
+// Infographic Stat Card
+const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
+  const IconComponent = STAT_ICONS.find(s => s.id === stat.iconType)?.icon || Percent;
+  const isAccent = index % 2 === 1;
+  const bgColor = isAccent ? theme.accent : theme.primary;
+  
   return (
-    <div
-      ref={sectionRef}
-      draggable={!isResizing}
-      onDragStart={(e) => onDragStart(e, index)}
-      onDragOver={onDragOver}
-      onDrop={(e) => onDrop(e, index)}
-      className="relative group bg-white rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-all cursor-move"
-      style={{
-        width: `${section.width || 100}%`,
-        minHeight: `${section.height || 150}px`,
-      }}
-      data-testid={`section-${section.id}`}
+    <div 
+      className="rounded-xl p-4 text-white relative overflow-hidden"
+      style={{ backgroundColor: bgColor }}
+      data-testid={`stat-card-${index}`}
     >
-      {/* Drag Handle */}
-      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-        <GripVertical size={16} className="text-gray-400" />
-      </div>
-
-      {/* Section Header */}
+      {/* Background decoration */}
       <div 
-        className="px-4 py-2 rounded-t-lg flex items-center justify-between"
-        style={{ backgroundColor: section.type === 'chart' ? primaryColor : accentColor }}
-      >
-        <div className="flex items-center gap-2 text-white">
-          <Icon size={16} />
-          <span className="font-medium text-sm">{section.title || section.type}</span>
-        </div>
-        {!isPreview && (
-          <button
-            onClick={() => onDelete(index)}
-            className="text-white/70 hover:text-white transition-colors"
-            data-testid={`delete-section-${index}`}
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
+        className="absolute top-0 right-0 w-16 h-16 rounded-full opacity-20"
+        style={{ backgroundColor: 'white', transform: 'translate(30%, -30%)' }}
+      />
+      
+      {/* Icon */}
+      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center mb-2">
+        <IconComponent size={18} className="text-white" />
       </div>
-
-      {/* Section Content */}
-      <div className="p-4">
-        {section.type === 'intro' || section.type === 'conclusion' ? (
-          <textarea
-            value={section.content || ''}
-            onChange={(e) => onUpdate(index, { ...section, content: e.target.value })}
-            placeholder={section.type === 'intro' ? 'Enter introduction text...' : 'Enter conclusion text...'}
-            className="w-full h-20 p-2 border rounded-md text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={isPreview}
-            data-testid={`section-content-${index}`}
-          />
-        ) : section.type === 'chart' ? (
-          <div className="flex flex-col gap-2">
-            <select
-              value={section.chartId || ''}
-              onChange={(e) => onUpdate(index, { ...section, chartId: e.target.value })}
-              className="w-full p-2 border rounded-md text-sm"
-              disabled={isPreview}
-              data-testid={`chart-select-${index}`}
-            >
-              <option value="">Select a chart...</option>
-              <option value="chart_1">Sales by Region</option>
-              <option value="chart_2">Sales by Quarter</option>
-            </select>
-            {/* Chart Preview */}
-            <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-200">
-              <div className="flex gap-1 items-end">
-                {[60, 80, 45, 70, 55].map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-6 rounded-t"
-                    style={{ 
-                      height: `${h}px`, 
-                      backgroundColor: i % 2 === 0 ? primaryColor : accentColor 
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : section.type === 'table' ? (
-          <div className="border rounded-md overflow-hidden">
-            <div className="grid grid-cols-3 text-xs font-medium text-white" style={{ backgroundColor: primaryColor }}>
-              <div className="p-2">Category</div>
-              <div className="p-2 text-right">Value</div>
-              <div className="p-2 text-right">Share</div>
-            </div>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={`grid grid-cols-3 text-xs ${i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                <div className="p-2 text-gray-700">Category {i}</div>
-                <div className="p-2 text-right text-gray-600">{(100 - i * 15).toLocaleString()}</div>
-                <div className="p-2 text-right" style={{ color: accentColor }}>{35 - i * 5}%</div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Resize Handle */}
-      {!isPreview && (
-        <div
-          onMouseDown={handleResizeStart}
-          className="absolute bottom-1 right-1 w-4 h-4 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity"
-          data-testid={`resize-handle-${index}`}
-        >
-          <svg viewBox="0 0 16 16" fill="currentColor" className="text-gray-400">
-            <path d="M14 14H10L14 10V14ZM14 6V2H10L14 6ZM6 14H2V10L6 14Z" />
-          </svg>
-        </div>
+      
+      {/* Value */}
+      {!isPreview ? (
+        <input
+          type="text"
+          value={stat.value}
+          onChange={(e) => onUpdate(index, { ...stat, value: e.target.value })}
+          className="text-2xl font-bold bg-transparent border-none outline-none w-full text-white placeholder-white/50"
+          placeholder="44%"
+          data-testid={`stat-value-${index}`}
+        />
+      ) : (
+        <div className="text-2xl font-bold">{stat.value || '44%'}</div>
       )}
-
-      {/* Size indicator while resizing */}
-      {isResizing && (
-        <div className="absolute bottom-8 right-2 bg-black text-white text-xs px-2 py-1 rounded">
-          {Math.round(section.width || 100)}% × {Math.round(section.height || 150)}px
-        </div>
+      
+      {/* Label */}
+      {!isPreview ? (
+        <input
+          type="text"
+          value={stat.label}
+          onChange={(e) => onUpdate(index, { ...stat, label: e.target.value })}
+          className="text-xs opacity-90 bg-transparent border-none outline-none w-full text-white placeholder-white/50"
+          placeholder="Description text"
+          data-testid={`stat-label-${index}`}
+        />
+      ) : (
+        <div className="text-xs opacity-90">{stat.label || 'Description text'}</div>
       )}
     </div>
   );
 };
 
-// Theme Selector Component
+// Bar Chart Component (SVG preview)
+const BarChartPreview = ({ theme, data = SAMPLE_BAR_DATA }) => {
+  const maxValue = Math.max(...data.map(d => d.value));
+  
+  return (
+    <div className="h-40 flex items-end justify-center gap-3 p-4">
+      {data.map((item, i) => (
+        <div key={i} className="flex flex-col items-center gap-1">
+          <div 
+            className="w-10 rounded-t transition-all duration-300"
+            style={{ 
+              height: `${(item.value / maxValue) * 100}px`,
+              backgroundColor: i % 2 === 0 ? theme.primary : theme.accent 
+            }}
+          />
+          <span className="text-xs text-gray-500">{item.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Pie Chart Component (SVG preview)
+const PieChartPreview = ({ theme }) => {
+  return (
+    <div className="h-40 flex items-center justify-center">
+      <svg viewBox="0 0 100 100" className="w-32 h-32">
+        {/* Primary slice - 60% */}
+        <circle
+          cx="50" cy="50" r="40"
+          fill="transparent"
+          stroke={theme.primary}
+          strokeWidth="20"
+          strokeDasharray="150.8 251.33"
+          transform="rotate(-90 50 50)"
+        />
+        {/* Accent slice - 25% */}
+        <circle
+          cx="50" cy="50" r="40"
+          fill="transparent"
+          stroke={theme.accent}
+          strokeWidth="20"
+          strokeDasharray="62.83 251.33"
+          strokeDashoffset="-150.8"
+          transform="rotate(-90 50 50)"
+        />
+        {/* Secondary slice - 15% */}
+        <circle
+          cx="50" cy="50" r="40"
+          fill="transparent"
+          stroke={theme.secondary}
+          strokeWidth="20"
+          strokeDasharray="37.7 251.33"
+          strokeDashoffset="-213.63"
+          transform="rotate(-90 50 50)"
+        />
+      </svg>
+    </div>
+  );
+};
+
+// Line Chart Component (SVG preview)
+const LineChartPreview = ({ theme }) => {
+  const points = [10, 40, 30, 60, 45, 70, 55];
+  const width = 200;
+  const height = 100;
+  const padding = 10;
+  
+  const maxVal = Math.max(...points);
+  const pointsStr = points.map((p, i) => {
+    const x = padding + (i / (points.length - 1)) * (width - 2 * padding);
+    const y = height - padding - (p / maxVal) * (height - 2 * padding);
+    return `${x},${y}`;
+  }).join(' ');
+  
+  return (
+    <div className="h-40 flex items-center justify-center">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32">
+        <polyline
+          fill="none"
+          stroke={theme.primary}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={pointsStr}
+        />
+        {points.map((p, i) => {
+          const x = padding + (i / (points.length - 1)) * (width - 2 * padding);
+          const y = height - padding - (p / maxVal) * (height - 2 * padding);
+          return (
+            <circle key={i} cx={x} cy={y} r="4" fill={theme.accent} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+// Data Table Preview
+const DataTablePreview = ({ theme }) => {
+  const tableData = [
+    { category: 'North Region', value: '245,000', share: '32%' },
+    { category: 'South Region', value: '189,000', share: '24%' },
+    { category: 'East Region', value: '156,000', share: '21%' },
+    { category: 'West Region', value: '178,000', share: '23%' },
+  ];
+  
+  return (
+    <div className="overflow-hidden rounded-lg border border-gray-200">
+      <div 
+        className="grid grid-cols-3 text-xs font-semibold text-white"
+        style={{ backgroundColor: theme.primary }}
+      >
+        <div className="p-2 border-r border-white/20">Category</div>
+        <div className="p-2 border-r border-white/20 text-right">Value</div>
+        <div className="p-2 text-right">Share</div>
+      </div>
+      {tableData.map((row, i) => (
+        <div 
+          key={i} 
+          className={`grid grid-cols-3 text-xs ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+        >
+          <div className="p-2 border-r border-gray-100 text-gray-700">{row.category}</div>
+          <div className="p-2 border-r border-gray-100 text-right text-gray-600">{row.value}</div>
+          <div className="p-2 text-right font-semibold" style={{ color: theme.accent }}>{row.share}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Report Section Component
+const ReportSection = ({ section, index, theme, isPreview, onUpdate, onDelete, onMoveUp, onMoveDown, totalSections }) => {
+  const renderContent = () => {
+    switch (section.type) {
+      case 'stat_cards':
+        return (
+          <div className="grid grid-cols-4 gap-3">
+            {(section.stats || [
+              { value: '44%', label: 'Mercury is the closest planet to the Sun', iconType: 'percent' },
+              { value: '32%', label: 'Despite being red, Mars is a cold place', iconType: 'trending' },
+              { value: '21%', label: 'Neptune is the farthest planet from the Sun', iconType: 'users' },
+              { value: '72%', label: 'Jupiter is the biggest planet of them all', iconType: 'cart' },
+            ]).map((stat, i) => (
+              <StatCard 
+                key={i} 
+                stat={stat} 
+                theme={theme} 
+                isPreview={isPreview}
+                onUpdate={(idx, newStat) => {
+                  const newStats = [...(section.stats || [])];
+                  newStats[idx] = newStat;
+                  onUpdate(index, { ...section, stats: newStats });
+                }}
+                index={i}
+              />
+            ))}
+          </div>
+        );
+      
+      case 'intro':
+      case 'conclusion':
+        return (
+          <div className="p-4">
+            {!isPreview ? (
+              <textarea
+                value={section.content || ''}
+                onChange={(e) => onUpdate(index, { ...section, content: e.target.value })}
+                placeholder={section.type === 'intro' 
+                  ? 'Enter your introduction text here. Describe the purpose and scope of this report...'
+                  : 'Enter your conclusion text here. Summarize the key findings and recommendations...'
+                }
+                className="w-full h-24 p-3 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                data-testid={`section-content-${index}`}
+              />
+            ) : (
+              <p className="text-gray-700 text-sm leading-relaxed">
+                {section.content || (section.type === 'intro' 
+                  ? 'This report provides a comprehensive analysis of the data collected...'
+                  : 'In conclusion, the analysis reveals significant insights that can guide strategic decisions...'
+                )}
+              </p>
+            )}
+          </div>
+        );
+      
+      case 'bar_chart':
+        return (
+          <div className="p-4">
+            <BarChartPreview theme={theme} />
+            {!isPreview && (
+              <input
+                type="text"
+                value={section.chartTitle || ''}
+                onChange={(e) => onUpdate(index, { ...section, chartTitle: e.target.value })}
+                placeholder="Chart title (optional)"
+                className="w-full mt-2 p-2 border border-gray-200 rounded text-xs text-center"
+                data-testid={`chart-title-${index}`}
+              />
+            )}
+          </div>
+        );
+      
+      case 'pie_chart':
+        return (
+          <div className="p-4">
+            <PieChartPreview theme={theme} />
+            <div className="flex justify-center gap-4 mt-2">
+              <div className="flex items-center gap-1 text-xs">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.primary }} />
+                <span>Primary (60%)</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.accent }} />
+                <span>Secondary (25%)</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.secondary }} />
+                <span>Other (15%)</span>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'line_chart':
+        return (
+          <div className="p-4">
+            <LineChartPreview theme={theme} />
+          </div>
+        );
+      
+      case 'data_table':
+        return (
+          <div className="p-4">
+            <DataTablePreview theme={theme} />
+          </div>
+        );
+      
+      default:
+        return <div className="p-4 text-gray-400 text-center">Unknown section type</div>;
+    }
+  };
+  
+  const sectionInfo = SECTION_TYPES.find(t => t.id === section.type) || {};
+  const Icon = sectionInfo.icon || FileText;
+  
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`bg-white rounded-xl border-2 ${isPreview ? 'border-gray-100' : 'border-gray-200 hover:border-blue-300'} overflow-hidden transition-colors`}
+      style={{ width: section.width === 50 ? '48%' : '100%' }}
+      data-testid={`report-section-${index}`}
+    >
+      {/* Section Header */}
+      <div 
+        className="px-4 py-2 flex items-center justify-between"
+        style={{ backgroundColor: theme.light }}
+      >
+        <div className="flex items-center gap-2">
+          <Icon size={16} style={{ color: theme.primary }} />
+          {!isPreview ? (
+            <input
+              type="text"
+              value={section.title || sectionInfo.name}
+              onChange={(e) => onUpdate(index, { ...section, title: e.target.value })}
+              className="font-medium text-sm bg-transparent border-none outline-none"
+              style={{ color: theme.primary }}
+              data-testid={`section-title-${index}`}
+            />
+          ) : (
+            <span className="font-medium text-sm" style={{ color: theme.primary }}>
+              {section.title || sectionInfo.name}
+            </span>
+          )}
+        </div>
+        
+        {!isPreview && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onMoveUp(index)}
+              disabled={index === 0}
+              className="p-1 rounded hover:bg-white/50 disabled:opacity-30 disabled:cursor-not-allowed"
+              data-testid={`move-up-${index}`}
+            >
+              <ArrowUp size={14} className="text-gray-500" />
+            </button>
+            <button
+              onClick={() => onMoveDown(index)}
+              disabled={index === totalSections - 1}
+              className="p-1 rounded hover:bg-white/50 disabled:opacity-30 disabled:cursor-not-allowed"
+              data-testid={`move-down-${index}`}
+            >
+              <ArrowDown size={14} className="text-gray-500" />
+            </button>
+            <button
+              onClick={() => onDelete(index)}
+              className="p-1 rounded hover:bg-red-100"
+              data-testid={`delete-section-${index}`}
+            >
+              <Trash2 size={14} className="text-red-500" />
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Section Content */}
+      {renderContent()}
+    </motion.div>
+  );
+};
+
+// Theme Selector Dropdown
 const ThemeSelector = ({ selectedTheme, onSelect }) => {
   const [isOpen, setIsOpen] = useState(false);
   const theme = THEMES.find(t => t.id === selectedTheme) || THEMES[0];
-
+  
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
         data-testid="theme-selector"
       >
+        <Palette size={16} className="text-gray-500" />
         <div className="flex gap-1">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: theme.primary }} />
           <div className="w-4 h-4 rounded" style={{ backgroundColor: theme.accent }} />
         </div>
         <span className="text-sm font-medium">{theme.name}</span>
-        <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white border rounded-lg shadow-lg z-10">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                onSelect(t.id);
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors"
-              data-testid={`theme-option-${t.id}`}
-            >
-              <div className="flex gap-1">
-                <div className="w-5 h-5 rounded" style={{ backgroundColor: t.primary }} />
-                <div className="w-5 h-5 rounded" style={{ backgroundColor: t.accent }} />
-              </div>
-              <span className="text-sm flex-1 text-left">{t.name}</span>
-              {selectedTheme === t.id && <Check size={16} className="text-green-500" />}
-            </button>
-          ))}
-        </div>
-      )}
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-full left-0 mt-1 w-56 bg-white border rounded-lg shadow-xl z-20 overflow-hidden"
+          >
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  onSelect(t.id);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors ${
+                  selectedTheme === t.id ? 'bg-blue-50' : ''
+                }`}
+                data-testid={`theme-option-${t.id}`}
+              >
+                <div className="flex gap-1">
+                  <div className="w-5 h-5 rounded" style={{ backgroundColor: t.primary }} />
+                  <div className="w-5 h-5 rounded" style={{ backgroundColor: t.accent }} />
+                </div>
+                <span className="text-sm flex-1 text-left">{t.name}</span>
+                {selectedTheme === t.id && <Check size={16} className="text-blue-500" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
+// Add Section Panel
+const AddSectionPanel = ({ onAdd, theme }) => {
+  return (
+    <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-4">
+      <p className="text-sm font-medium text-gray-500 mb-3 text-center">Add Section</p>
+      <div className="grid grid-cols-4 gap-2">
+        {SECTION_TYPES.map((type) => {
+          const Icon = type.icon;
+          return (
+            <button
+              key={type.id}
+              onClick={() => onAdd(type.id)}
+              className="flex flex-col items-center gap-1 p-3 rounded-lg hover:bg-gray-50 border border-gray-200 hover:border-blue-300 transition-all group"
+              data-testid={`add-${type.id}-btn`}
+            >
+              <Icon size={20} className="text-gray-400 group-hover:text-blue-500" />
+              <span className="text-xs text-gray-600 group-hover:text-blue-600">{type.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ========================================
+// MAIN COMPONENT
+// ========================================
+
 const ReportBuilderPage = () => {
+  // Report configuration state
   const [reportConfig, setReportConfig] = useState({
-    title: 'Sales Performance Report',
-    subtitle: 'Q1-Q2 2026 Regional Analysis',
-    companyName: 'Acme Corporation',
+    title: 'Survey Results Infographics',
+    subtitle: 'Comprehensive Analysis Report',
+    companyName: '',
     theme: 'blue_coral',
-    includeDataTables: true,
-    layoutStyle: 'two_column',
+    reportDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
   });
-
+  
+  // Sections state
   const [sections, setSections] = useState([
-    { id: 'sec_1', type: 'intro', title: 'Introduction', content: 'This report analyzes sales performance across all regions.', width: 100, height: 120 },
-    { id: 'sec_2', type: 'chart', title: 'Sales by Region', chartId: 'chart_1', width: 50, height: 200 },
-    { id: 'sec_3', type: 'chart', title: 'Sales by Quarter', chartId: 'chart_2', width: 50, height: 200 },
-    { id: 'sec_4', type: 'table', title: 'Data Summary', width: 100, height: 180 },
-    { id: 'sec_5', type: 'conclusion', title: 'Conclusions', content: 'East region leads with 24% of total revenue.', width: 100, height: 120 },
+    { 
+      id: 'sec_1', 
+      type: 'stat_cards', 
+      title: 'Key Metrics',
+      width: 100,
+      stats: [
+        { value: '44%', label: 'Mercury is the closest planet to the Sun', iconType: 'percent' },
+        { value: '32%', label: 'Despite being red, Mars is a cold place', iconType: 'trending' },
+        { value: '21%', label: 'Neptune is the farthest planet from the Sun', iconType: 'users' },
+        { value: '72%', label: 'Jupiter is the biggest planet of them all', iconType: 'cart' },
+      ]
+    },
+    { id: 'sec_2', type: 'bar_chart', title: 'Revenue by Quarter', width: 50 },
+    { id: 'sec_3', type: 'data_table', title: 'Regional Breakdown', width: 50 },
+    { id: 'sec_4', type: 'intro', title: 'Introduction', content: '', width: 100 },
+    { id: 'sec_5', type: 'pie_chart', title: 'Market Share', width: 50 },
+    { id: 'sec_6', type: 'line_chart', title: 'Growth Trend', width: 50 },
+    { id: 'sec_7', type: 'conclusion', title: 'Conclusions', content: '', width: 100 },
   ]);
-
-  const [draggedIndex, setDraggedIndex] = useState(null);
+  
+  // UI state
   const [isPreview, setIsPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-
+  const [showSettings, setShowSettings] = useState(true);
+  
+  // Get current theme
   const theme = THEMES.find(t => t.id === reportConfig.theme) || THEMES[0];
-
-  const handleDragStart = (e, index) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e, targetIndex) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === targetIndex) return;
-
-    const newSections = [...sections];
-    const [draggedItem] = newSections.splice(draggedIndex, 1);
-    newSections.splice(targetIndex, 0, draggedItem);
-    setSections(newSections);
-    setDraggedIndex(null);
-  };
-
+  
+  // Section management functions
   const handleUpdateSection = (index, updatedSection) => {
     const newSections = [...sections];
     newSections[index] = updatedSection;
     setSections(newSections);
   };
-
+  
   const handleDeleteSection = (index) => {
     setSections(sections.filter((_, i) => i !== index));
   };
-
-  const handleResizeSection = (index, width, height) => {
+  
+  const handleMoveUp = (index) => {
+    if (index === 0) return;
     const newSections = [...sections];
-    newSections[index] = { ...newSections[index], width, height };
+    [newSections[index - 1], newSections[index]] = [newSections[index], newSections[index - 1]];
     setSections(newSections);
   };
-
+  
+  const handleMoveDown = (index) => {
+    if (index === sections.length - 1) return;
+    const newSections = [...sections];
+    [newSections[index], newSections[index + 1]] = [newSections[index + 1], newSections[index]];
+    setSections(newSections);
+  };
+  
   const handleAddSection = (type) => {
+    const sectionInfo = SECTION_TYPES.find(t => t.id === type);
     const newSection = {
       id: `sec_${Date.now()}`,
       type,
-      title: SECTION_TYPES.find(t => t.id === type)?.name || 'New Section',
+      title: sectionInfo?.name || 'New Section',
+      width: ['bar_chart', 'pie_chart', 'line_chart', 'data_table'].includes(type) ? 50 : 100,
       content: '',
-      width: type === 'chart' ? 50 : 100,
-      height: type === 'chart' ? 200 : 150,
+      stats: type === 'stat_cards' ? [
+        { value: '25%', label: 'Enter description', iconType: 'percent' },
+        { value: '50%', label: 'Enter description', iconType: 'trending' },
+        { value: '75%', label: 'Enter description', iconType: 'users' },
+        { value: '100%', label: 'Enter description', iconType: 'cart' },
+      ] : undefined,
     };
     setSections([...sections, newSection]);
   };
-
+  
+  // Toggle section width
+  const handleToggleWidth = (index) => {
+    const newSections = [...sections];
+    newSections[index] = {
+      ...newSections[index],
+      width: newSections[index].width === 100 ? 50 : 100
+    };
+    setSections(newSections);
+  };
+  
+  // Export PDF
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reports/export/pdf`, {
+      const response = await fetch(`${API_URL}/api/reports/export/pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          dashboard_id: '982f239e-9479-4394-b40b-2df615385eba',
           title: reportConfig.title,
           subtitle: reportConfig.subtitle,
           company_name: reportConfig.companyName,
           theme: reportConfig.theme,
+          report_date: reportConfig.reportDate,
+          include_summary_cards: sections.some(s => s.type === 'stat_cards'),
           include_intro: sections.some(s => s.type === 'intro'),
           include_conclusions: sections.some(s => s.type === 'conclusion'),
-          include_data_tables: reportConfig.includeDataTables,
+          include_data_tables: sections.some(s => s.type === 'data_table'),
           intro_text: sections.find(s => s.type === 'intro')?.content || '',
           conclusions_text: sections.find(s => s.type === 'conclusion')?.content || '',
-          layout_style: reportConfig.layoutStyle,
+          layout_style: 'two_column',
+          layout: {
+            columns: 2,
+            sections: sections.map(s => ({
+              id: s.id,
+              type: s.type,
+              title: s.title,
+              content: s.content,
+              position: { w: s.width === 50 ? 1 : 2 }
+            }))
+          }
         }),
       });
-
+      
       const data = await response.json();
+      
       if (data.pdf_base64) {
-        // Download PDF
         const link = document.createElement('a');
         link.href = `data:application/pdf;base64,${data.pdf_base64}`;
         link.download = data.filename || 'report.pdf';
         link.click();
+        toast.success('Report exported successfully!');
+      } else if (data.error) {
+        toast.error(`Export failed: ${data.error}`);
       }
     } catch (error) {
       console.error('Export failed:', error);
+      toast.error('Failed to export PDF. Please try again.');
     } finally {
       setIsExporting(false);
     }
   };
-
+  
   return (
     <DashboardLayout>
-      <div className="p-6 bg-gray-50 min-h-screen" data-testid="report-builder-page">
+      <div className="min-h-screen bg-gray-50" data-testid="report-builder-page">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Report Builder</h1>
-            <p className="text-gray-500 text-sm">Drag, drop, and resize sections to customize your report</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeSelector
-              selectedTheme={reportConfig.theme}
-              onSelect={(theme) => setReportConfig({ ...reportConfig, theme })}
-            />
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
-              data-testid="settings-btn"
-            >
-              <Settings size={20} className="text-gray-600" />
-            </button>
-            <button
-              onClick={() => setIsPreview(!isPreview)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isPreview ? 'bg-blue-100 text-blue-700' : 'bg-white border hover:bg-gray-50'
-              }`}
-              data-testid="preview-btn"
-            >
-              <Eye size={18} />
-              <span className="font-medium">{isPreview ? 'Edit Mode' : 'Preview'}</span>
-            </button>
-            <button
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              data-testid="export-btn"
-            >
-              <Download size={18} />
-              <span className="font-medium">{isExporting ? 'Exporting...' : 'Export PDF'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="bg-white rounded-lg border p-4 mb-6" data-testid="settings-panel">
-            <h3 className="font-semibold mb-4">Report Settings</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Report Title</label>
-                <input
-                  type="text"
-                  value={reportConfig.title}
-                  onChange={(e) => setReportConfig({ ...reportConfig, title: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="report-title-input"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
-                <input
-                  type="text"
-                  value={reportConfig.subtitle}
-                  onChange={(e) => setReportConfig({ ...reportConfig, subtitle: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="report-subtitle-input"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                <input
-                  type="text"
-                  value={reportConfig.companyName}
-                  onChange={(e) => setReportConfig({ ...reportConfig, companyName: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="company-name-input"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Layout Style</label>
-                <select
-                  value={reportConfig.layoutStyle}
-                  onChange={(e) => setReportConfig({ ...reportConfig, layoutStyle: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="layout-style-select"
-                >
-                  <option value="auto">Auto</option>
-                  <option value="single_column">Single Column</option>
-                  <option value="two_column">Two Column</option>
-                </select>
-              </div>
+        <div className="bg-white border-b px-6 py-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Report Builder</h1>
+              <p className="text-gray-500 text-sm">Design professional infographic-style reports</p>
             </div>
-          </div>
-        )}
-
-        {/* Add Section Toolbar */}
-        {!isPreview && (
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm font-medium text-gray-600">Add Section:</span>
-            {SECTION_TYPES.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => handleAddSection(type.id)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-white border rounded-md hover:bg-gray-50 transition-colors text-sm"
-                data-testid={`add-${type.id}-btn`}
-              >
-                <type.icon size={14} />
-                <span>{type.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Report Canvas */}
-        <div 
-          className="bg-white rounded-xl border-2 border-gray-200 p-6 min-h-[600px]"
-          style={{ borderColor: theme.primary + '40' }}
-          data-testid="report-canvas"
-        >
-          {/* Report Header Preview */}
-          <div 
-            className="rounded-t-lg p-4 mb-6 text-white"
-            style={{ backgroundColor: theme.primary }}
-          >
-            <div className="flex items-center gap-2 mb-2 opacity-80">
-              <BarChart3 size={20} />
-              <span className="font-medium">DataViz Studio</span>
-            </div>
-            <h2 className="text-2xl font-bold">{reportConfig.title}</h2>
-            <p className="opacity-80">{reportConfig.subtitle}</p>
-          </div>
-
-          {/* Sections Grid */}
-          <div className="flex flex-wrap gap-4">
-            {sections.map((section, index) => (
-              <DraggableSection
-                key={section.id}
-                section={section}
-                index={index}
-                onUpdate={handleUpdateSection}
-                onDelete={handleDeleteSection}
-                onResize={handleResizeSection}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                isPreview={isPreview}
-                theme={theme}
+            <div className="flex items-center gap-3">
+              <ThemeSelector
+                selectedTheme={reportConfig.theme}
+                onSelect={(t) => setReportConfig({ ...reportConfig, theme: t })}
               />
-            ))}
-          </div>
-
-          {sections.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-              <Plus size={48} className="mb-2" />
-              <p>Add sections to build your report</p>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-blue-100 text-blue-600' : 'bg-white border hover:bg-gray-50'}`}
+                data-testid="settings-btn"
+              >
+                <Settings size={20} />
+              </button>
+              <button
+                onClick={() => setIsPreview(!isPreview)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  isPreview ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'
+                }`}
+                data-testid="preview-btn"
+              >
+                <Eye size={18} />
+                <span className="font-medium">{isPreview ? 'Edit Mode' : 'Preview'}</span>
+              </button>
+              <button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 shadow-md"
+                data-testid="export-btn"
+              >
+                {isExporting ? <RefreshCw size={18} className="animate-spin" /> : <Download size={18} />}
+                <span className="font-medium">{isExporting ? 'Exporting...' : 'Export PDF'}</span>
+              </button>
             </div>
-          )}
-
-          {/* Footer Preview */}
-          <div 
-            className="rounded-b-lg p-3 mt-6 flex items-center justify-between text-white text-sm"
-            style={{ backgroundColor: theme.primary }}
-          >
-            <div className="flex items-center gap-2">
-              <BarChart3 size={16} />
-              <span className="font-medium">DataViz Studio</span>
-            </div>
-            <span>{reportConfig.companyName} | Page 1 | {new Date().toLocaleDateString()}</span>
           </div>
         </div>
-
-        {/* Instructions */}
-        <div className="mt-4 text-sm text-gray-500">
-          <p><strong>Tips:</strong> Drag sections to reorder • Drag corner to resize • Use 50% width for side-by-side charts</p>
+        
+        <div className="p-6">
+          {/* Settings Panel */}
+          <AnimatePresence>
+            {showSettings && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white rounded-xl border shadow-sm mb-6 overflow-hidden"
+                data-testid="settings-panel"
+              >
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-800 mb-4">Report Header Settings</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Report Title</label>
+                      <input
+                        type="text"
+                        value={reportConfig.title}
+                        onChange={(e) => setReportConfig({ ...reportConfig, title: e.target.value })}
+                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter report title"
+                        data-testid="report-title-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
+                      <input
+                        type="text"
+                        value={reportConfig.subtitle}
+                        onChange={(e) => setReportConfig({ ...reportConfig, subtitle: e.target.value })}
+                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter subtitle"
+                        data-testid="report-subtitle-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name (Optional)</label>
+                      <input
+                        type="text"
+                        value={reportConfig.companyName}
+                        onChange={(e) => setReportConfig({ ...reportConfig, companyName: e.target.value })}
+                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Your company name"
+                        data-testid="company-name-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Report Preview Canvas */}
+          <div 
+            className="bg-white rounded-2xl border-2 shadow-lg overflow-hidden"
+            style={{ borderColor: theme.primary + '30' }}
+          >
+            {/* Report Header */}
+            <div 
+              className="p-6 text-white relative overflow-hidden"
+              style={{ backgroundColor: theme.primary }}
+            >
+              {/* Decorative elements */}
+              <div 
+                className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10"
+                style={{ backgroundColor: 'white', transform: 'translate(30%, -50%)' }}
+              />
+              <div 
+                className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-10"
+                style={{ backgroundColor: 'white', transform: 'translate(-30%, 50%)' }}
+              />
+              
+              <div className="relative z-10 text-center">
+                <h2 className="text-3xl font-bold mb-2">{reportConfig.title || 'Report Title'}</h2>
+                <p className="text-lg opacity-90">{reportConfig.subtitle || 'Report Subtitle'}</p>
+                {reportConfig.companyName && (
+                  <p className="text-sm opacity-75 mt-2">{reportConfig.companyName}</p>
+                )}
+              </div>
+            </div>
+            
+            {/* Report Body */}
+            <div className="p-6">
+              <div className="flex flex-wrap gap-4">
+                <AnimatePresence>
+                  {sections.map((section, index) => (
+                    <ReportSection
+                      key={section.id}
+                      section={section}
+                      index={index}
+                      theme={theme}
+                      isPreview={isPreview}
+                      onUpdate={handleUpdateSection}
+                      onDelete={handleDeleteSection}
+                      onMoveUp={handleMoveUp}
+                      onMoveDown={handleMoveDown}
+                      totalSections={sections.length}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+              
+              {/* Add Section Panel (only in edit mode) */}
+              {!isPreview && (
+                <div className="mt-6">
+                  <AddSectionPanel onAdd={handleAddSection} theme={theme} />
+                </div>
+              )}
+              
+              {sections.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <Plus size={48} className="mb-3" />
+                  <p className="text-lg">Add sections to build your report</p>
+                  <p className="text-sm">Click on a section type above to get started</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Report Footer */}
+            <div 
+              className="px-6 py-4 flex items-center justify-center gap-3 text-white"
+              style={{ backgroundColor: theme.primary }}
+            >
+              {/* DataViz Studio Logo */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <PieChart size={18} className="text-white" />
+                </div>
+                <span className="font-bold text-lg">DataViz Studio</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Help Text */}
+          <div className="mt-4 text-center text-sm text-gray-500">
+            <p>
+              <strong>Tips:</strong> Use arrow buttons to reorder sections • 
+              Charts default to 50% width for side-by-side layout • 
+              Click Preview to see final result
+            </p>
+          </div>
         </div>
       </div>
     </DashboardLayout>
