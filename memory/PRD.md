@@ -127,9 +127,33 @@ DataViz Studio is an interactive analytics and visualization platform that enabl
   - Downloads as PDF with timestamped filename
   - High-quality 2x scale rendering
 
+- [x] **Custom Color Picker** (NEW)
+  - Primary and Accent color selection with native color picker inputs
+  - Hex text input fields for precise color entry
+  - Live preview of custom colors before applying
+  - "Apply Custom Theme" button to apply to entire report
+  - Colors persist and apply to all report components
+
 **Files Created/Modified:**
-- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Complete rewrite with infographic layout
+- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Complete rewrite with infographic layout and custom color picker
 - Installed: `html2canvas`, `jspdf` via yarn
+
+### Session 7 (Feb 14, 2026) - Dashboard Templates
+- [x] **Dashboard Templates Feature**
+  - Templates button in Dashboards page header
+  - Templates dialog with 6 pre-built templates:
+    1. **Sales Overview** (emerald) - 8 widgets for revenue tracking
+    2. **Marketing Analytics** (violet) - 7 widgets for campaign monitoring
+    3. **Customer Insights** (blue) - 6 widgets for customer behavior
+    4. **Operations Monitor** (amber) - 7 widgets for inventory/orders
+    5. **Financial Summary** (rose) - 6 widgets for P&L tracking
+    6. **Blank Canvas** (gray) - Empty dashboard for custom creation
+  - Each template has: icon, gradient color, name, description, widget count
+  - Click template to instantly create dashboard with pre-configured widgets
+  - Blank Canvas opens custom name dialog
+
+**Files Modified:**
+- `/app/frontend/src/pages/DashboardsPage.jsx` - Added DASHBOARD_TEMPLATES array, Templates dialog, handleCreateFromTemplate function
 
 ### Backend API Endpoints (Complete List)
 ```
