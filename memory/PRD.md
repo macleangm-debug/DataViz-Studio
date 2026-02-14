@@ -70,6 +70,29 @@ DataViz Studio is an interactive analytics and visualization platform that enabl
   - Shows filtered row count
   - Suggests next drill-down options
 
+### Session 5 (Feb 14, 2026) - Help Center Documentation
+- [x] **Help Center with Screenshot Support**
+  - 8 comprehensive documentation articles
+  - Markdown content parser with image support
+  - Categories: Basics, Data Sources, Visualization, Analysis, Export
+  - Search functionality across all articles
+  - SVG placeholder images in /public/images/docs/
+  
+  **Articles Created:**
+  - Getting Started with DataViz Studio
+  - Using the Chart Studio
+  - Connecting to Databases
+  - AI-Powered Insights
+  - Building Dashboards
+  - Chart Drill-Down
+  - Exporting PDF Reports
+  - Uploading Data
+
+  **Markdown Parser Regex:**
+  ```javascript
+  .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="rounded-lg border my-4 shadow-lg" />')
+  ```
+
 ### Backend API Endpoints (Complete List)
 ```
 Authentication:
