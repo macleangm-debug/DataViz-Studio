@@ -13,6 +13,7 @@ import { DatabaseConnectionsPage } from './pages/DatabaseConnectionsPage';
 import { ChartsPage } from './pages/ChartsPage';
 import { AIInsightsPage } from './pages/AIInsightsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { HelpCenterPage } from './pages/HelpCenterPage';
 import '@/App.css';
 
 // Protected Route wrapper
