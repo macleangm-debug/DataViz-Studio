@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Download, Settings, Eye, Palette, GripVertical, Plus, Trash2, Type, BarChart3, Table, ChevronDown, Check, Maximize2, Minimize2 } from 'lucide-react';
-import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardLayout from '../layouts/DashboardLayout';
 
 const THEMES = [
   { id: 'blue_coral', name: 'Blue & Coral', primary: '#3B82F6', accent: '#EF4444' },
