@@ -794,8 +794,10 @@ const ReportBuilderPage = () => {
           
           {/* Report Preview Canvas */}
           <div 
+            ref={reportCanvasRef}
             className="bg-white rounded-2xl border-2 shadow-lg overflow-hidden"
             style={{ borderColor: theme.primary + '30' }}
+            data-testid="report-canvas"
           >
             {/* Report Header */}
             <div 
