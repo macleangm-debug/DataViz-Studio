@@ -2047,61 +2047,6 @@ async def export_report_pdf(request: ReportExportRequest):
                 chart_idx += 1
             
             pdf.set_y(row_start_y + card_height + 8)
-                
-                # Chart title bar
-                pdf.set_fill_color(*primary_color if col == 0 else accent_color)
-                pdf.rect(x_offset, row_start_y, col_width, 8, 'F')
-                pdf.set_xy(x_offset + 3, row_start_y + 1)
-                pdf.set_font('Helvetica', 'B', 8)
-                pdf.set_text_color(255, 255, 255)
-                pdf.cell(col_width - 6, 6, chart_info['title'][:25])
-                
-                # Mini bar chart
-                chart_y = row_start_y + 12
-                chart_height = 35
-                max_val = max(d.get('value', 0) for d in chart_data) or 1
-                total_val = sum(d.get('value', 0) for d in chart_data)
-                bar_count = min(len(chart_data), 5)
-                bar_area_width = col_width - 10
-                bar_width = bar_area_width / bar_count * 0.75
-                bar_gap_w = bar_area_width / bar_count * 0.25
-                
-                bar_colors = [primary_color, accent_color, (100, 116, 139)]
-                
-                for i, d in enumerate(chart_data[:bar_count]):
-                    bar_h = (d.get('value', 0) / max_val) * chart_height
-                    bx = x_offset + 5 + i * (bar_width + bar_gap_w)
-                    by = chart_y + chart_height - bar_h
-                    
-                    pdf.set_fill_color(*bar_colors[i % len(bar_colors)])
-                    pdf.rect(bx, by, bar_width, bar_h, 'F')
-                    
-                    # Label
-                    pdf.set_font('Helvetica', '', 5)
-                    pdf.set_text_color(80, 80, 80)
-                    pdf.set_xy(bx, chart_y + chart_height + 1)
-                    pdf.cell(bar_width, 3, str(d.get('name', ''))[:6], align='C')
-                
-                # Top 3 stats on right side of card
-                stats_x = x_offset + 3
-                stats_y = chart_y + chart_height + 8
-                
-                for i, d in enumerate(chart_data[:3]):
-                    pct = int((d.get('value', 0) / total_val * 100)) if total_val > 0 else 0
-                    
-                    pdf.set_xy(stats_x, stats_y + i * 6)
-                    pdf.set_font('Helvetica', 'B', 7)
-                    pdf.set_text_color(*accent_color)
-                    pdf.cell(12, 5, f"{pct}%")
-                    
-                    pdf.set_font('Helvetica', '', 6)
-                    pdf.set_text_color(60, 60, 60)
-                    pdf.cell(col_width - 18, 5, str(d.get('name', ''))[:20])
-                
-                row_max_height = max(row_max_height, 78)
-                chart_idx += 1
-            
-            pdf.set_y(row_start_y + row_max_height + 5)
     
     else:
         # Single column / full width layout
