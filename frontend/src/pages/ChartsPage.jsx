@@ -232,6 +232,9 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           data: data.map(d => d.value),
           itemStyle: { borderRadius: [4, 4, 0, 0] },
           emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(139, 92, 246, 0.5)' } },
+          markLine: annotationConfig.markLine,
+          markPoint: annotationConfig.markPoint,
+          markArea: annotationConfig.markArea,
         }],
       };
 
@@ -257,6 +260,9 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           symbolSize: 8,
           lineStyle: { width: 3 },
           areaStyle: config?.showArea ? { opacity: 0.3 } : undefined,
+          markLine: annotationConfig.markLine,
+          markPoint: annotationConfig.markPoint,
+          markArea: annotationConfig.markArea,
         }],
       };
 
