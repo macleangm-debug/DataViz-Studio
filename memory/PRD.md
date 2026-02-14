@@ -257,7 +257,7 @@ Exports:
 - External preview URL occasionally has platform caching issues
 - PostgreSQL/MySQL connections require actual database servers to test fully
 - Report Builder uses sample data for preview (not connected to live database charts)
-- Template widgets store in backend but may not render on dashboard detail page (MEDIUM priority)
+- Template widgets created without dataset links (users need to link data sources after creation)
 
 ## Next Recommended Task
 Consider implementing **Scheduled Report Delivery via Email** using SendGrid or Resend integration to allow users to schedule automatic report exports.
