@@ -1585,6 +1585,33 @@ def hex_to_rgb(hex_color: str) -> tuple:
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
+def get_theme_colors(request: ReportExportRequest) -> tuple:
+    """Get primary and accent colors based on theme or custom settings"""
+    if request.theme == "custom" and request.header_color and request.accent_color:
+        return hex_to_rgb(request.header_color), hex_to_rgb(request.accent_color)
+    
+    theme = REPORT_THEMES.get(request.theme or "blue_coral", REPORT_THEMES["blue_coral"])
+    return hex_to_rgb(theme["primary"]), hex_to_rgb(theme["accent"])
+
+def draw_dataviz_logo(pdf, x, y, size=12, color=(255, 255, 255)):
+    """Draw DataViz Studio logo (chart icon + text)"""
+    # Draw a small chart icon
+    icon_size = size * 0.8
+    bar_width = icon_size / 4
+    
+    pdf.set_fill_color(*color)
+    
+    # Three bars of different heights (like a bar chart)
+    pdf.rect(x, y + icon_size * 0.6, bar_width, icon_size * 0.4, 'F')
+    pdf.rect(x + bar_width * 1.2, y + icon_size * 0.2, bar_width, icon_size * 0.8, 'F')
+    pdf.rect(x + bar_width * 2.4, y + icon_size * 0.4, bar_width, icon_size * 0.6, 'F')
+    
+    # Text "DataViz Studio"
+    pdf.set_font('Helvetica', 'B', size * 0.7)
+    pdf.set_text_color(*color)
+    pdf.set_xy(x + icon_size + 3, y + icon_size * 0.25)
+    pdf.cell(50, icon_size * 0.6, 'DataViz Studio')
+
 def _generate_chart_svg(chart_data: List[dict], chart_type: str, config: dict) -> str:
     """Generate SVG representation of a chart for PDF"""
     if not chart_data:
