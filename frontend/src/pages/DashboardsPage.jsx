@@ -394,7 +394,7 @@ export function DashboardsPage() {
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreate} className="bg-violet-600 hover:bg-violet-700" data-testid="create-dashboard-submit">
+                <Button onClick={() => handleCreate(null)} className="bg-violet-600 hover:bg-violet-700" data-testid="create-dashboard-submit">
                   Create Dashboard
                 </Button>
               </div>
