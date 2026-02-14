@@ -284,18 +284,18 @@ Exports:
 - [ ] Custom chart themes
 
 ## Test Status
-- **Backend Tests:** 100% (24/24 passed)
-- **Frontend Tests:** 100% (all features verified)
-- **Report Builder Tests:** 100% (27/27 passed - all UI features including custom color picker)
-- **Dashboard Templates Tests:** 100% (all 6 templates verified)
+- **Backend Tests:** 100% (13/13 tests for chart/transform features)
+- **Frontend Tests:** 100% (22 tests for annotations + transformations)
+- **Chart Annotations:** PASS - All 3 annotation types working
+- **Data Transformation:** PASS - All 7 transformation types working
 - **Test Credentials:** test@dataviz.com / test123
-- **Test Data:** Sales Data (14 rows), 5 columns
+- **Test Data:** Sales Data 2026 (10 rows, 3 columns: Region, Sales, Quarter)
 
 ## Known Limitations
-- External preview URL occasionally has platform caching issues
+- External preview URL sessions expire quickly during navigation
 - PostgreSQL/MySQL connections require actual database servers to test fully
 - Report Builder uses sample data for preview (not connected to live database charts)
-- Template widgets created without dataset links (users need to link data sources after creation)
+- Template widgets created without dataset links (users need to link data sources)
 
 ## Next Recommended Task
 Consider implementing **Scheduled Report Delivery via Email** using SendGrid or Resend integration to allow users to schedule automatic report exports.
