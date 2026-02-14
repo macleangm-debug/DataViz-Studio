@@ -262,7 +262,10 @@ export function DataTransformPage() {
       setDataset(datasetRes.data);
       setOriginalData(dataRes.data.data || []);
       setPreviewData(dataRes.data.data || []);
-      setColumns(datasetRes.data.columns || []);
+      // Normalize columns to be an array of column name strings
+      const rawColumns = datasetRes.data.columns || [];
+      const normalizedColumns = rawColumns.map(col => typeof col === 'object' ? col.name : col);
+      setColumns(normalizedColumns);
       setColumnStats(statsRes.data.stats || {});
     } catch (error) {
       console.error('Error fetching dataset:', error);
