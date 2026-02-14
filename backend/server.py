@@ -915,6 +915,300 @@ async def delete_dataset(dataset_id: str):
     return {"status": "deleted"}
 
 # =============================================================================
+# Data Transformation Routes
+# =============================================================================
+
+class TransformRequest(BaseModel):
+    transformations: List[Dict[str, Any]]
+
+@api_router.post("/datasets/{dataset_id}/transform/preview")
+async def preview_transformation(dataset_id: str, request: TransformRequest):
+    """Preview data transformations without saving"""
+    import pandas as pd
+    
+    # Get dataset data
+    data_docs = await db.dataset_data.find({"dataset_id": dataset_id}).to_list(1000)
+    if not data_docs:
+        return {"data": [], "columns": []}
+    
+    df = pd.DataFrame(data_docs)
+    # Remove MongoDB fields
+    df = df.drop(columns=["_id", "dataset_id"], errors='ignore')
+    
+    # Apply transformations
+    for transform in request.transformations:
+        if not transform.get('enabled', True):
+            continue
+            
+        t_type = transform.get('type')
+        config = transform.get('config', {})
+        
+        try:
+            if t_type == 'filter':
+                col = config.get('column')
+                op = config.get('operator')
+                val = config.get('value')
+                
+                if col not in df.columns:
+                    continue
+                    
+                if op == 'eq':
+                    df = df[df[col] == val]
+                elif op == 'neq':
+                    df = df[df[col] != val]
+                elif op == 'gt':
+                    df = df[pd.to_numeric(df[col], errors='coerce') > float(val)]
+                elif op == 'gte':
+                    df = df[pd.to_numeric(df[col], errors='coerce') >= float(val)]
+                elif op == 'lt':
+                    df = df[pd.to_numeric(df[col], errors='coerce') < float(val)]
+                elif op == 'lte':
+                    df = df[pd.to_numeric(df[col], errors='coerce') <= float(val)]
+                elif op == 'contains':
+                    df = df[df[col].astype(str).str.contains(str(val), na=False)]
+                elif op == 'starts_with':
+                    df = df[df[col].astype(str).str.startswith(str(val), na=False)]
+                elif op == 'ends_with':
+                    df = df[df[col].astype(str).str.endswith(str(val), na=False)]
+                elif op == 'is_null':
+                    df = df[df[col].isna()]
+                elif op == 'not_null':
+                    df = df[df[col].notna()]
+                    
+            elif t_type == 'rename':
+                col = config.get('column')
+                new_name = config.get('new_name')
+                if col in df.columns and new_name:
+                    df = df.rename(columns={col: new_name})
+                    
+            elif t_type == 'cast':
+                col = config.get('column')
+                new_type = config.get('new_type')
+                if col in df.columns:
+                    if new_type == 'int':
+                        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+                    elif new_type == 'float':
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                    elif new_type == 'string':
+                        df[col] = df[col].astype(str)
+                    elif new_type == 'date':
+                        df[col] = pd.to_datetime(df[col], errors='coerce')
+                    elif new_type == 'bool':
+                        df[col] = df[col].astype(bool)
+                        
+            elif t_type == 'fill_missing':
+                col = config.get('column')
+                method = config.get('method')
+                fill_val = config.get('value')
+                
+                if col in df.columns:
+                    if method == 'value':
+                        df[col] = df[col].fillna(fill_val)
+                    elif method == 'mean':
+                        df[col] = df[col].fillna(pd.to_numeric(df[col], errors='coerce').mean())
+                    elif method == 'median':
+                        df[col] = df[col].fillna(pd.to_numeric(df[col], errors='coerce').median())
+                    elif method == 'mode':
+                        mode_val = df[col].mode()
+                        df[col] = df[col].fillna(mode_val[0] if len(mode_val) > 0 else None)
+                    elif method == 'forward':
+                        df[col] = df[col].ffill()
+                    elif method == 'backward':
+                        df[col] = df[col].bfill()
+                    elif method == 'drop':
+                        df = df.dropna(subset=[col])
+                        
+            elif t_type == 'drop':
+                col = config.get('column')
+                if col in df.columns:
+                    df = df.drop(columns=[col])
+                    
+            elif t_type == 'sort':
+                col = config.get('column')
+                order = config.get('order', 'asc')
+                if col in df.columns:
+                    df = df.sort_values(by=col, ascending=(order == 'asc'))
+                    
+            elif t_type == 'calculate':
+                new_col = config.get('new_column')
+                formula = config.get('formula', '')
+                if new_col and formula:
+                    # Simple formula evaluation (column operations)
+                    try:
+                        # Replace column names with df['column'] syntax
+                        eval_formula = formula
+                        for col in df.columns:
+                            if col in formula:
+                                eval_formula = eval_formula.replace(col, f"df['{col}']")
+                        df[new_col] = eval(eval_formula)
+                    except Exception as e:
+                        print(f"Formula error: {e}")
+                        
+        except Exception as e:
+            print(f"Transform error: {e}")
+            continue
+    
+    # Convert to records
+    df = df.reset_index(drop=True)
+    data = df.head(100).to_dict('records')
+    columns = list(df.columns)
+    
+    return {"data": data, "columns": columns, "row_count": len(df)}
+
+@api_router.post("/datasets/{dataset_id}/transform/apply")
+async def apply_transformation(dataset_id: str, request: TransformRequest):
+    """Apply and save data transformations"""
+    import pandas as pd
+    
+    # Get dataset data
+    data_docs = await db.dataset_data.find({"dataset_id": dataset_id}).to_list(100000)
+    if not data_docs:
+        return {"error": "No data found"}
+    
+    df = pd.DataFrame(data_docs)
+    original_ids = df['_id'].tolist() if '_id' in df.columns else []
+    df = df.drop(columns=["_id", "dataset_id"], errors='ignore')
+    
+    # Apply transformations (same logic as preview)
+    for transform in request.transformations:
+        if not transform.get('enabled', True):
+            continue
+            
+        t_type = transform.get('type')
+        config = transform.get('config', {})
+        
+        try:
+            if t_type == 'filter':
+                col = config.get('column')
+                op = config.get('operator')
+                val = config.get('value')
+                
+                if col not in df.columns:
+                    continue
+                    
+                if op == 'eq':
+                    df = df[df[col] == val]
+                elif op == 'neq':
+                    df = df[df[col] != val]
+                elif op == 'gt':
+                    df = df[pd.to_numeric(df[col], errors='coerce') > float(val)]
+                elif op == 'gte':
+                    df = df[pd.to_numeric(df[col], errors='coerce') >= float(val)]
+                elif op == 'lt':
+                    df = df[pd.to_numeric(df[col], errors='coerce') < float(val)]
+                elif op == 'lte':
+                    df = df[pd.to_numeric(df[col], errors='coerce') <= float(val)]
+                elif op == 'contains':
+                    df = df[df[col].astype(str).str.contains(str(val), na=False)]
+                elif op == 'starts_with':
+                    df = df[df[col].astype(str).str.startswith(str(val), na=False)]
+                elif op == 'ends_with':
+                    df = df[df[col].astype(str).str.endswith(str(val), na=False)]
+                elif op == 'is_null':
+                    df = df[df[col].isna()]
+                elif op == 'not_null':
+                    df = df[df[col].notna()]
+                    
+            elif t_type == 'rename':
+                col = config.get('column')
+                new_name = config.get('new_name')
+                if col in df.columns and new_name:
+                    df = df.rename(columns={col: new_name})
+                    
+            elif t_type == 'cast':
+                col = config.get('column')
+                new_type = config.get('new_type')
+                if col in df.columns:
+                    if new_type == 'int':
+                        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+                    elif new_type == 'float':
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                    elif new_type == 'string':
+                        df[col] = df[col].astype(str)
+                    elif new_type == 'date':
+                        df[col] = pd.to_datetime(df[col], errors='coerce')
+                    elif new_type == 'bool':
+                        df[col] = df[col].astype(bool)
+                        
+            elif t_type == 'fill_missing':
+                col = config.get('column')
+                method = config.get('method')
+                fill_val = config.get('value')
+                
+                if col in df.columns:
+                    if method == 'value':
+                        df[col] = df[col].fillna(fill_val)
+                    elif method == 'mean':
+                        df[col] = df[col].fillna(pd.to_numeric(df[col], errors='coerce').mean())
+                    elif method == 'median':
+                        df[col] = df[col].fillna(pd.to_numeric(df[col], errors='coerce').median())
+                    elif method == 'mode':
+                        mode_val = df[col].mode()
+                        df[col] = df[col].fillna(mode_val[0] if len(mode_val) > 0 else None)
+                    elif method == 'forward':
+                        df[col] = df[col].ffill()
+                    elif method == 'backward':
+                        df[col] = df[col].bfill()
+                    elif method == 'drop':
+                        df = df.dropna(subset=[col])
+                        
+            elif t_type == 'drop':
+                col = config.get('column')
+                if col in df.columns:
+                    df = df.drop(columns=[col])
+                    
+            elif t_type == 'sort':
+                col = config.get('column')
+                order = config.get('order', 'asc')
+                if col in df.columns:
+                    df = df.sort_values(by=col, ascending=(order == 'asc'))
+                    
+            elif t_type == 'calculate':
+                new_col = config.get('new_column')
+                formula = config.get('formula', '')
+                if new_col and formula:
+                    try:
+                        eval_formula = formula
+                        for col in df.columns:
+                            if col in formula:
+                                eval_formula = eval_formula.replace(col, f"df['{col}']")
+                        df[new_col] = eval(eval_formula)
+                    except Exception as e:
+                        print(f"Formula error: {e}")
+                        
+        except Exception as e:
+            print(f"Transform error: {e}")
+            continue
+    
+    # Delete old data
+    await db.dataset_data.delete_many({"dataset_id": dataset_id})
+    
+    # Insert transformed data
+    df = df.reset_index(drop=True)
+    records = df.to_dict('records')
+    for record in records:
+        record['dataset_id'] = dataset_id
+    
+    if records:
+        await db.dataset_data.insert_many(records)
+    
+    # Update dataset metadata
+    await db.datasets.update_one(
+        {"id": dataset_id},
+        {"$set": {
+            "columns": list(df.columns),
+            "row_count": len(df),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "status": "success",
+        "row_count": len(df),
+        "columns": list(df.columns)
+    }
+
+# =============================================================================
 # Dashboard Routes
 # =============================================================================
 
