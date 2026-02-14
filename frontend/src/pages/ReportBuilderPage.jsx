@@ -844,6 +844,8 @@ const ReportBuilderPage = () => {
               <ThemeSelector
                 selectedTheme={reportConfig.theme}
                 onSelect={(t) => setReportConfig({ ...reportConfig, theme: t })}
+                customColors={customColors}
+                onCustomColorsChange={setCustomColors}
               />
               <button
                 onClick={() => setShowSettings(!showSettings)}
