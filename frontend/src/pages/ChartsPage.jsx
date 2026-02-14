@@ -915,9 +915,257 @@ const ChartStudio = ({
                     <Switch checked={showArea} onCheckedChange={setShowArea} />
                   </div>
                 )}
+                
+                {/* Annotations Section */}
+                {(chartType === 'bar' || chartType === 'line' || chartType === 'area') && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-amber-500" />
+                        Annotations
+                      </Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAnnotationDialog(true)}
+                        data-testid="add-annotation-btn"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                    
+                    {annotations.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        No annotations yet. Add reference lines, labels, or highlight regions.
+                      </p>
+                    ) : (
+                      <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                        {annotations.map((ann) => (
+                          <div
+                            key={ann.id}
+                            className="flex items-center justify-between p-2 rounded-lg border bg-card"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: ann.color }}
+                              />
+                              <div>
+                                <p className="text-xs font-medium">{ann.label}</p>
+                                <p className="text-[10px] text-muted-foreground capitalize">
+                                  {ann.type} {ann.type === 'line' && `(${ann.axis === 'y' ? 'horizontal' : 'vertical'})`}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleDeleteAnnotation(ann.id)}
+                            >
+                              <Trash2 className="w-3 h-3 text-red-500" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </ScrollArea>
+
+          {/* Annotation Dialog */}
+          <Dialog open={showAnnotationDialog} onOpenChange={setShowAnnotationDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-amber-500" />
+                  Add Annotation
+                </DialogTitle>
+                <DialogDescription>
+                  Add reference lines, text labels, or highlight regions to your chart
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                {/* Annotation Type */}
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ANNOTATION_TYPES.map((type) => (
+                      <button
+                        key={type.value}
+                        onClick={() => setNewAnnotation({ ...newAnnotation, type: type.value })}
+                        className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-all ${
+                          newAnnotation.type === type.value
+                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                            : 'border-border hover:border-amber-300'
+                        }`}
+                      >
+                        <type.icon className="w-5 h-5" />
+                        <span className="text-xs font-medium">{type.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Label */}
+                <div className="space-y-2">
+                  <Label>Label</Label>
+                  <Input
+                    value={newAnnotation.label}
+                    onChange={(e) => setNewAnnotation({ ...newAnnotation, label: e.target.value })}
+                    placeholder="e.g., Target, Peak Sales, Promotion Period"
+                    data-testid="annotation-label-input"
+                  />
+                </div>
+                
+                {/* Reference Line Options */}
+                {newAnnotation.type === 'line' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Orientation</Label>
+                      <Select
+                        value={newAnnotation.axis}
+                        onValueChange={(v) => setNewAnnotation({ ...newAnnotation, axis: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="y">Horizontal (at Y value)</SelectItem>
+                          <SelectItem value="x">Vertical (at X category)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{newAnnotation.axis === 'y' ? 'Y Value' : 'X Category'}</Label>
+                      <Input
+                        value={newAnnotation.value}
+                        onChange={(e) => setNewAnnotation({ ...newAnnotation, value: newAnnotation.axis === 'y' ? Number(e.target.value) : e.target.value })}
+                        placeholder={newAnnotation.axis === 'y' ? 'e.g., 1000' : 'e.g., Category Name'}
+                        type={newAnnotation.axis === 'y' ? 'number' : 'text'}
+                        data-testid="annotation-value-input"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Line Style</Label>
+                      <Select
+                        value={newAnnotation.lineStyle}
+                        onValueChange={(v) => setNewAnnotation({ ...newAnnotation, lineStyle: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="solid">Solid</SelectItem>
+                          <SelectItem value="dashed">Dashed</SelectItem>
+                          <SelectItem value="dotted">Dotted</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+                
+                {/* Text Label Options */}
+                {newAnnotation.type === 'text' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>X Category</Label>
+                      <Select
+                        value={newAnnotation.xValue}
+                        onValueChange={(v) => setNewAnnotation({ ...newAnnotation, xValue: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select data point" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {previewData.map((d) => (
+                            <SelectItem key={d.name} value={d.name}>
+                              {d.name} ({d.value})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+                
+                {/* Region Options */}
+                {newAnnotation.type === 'region' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>Start X</Label>
+                        <Select
+                          value={newAnnotation.startX}
+                          onValueChange={(v) => setNewAnnotation({ ...newAnnotation, startX: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Start" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {previewData.map((d) => (
+                              <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>End X</Label>
+                        <Select
+                          value={newAnnotation.endX}
+                          onValueChange={(v) => setNewAnnotation({ ...newAnnotation, endX: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="End" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {previewData.map((d) => (
+                              <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {/* Color Picker */}
+                <div className="space-y-2">
+                  <Label>Color</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={newAnnotation.color}
+                      onChange={(e) => setNewAnnotation({ ...newAnnotation, color: e.target.value })}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <Input
+                      value={newAnnotation.color}
+                      onChange={(e) => setNewAnnotation({ ...newAnnotation, color: e.target.value })}
+                      className="flex-1 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowAnnotationDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddAnnotation}
+                  className="bg-amber-500 hover:bg-amber-600"
+                  data-testid="save-annotation-btn"
+                >
+                  Add Annotation
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Save Button */}
           <div className="p-4 border-t">
