@@ -1,0 +1,6 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#1a1a2e"/>
+  <rect x="50" y="50" width="700" height="300" fill="#252542" rx="8"/>
+  <text x="400" y="200" text-anchor="middle" fill="#8b5cf6" font-size="20" font-family="system-ui">dashboard builder</text>
+  <text x="400" y="240" text-anchor="middle" fill="#64748b" font-size="12" font-family="system-ui">Interactive screenshot - view live in app</text>
+</svg>
