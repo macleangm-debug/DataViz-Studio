@@ -92,6 +92,11 @@ function App() {
               <DatasetsPage />
             </ProtectedRoute>
           } />
+          <Route path="/datasets/:datasetId/transform" element={
+            <ProtectedRoute>
+              <DataTransformPage />
+            </ProtectedRoute>
+          } />
           
           {/* Visualization Routes */}
           <Route path="/dashboards" element={
