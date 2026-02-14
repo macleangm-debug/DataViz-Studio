@@ -1919,7 +1919,7 @@ async def export_report_pdf(request: ReportExportRequest):
         pdf.multi_cell(170, 4, methodology_text)
         pdf.set_y(meth_y + 28)
     
-    # ========== CHARTS SECTION - TWO COLUMN LAYOUT ==========
+    # ========== CHARTS SECTION - PROPER CARD LAYOUT ==========
     pdf.ln(5)
     
     # Section header
@@ -1929,27 +1929,26 @@ async def export_report_pdf(request: ReportExportRequest):
     pdf.set_font('Helvetica', 'B', 11)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(0, 6, 'Data Analysis & Visualizations', new_x='LMARGIN', new_y='NEXT')
-    pdf.ln(5)
+    pdf.ln(8)
     
     # Determine layout
     layout_style = request.layout_style or "auto"
     use_two_column = layout_style in ["auto", "two_column"] and len(all_chart_data) >= 2
     
     if use_two_column:
-        # Two-column layout
+        # Two-column card layout
         col_width = 88
-        col_gap = 8
+        col_gap = 6
+        card_height = 85
         chart_idx = 0
         
         while chart_idx < len(all_chart_data):
             row_start_y = pdf.get_y()
             
             # Check if we need a new page
-            if row_start_y > 180:
+            if row_start_y > 175:
                 pdf.add_page()
                 row_start_y = pdf.get_y() + 10
-            
-            row_max_height = 0
             
             for col in range(2):
                 if chart_idx >= len(all_chart_data):
@@ -1962,12 +1961,92 @@ async def export_report_pdf(request: ReportExportRequest):
                     chart_idx += 1
                     continue
                 
-                x_offset = 12 + col * (col_width + col_gap)
+                x_offset = 13 + col * (col_width + col_gap)
+                card_color = primary_color if col == 0 else accent_color
                 
-                # Chart card background
+                # ===== CARD CONTAINER =====
+                # Card shadow effect
+                pdf.set_fill_color(220, 220, 220)
+                pdf.rect(x_offset + 1, row_start_y + 1, col_width, card_height, 'F')
+                
+                # Card background (white)
                 pdf.set_fill_color(255, 255, 255)
+                pdf.rect(x_offset, row_start_y, col_width, card_height, 'F')
+                
+                # Card border
                 pdf.set_draw_color(230, 230, 230)
-                pdf.rect(x_offset, row_start_y, col_width, 75, 'DF')
+                pdf.rect(x_offset, row_start_y, col_width, card_height, 'D')
+                
+                # ===== CARD HEADER =====
+                pdf.set_fill_color(*card_color)
+                pdf.rect(x_offset, row_start_y, col_width, 12, 'F')
+                
+                # Title text
+                pdf.set_xy(x_offset + 4, row_start_y + 3)
+                pdf.set_font('Helvetica', 'B', 9)
+                pdf.set_text_color(255, 255, 255)
+                pdf.cell(col_width - 8, 6, chart_info['title'][:28])
+                
+                # ===== CHART AREA =====
+                chart_area_y = row_start_y + 15
+                chart_area_height = 40
+                chart_area_width = col_width - 10
+                
+                max_val = max(d.get('value', 0) for d in chart_data) or 1
+                total_val = sum(d.get('value', 0) for d in chart_data)
+                bar_count = min(len(chart_data), 5)
+                bar_width = (chart_area_width / bar_count) * 0.7
+                bar_gap_w = (chart_area_width / bar_count) * 0.3
+                
+                # Draw bars
+                bar_colors = [primary_color, accent_color, (100, 116, 139), (34, 197, 94), (249, 115, 22)]
+                
+                for i, d in enumerate(chart_data[:bar_count]):
+                    bar_h = (d.get('value', 0) / max_val) * chart_area_height
+                    bx = x_offset + 5 + i * (bar_width + bar_gap_w)
+                    by = chart_area_y + chart_area_height - bar_h
+                    
+                    pdf.set_fill_color(*bar_colors[i % len(bar_colors)])
+                    pdf.rect(bx, by, bar_width, bar_h, 'F')
+                    
+                    # Value on top
+                    pdf.set_font('Helvetica', 'B', 6)
+                    pdf.set_text_color(*bar_colors[i % len(bar_colors)])
+                    pdf.set_xy(bx, by - 4)
+                    val_str = f"{int(d.get('value', 0)):,}" if d.get('value', 0) >= 1000 else str(int(d.get('value', 0)))
+                    pdf.cell(bar_width, 3, val_str[:6], align='C')
+                    
+                    # Category label
+                    pdf.set_font('Helvetica', '', 5)
+                    pdf.set_text_color(100, 100, 100)
+                    pdf.set_xy(bx, chart_area_y + chart_area_height + 1)
+                    pdf.cell(bar_width, 3, str(d.get('name', ''))[:7], align='C')
+                
+                # ===== STATS LEGEND =====
+                legend_y = chart_area_y + chart_area_height + 8
+                legend_x = x_offset + 4
+                
+                for i, d in enumerate(chart_data[:3]):
+                    pct = int((d.get('value', 0) / total_val * 100)) if total_val > 0 else 0
+                    
+                    # Color dot
+                    pdf.set_fill_color(*bar_colors[i % len(bar_colors)])
+                    pdf.rect(legend_x, legend_y + i * 6 + 1, 3, 3, 'F')
+                    
+                    # Percentage
+                    pdf.set_xy(legend_x + 5, legend_y + i * 6)
+                    pdf.set_font('Helvetica', 'B', 7)
+                    pdf.set_text_color(*card_color)
+                    pdf.cell(12, 4, f"{pct}%")
+                    
+                    # Name
+                    pdf.set_font('Helvetica', '', 6)
+                    pdf.set_text_color(80, 80, 80)
+                    pdf.cell(col_width - 25, 4, str(d.get('name', ''))[:18])
+                
+                chart_idx += 1
+            
+            pdf.set_y(row_start_y + card_height + 8)
                 
                 # Chart title bar
                 pdf.set_fill_color(*primary_color if col == 0 else accent_color)
