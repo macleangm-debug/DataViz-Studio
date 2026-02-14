@@ -142,6 +142,18 @@ class DrillDownRequest(BaseModel):
     filter_value: str
     drill_to_field: Optional[str] = None
 
+class ReportSection(BaseModel):
+    id: str
+    type: str  # "intro", "methodology", "chart", "conclusion", "custom"
+    title: Optional[str] = None
+    content: Optional[str] = None  # For text sections
+    chart_id: Optional[str] = None  # For chart sections
+    position: Optional[dict] = None  # {x, y, w, h} for drag-drop layout
+
+class ReportLayout(BaseModel):
+    columns: int = 2  # 1, 2, or 3 column layout
+    sections: List[ReportSection] = []
+
 class ReportExportRequest(BaseModel):
     dashboard_id: Optional[str] = None
     chart_ids: Optional[List[str]] = None
@@ -150,10 +162,33 @@ class ReportExportRequest(BaseModel):
     subtitle: Optional[str] = None
     company_name: Optional[str] = None
     report_date: Optional[str] = None
-    header_color: Optional[str] = "#3B82F6"  # Blue default
-    accent_color: Optional[str] = "#EF4444"  # Red/coral accent
+    # Theme settings
+    theme: Optional[str] = "blue_coral"  # blue_coral, purple_teal, green_orange, slate_amber, custom
+    header_color: Optional[str] = None  # For custom theme
+    accent_color: Optional[str] = None  # For custom theme
+    # Section toggles
     include_summary_cards: bool = True
-    layout_style: str = "infographic"  # infographic, classic, minimal
+    include_intro: bool = True
+    include_methodology: bool = False
+    include_conclusions: bool = True
+    # Editable content
+    intro_text: Optional[str] = None
+    methodology_text: Optional[str] = None
+    conclusions_text: Optional[str] = None
+    # Layout
+    layout: Optional[ReportLayout] = None
+    layout_style: str = "auto"  # auto, single_column, two_column, grid
+
+
+# Preset color themes
+REPORT_THEMES = {
+    "blue_coral": {"primary": "#3B82F6", "accent": "#EF4444", "name": "Blue & Coral"},
+    "purple_teal": {"primary": "#8B5CF6", "accent": "#14B8A6", "name": "Purple & Teal"},
+    "green_orange": {"primary": "#10B981", "accent": "#F59E0B", "name": "Green & Orange"},
+    "slate_amber": {"primary": "#475569", "accent": "#F59E0B", "name": "Slate & Amber"},
+    "indigo_rose": {"primary": "#6366F1", "accent": "#F43F5E", "name": "Indigo & Rose"},
+    "cyan_pink": {"primary": "#06B6D4", "accent": "#EC4899", "name": "Cyan & Pink"},
+}
 
 
 # =============================================================================
