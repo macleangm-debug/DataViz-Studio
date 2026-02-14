@@ -185,6 +185,15 @@ export function DatasetsPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
+                onClick={() => navigate(`/datasets/${selectedDataset.id}/transform`)}
+                className="border-amber-200 hover:bg-amber-50"
+                data-testid="transform-btn"
+              >
+                <Wand2 className="w-4 h-4 mr-2 text-amber-500" />
+                Transform
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => handleExport('csv')}
                 data-testid="export-csv-btn"
               >
