@@ -1542,8 +1542,13 @@ async def delete_refresh_schedule(conn_id: str):
     return {"status": "removed"}
 
 # =============================================================================
-# PDF Report Export Routes
+# PDF Report Export Routes - Professional Infographic Style
 # =============================================================================
+
+def hex_to_rgb(hex_color: str) -> tuple:
+    """Convert hex color to RGB tuple"""
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 def _generate_chart_svg(chart_data: List[dict], chart_type: str, config: dict) -> str:
     """Generate SVG representation of a chart for PDF"""
