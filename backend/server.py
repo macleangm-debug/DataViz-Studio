@@ -921,17 +921,43 @@ async def delete_dataset(dataset_id: str):
 @api_router.post("/dashboards")
 async def create_dashboard(dashboard: DashboardCreate):
     """Create a new dashboard"""
+    dashboard_id = str(uuid.uuid4())
     dashboard_doc = {
-        "id": str(uuid.uuid4()),
+        "id": dashboard_id,
         "name": dashboard.name,
         "description": dashboard.description,
         "org_id": dashboard.org_id,
-        "widgets": dashboard.widgets,
+        "widgets": [],  # Store widget IDs only, actual widgets go to widgets collection
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     await db.dashboards.insert_one(dashboard_doc)
-    return {"id": dashboard_doc["id"], "name": dashboard_doc["name"]}
+    
+    # If widgets were provided (e.g., from a template), insert them into widgets collection
+    widget_ids = []
+    if dashboard.widgets:
+        for widget_data in dashboard.widgets:
+            widget_id = str(uuid.uuid4())
+            widget_doc = {
+                "id": widget_id,
+                "dashboard_id": dashboard_id,
+                "type": widget_data.get("type", "stat"),
+                "title": widget_data.get("title", "Widget"),
+                "dataset_id": widget_data.get("dataset_id"),
+                "config": widget_data.get("config", {}),
+                "position": widget_data.get("position", {"x": 0, "y": 0, "w": 3, "h": 2}),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.widgets.insert_one(widget_doc)
+            widget_ids.append(widget_id)
+        
+        # Update dashboard with widget IDs
+        await db.dashboards.update_one(
+            {"id": dashboard_id},
+            {"$set": {"widgets": widget_ids}}
+        )
+    
+    return {"id": dashboard_id, "name": dashboard_doc["name"], "widgets_created": len(widget_ids)}
 
 @api_router.get("/dashboards")
 async def list_dashboards(org_id: Optional[str] = None):
