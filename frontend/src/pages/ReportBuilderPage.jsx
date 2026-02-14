@@ -603,50 +603,89 @@ const ReportBuilderPage = () => {
     setSections(newSections);
   };
   
-  // Export PDF
+  // Reference for the report canvas
+  const reportCanvasRef = useRef(null);
+  
+  // Export PDF using client-side generation
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch(`${API_URL}/api/reports/export/pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: reportConfig.title,
-          subtitle: reportConfig.subtitle,
-          company_name: reportConfig.companyName,
-          theme: reportConfig.theme,
-          report_date: reportConfig.reportDate,
-          include_summary_cards: sections.some(s => s.type === 'stat_cards'),
-          include_intro: sections.some(s => s.type === 'intro'),
-          include_conclusions: sections.some(s => s.type === 'conclusion'),
-          include_data_tables: sections.some(s => s.type === 'data_table'),
-          intro_text: sections.find(s => s.type === 'intro')?.content || '',
-          conclusions_text: sections.find(s => s.type === 'conclusion')?.content || '',
-          layout_style: 'two_column',
-          layout: {
-            columns: 2,
-            sections: sections.map(s => ({
-              id: s.id,
-              type: s.type,
-              title: s.title,
-              content: s.content,
-              position: { w: s.width === 50 ? 1 : 2 }
-            }))
-          }
-        }),
+      // Get the report canvas element
+      const reportElement = reportCanvasRef.current;
+      if (!reportElement) {
+        toast.error('Report canvas not found');
+        setIsExporting(false);
+        return;
+      }
+      
+      // Temporarily switch to preview mode for clean export
+      const wasInEditMode = !isPreview;
+      if (wasInEditMode) {
+        setIsPreview(true);
+        // Wait for state to update and re-render
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      // Use html2canvas to capture the report
+      const canvas = await html2canvas(reportElement, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1200,
       });
       
-      const data = await response.json();
+      // Create PDF with A4 dimensions
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
       
-      if (data.pdf_base64) {
-        const link = document.createElement('a');
-        link.href = `data:application/pdf;base64,${data.pdf_base64}`;
-        link.download = data.filename || 'report.pdf';
-        link.click();
-        toast.success('Report exported successfully!');
-      } else if (data.error) {
-        toast.error(`Export failed: ${data.error}`);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculate dimensions to fit the canvas
+      const canvasAspect = canvas.width / canvas.height;
+      const pageAspect = pdfWidth / pdfHeight;
+      
+      let imgWidth, imgHeight;
+      
+      if (canvasAspect > pageAspect) {
+        // Canvas is wider - fit to width
+        imgWidth = pdfWidth - 20; // 10mm margins
+        imgHeight = imgWidth / canvasAspect;
+      } else {
+        // Canvas is taller - may need multiple pages
+        imgWidth = pdfWidth - 20;
+        imgHeight = imgWidth / canvasAspect;
       }
+      
+      // If content is taller than one page, scale to fit
+      if (imgHeight > pdfHeight - 20) {
+        const scaleFactor = (pdfHeight - 20) / imgHeight;
+        imgHeight = pdfHeight - 20;
+        imgWidth = imgWidth * scaleFactor;
+      }
+      
+      // Center horizontally
+      const xOffset = (pdfWidth - imgWidth) / 2;
+      
+      pdf.addImage(imgData, 'PNG', xOffset, 10, imgWidth, imgHeight);
+      
+      // Generate filename
+      const fileName = `${reportConfig.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Download the PDF
+      pdf.save(fileName);
+      
+      // Restore edit mode if needed
+      if (wasInEditMode) {
+        setIsPreview(false);
+      }
+      
+      toast.success('Report exported successfully!');
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Failed to export PDF. Please try again.');
