@@ -2049,7 +2049,8 @@ async def export_report_pdf(request: ReportExportRequest):
             pdf.set_y(row_start_y + card_height + 8)
     
     else:
-        # Single column / full width layout
+        # Single column / full width card layout
+        card_height = 80
         for idx, chart_info in enumerate(all_chart_data):
             chart_data = chart_info.get('data', [])
             if not chart_data:
@@ -2057,18 +2058,27 @@ async def export_report_pdf(request: ReportExportRequest):
             
             chart_y = pdf.get_y()
             
-            if chart_y > 190:
+            if chart_y > 180:
                 pdf.add_page()
                 chart_y = pdf.get_y() + 10
             
-            # Full width chart card
+            # ===== FULL WIDTH CARD =====
+            # Card shadow
+            pdf.set_fill_color(220, 220, 220)
+            pdf.rect(16, chart_y + 1, 180, card_height, 'F')
+            
+            # Card background
+            pdf.set_fill_color(255, 255, 255)
+            pdf.rect(15, chart_y, 180, card_height, 'F')
+            
+            # Card border
             pdf.set_draw_color(230, 230, 230)
-            pdf.rect(15, chart_y, 180, 70, 'D')
+            pdf.rect(15, chart_y, 180, card_height, 'D')
             
             # Title bar
             pdf.set_fill_color(*primary_color)
-            pdf.rect(15, chart_y, 180, 10, 'F')
-            pdf.set_xy(18, chart_y + 2)
+            pdf.rect(15, chart_y, 180, 12, 'F')
+            pdf.set_xy(20, chart_y + 3)
             pdf.set_font('Helvetica', 'B', 10)
             pdf.set_text_color(255, 255, 255)
             pdf.cell(0, 6, chart_info['title'])
@@ -2081,42 +2091,62 @@ async def export_report_pdf(request: ReportExportRequest):
             bar_area_width = 100
             bar_width = bar_area_width / bar_count * 0.7
             bar_gap_w = bar_area_width / bar_count * 0.3
-            chart_height = 45
-            chart_top_y = chart_y + 15
+            chart_height_inner = 48
+            chart_top_y = chart_y + 16
+            
+            bar_colors = [primary_color, accent_color, (100, 116, 139), (34, 197, 94), (249, 115, 22)]
             
             for i, d in enumerate(chart_data[:bar_count]):
-                bar_h = (d.get('value', 0) / max_val) * chart_height
+                bar_h = (d.get('value', 0) / max_val) * chart_height_inner
                 bx = bar_start_x + i * (bar_width + bar_gap_w)
-                by = chart_top_y + chart_height - bar_h
+                by = chart_top_y + chart_height_inner - bar_h
                 
-                color = primary_color if i % 2 == 0 else accent_color
-                pdf.set_fill_color(*color)
+                pdf.set_fill_color(*bar_colors[i % len(bar_colors)])
                 pdf.rect(bx, by, bar_width, bar_h, 'F')
                 
+                # Value on top
+                pdf.set_font('Helvetica', 'B', 6)
+                pdf.set_text_color(*bar_colors[i % len(bar_colors)])
+                pdf.set_xy(bx, by - 4)
+                pdf.cell(bar_width, 3, f"{int(d.get('value', 0)):,}"[:7], align='C')
+                
+                # Label below
                 pdf.set_font('Helvetica', '', 6)
                 pdf.set_text_color(80, 80, 80)
-                pdf.set_xy(bx, chart_top_y + chart_height + 1)
+                pdf.set_xy(bx, chart_top_y + chart_height_inner + 1)
                 pdf.cell(bar_width, 4, str(d.get('name', ''))[:8], align='C')
             
             # Stats panel on right
             stats_x = 140
             for i, d in enumerate(chart_data[:4]):
                 pct = int((d.get('value', 0) / total_val * 100)) if total_val > 0 else 0
-                sy = chart_top_y + i * 11
+                sy = chart_top_y + i * 12
                 
-                pdf.set_fill_color(*accent_color if i == 0 else (241, 245, 249))
-                pdf.rect(stats_x, sy, 50, 10, 'F')
+                # Stat row background
+                if i == 0:
+                    pdf.set_fill_color(*accent_color)
+                elif i == 1:
+                    pdf.set_fill_color(*primary_color)
+                else:
+                    pdf.set_fill_color(241, 245, 249)
+                pdf.rect(stats_x, sy, 52, 10, 'F')
                 
-                pdf.set_xy(stats_x + 2, sy + 2)
+                # Color indicator
+                pdf.set_fill_color(*bar_colors[i % len(bar_colors)])
+                pdf.rect(stats_x + 2, sy + 3, 3, 4, 'F')
+                
+                # Percentage
+                pdf.set_xy(stats_x + 7, sy + 2)
                 pdf.set_font('Helvetica', 'B', 8)
-                pdf.set_text_color(255, 255, 255) if i == 0 else pdf.set_text_color(*accent_color)
-                pdf.cell(15, 6, f"{pct}%")
+                pdf.set_text_color(255, 255, 255) if i < 2 else pdf.set_text_color(*accent_color)
+                pdf.cell(14, 6, f"{pct}%")
                 
+                # Name
                 pdf.set_font('Helvetica', '', 7)
-                pdf.set_text_color(255, 255, 255) if i == 0 else pdf.set_text_color(60, 60, 60)
-                pdf.cell(32, 6, str(d.get('name', ''))[:12])
+                pdf.set_text_color(255, 255, 255) if i < 2 else pdf.set_text_color(60, 60, 60)
+                pdf.cell(30, 6, str(d.get('name', ''))[:14])
             
-            pdf.set_y(chart_y + 75)
+            pdf.set_y(chart_y + card_height + 8)
     
     # ========== DATA TABLES (if enabled) ==========
     if request.include_data_tables:
