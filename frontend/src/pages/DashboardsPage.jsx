@@ -164,8 +164,12 @@ export function DashboardsPage() {
     }
   };
 
-  const handleCreate = async () => {
-    if (!newDashboard.name) {
+  const handleCreate = async (template = null) => {
+    const dashboardName = template ? `${template.name} Dashboard` : newDashboard.name;
+    const dashboardDesc = template ? template.description : newDashboard.description;
+    const dashboardWidgets = template ? template.widgets : [];
+    
+    if (!dashboardName) {
       toast.error('Please enter a name');
       return;
     }
@@ -173,17 +177,30 @@ export function DashboardsPage() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.post(`${API_URL}/api/dashboards`, {
-        ...newDashboard,
+        name: dashboardName,
+        description: dashboardDesc,
         org_id: currentOrg?.id,
-        widgets: []
+        widgets: dashboardWidgets
       }, { headers });
       
-      toast.success('Dashboard created');
+      toast.success(template ? `Created dashboard from "${template.name}" template` : 'Dashboard created');
       setShowCreateDialog(false);
+      setShowTemplatesDialog(false);
+      setSelectedTemplate(null);
       setNewDashboard({ name: '', description: '' });
       navigate(`/dashboards/${response.data.id}`);
     } catch (error) {
       toast.error('Failed to create dashboard');
+    }
+  };
+
+  const handleCreateFromTemplate = (template) => {
+    setSelectedTemplate(template);
+    if (template.id === 'blank') {
+      setShowTemplatesDialog(false);
+      setShowCreateDialog(true);
+    } else {
+      handleCreate(template);
     }
   };
 
