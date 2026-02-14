@@ -1628,16 +1628,15 @@ def _generate_chart_svg(chart_data: List[dict], chart_type: str, config: dict) -
 
 @api_router.post("/reports/export/pdf")
 async def export_report_pdf(request: ReportExportRequest):
-    """Export dashboard or charts as PDF report"""
+    """Export dashboard or charts as professional infographic-style PDF report"""
     charts_to_export = []
+    all_chart_data = []
     
     if request.dashboard_id:
-        # Get dashboard and its widgets
         dashboard = await db.dashboards.find_one({"id": request.dashboard_id}, {"_id": 0})
         if not dashboard:
             raise HTTPException(status_code=404, detail="Dashboard not found")
         
-        # Get chart widgets
         widgets = await db.widgets.find(
             {"dashboard_id": request.dashboard_id, "type": "chart"},
             {"_id": 0}
@@ -1667,123 +1666,318 @@ async def export_report_pdf(request: ReportExportRequest):
     if not charts_to_export:
         raise HTTPException(status_code=400, detail="No charts to export")
     
-    # Build PDF using fpdf2
-    report_title = request.title or "DataViz Studio Report"
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    
-    class DataVizPDF(FPDF):
-        def header(self):
-            self.set_font('Helvetica', 'B', 16)
-            self.set_text_color(124, 58, 237)  # Violet
-            self.cell(0, 10, 'DataViz Studio Report', align='C', new_x='LMARGIN', new_y='NEXT')
-            self.set_font('Helvetica', '', 10)
-            self.set_text_color(148, 163, 184)
-            self.cell(0, 5, f'Generated: {timestamp}', align='C', new_x='LMARGIN', new_y='NEXT')
-            self.ln(5)
-            
-        def footer(self):
-            self.set_y(-15)
-            self.set_font('Helvetica', 'I', 8)
-            self.set_text_color(148, 163, 184)
-            self.cell(0, 10, f'Page {self.page_no()} | DataViz Studio', align='C')
-    
-    pdf = DataVizPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-    
-    # Report Title
-    pdf.set_font('Helvetica', 'B', 20)
-    pdf.set_text_color(30, 41, 59)
-    pdf.cell(0, 15, report_title, align='C', new_x='LMARGIN', new_y='NEXT')
-    pdf.ln(10)
-    
-    for idx, chart_info in enumerate(charts_to_export):
-        # Get chart data
+    # Fetch all chart data first
+    for chart_info in charts_to_export:
         data = await db.dataset_data.find(
             {"dataset_id": chart_info["dataset_id"]},
             {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
         ).to_list(1000)
         
-        if not data:
+        if data:
+            df = pd.DataFrame(data)
+            config = chart_info.get("config", {})
+            x_field = config.get("x_field")
+            y_field = config.get("y_field")
+            
+            chart_data = []
+            if x_field and x_field in df.columns:
+                if y_field and y_field in df.columns:
+                    grouped = df.groupby(x_field)[y_field].sum().reset_index()
+                    grouped.columns = ["name", "value"]
+                else:
+                    grouped = df.groupby(x_field).size().reset_index()
+                    grouped.columns = ["name", "value"]
+                chart_data = grouped.sort_values('value', ascending=False).head(10).to_dict(orient='records')
+            
+            all_chart_data.append({
+                **chart_info,
+                "data": chart_data,
+                "total": sum(d.get('value', 0) for d in chart_data)
+            })
+    
+    # Colors from request or defaults (blue/coral theme like reference)
+    primary_color = hex_to_rgb(request.header_color or "#3B82F6")
+    accent_color = hex_to_rgb(request.accent_color or "#EF4444")
+    
+    # Report settings
+    report_title = request.title or "Survey Results Infographics"
+    report_subtitle = request.subtitle or ""
+    company_name = request.company_name or "DataViz Studio"
+    report_date = request.report_date or datetime.now(timezone.utc).strftime("%B %d, %Y")
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    
+    class InfographicPDF(FPDF):
+        def __init__(self, primary, accent, title, subtitle, company, date):
+            super().__init__()
+            self.primary = primary
+            self.accent = accent
+            self.report_title = title
+            self.report_subtitle = subtitle
+            self.company = company
+            self.report_date = date
+            
+        def header(self):
+            # Top color bar
+            self.set_fill_color(*self.primary)
+            self.rect(0, 0, 210, 8, 'F')
+            
+            # Small accent bar
+            self.set_fill_color(*self.accent)
+            self.rect(0, 8, 60, 2, 'F')
+            
+        def footer(self):
+            self.set_y(-20)
+            # Footer bar
+            self.set_fill_color(*self.primary)
+            self.rect(0, 282, 210, 15, 'F')
+            self.set_y(-12)
+            self.set_font('Helvetica', '', 9)
+            self.set_text_color(255, 255, 255)
+            self.cell(0, 10, f'{self.company}  |  Page {self.page_no()}  |  {self.report_date}', align='C')
+    
+    pdf = InfographicPDF(primary_color, accent_color, report_title, report_subtitle, company_name, report_date)
+    pdf.set_auto_page_break(auto=True, margin=25)
+    pdf.add_page()
+    
+    # ========== TITLE SECTION ==========
+    pdf.set_y(20)
+    pdf.set_font('Helvetica', 'B', 28)
+    pdf.set_text_color(*primary_color)
+    pdf.cell(0, 12, report_title, align='C', new_x='LMARGIN', new_y='NEXT')
+    
+    if report_subtitle:
+        pdf.set_font('Helvetica', '', 12)
+        pdf.set_text_color(100, 116, 139)
+        pdf.cell(0, 8, report_subtitle, align='C', new_x='LMARGIN', new_y='NEXT')
+    
+    pdf.ln(10)
+    
+    # ========== SUMMARY STAT CARDS ==========
+    if request.include_summary_cards and all_chart_data:
+        card_y = pdf.get_y()
+        card_width = 42
+        card_height = 35
+        card_gap = 5
+        start_x = 15
+        
+        # Calculate summary stats from all data
+        total_value = sum(c.get('total', 0) for c in all_chart_data)
+        num_categories = sum(len(c.get('data', [])) for c in all_chart_data)
+        
+        # Create up to 4 stat cards
+        stat_cards = []
+        for i, chart in enumerate(all_chart_data[:4]):
+            if chart.get('data'):
+                top_item = chart['data'][0]
+                percentage = int((top_item.get('value', 0) / chart.get('total', 1)) * 100) if chart.get('total', 0) > 0 else 0
+                stat_cards.append({
+                    'value': f"{percentage}%",
+                    'label': str(top_item.get('name', 'Top'))[:15],
+                    'sublabel': chart.get('title', '')[:20],
+                    'color': primary_color if i % 2 == 0 else accent_color
+                })
+        
+        # Draw stat cards
+        for i, card in enumerate(stat_cards):
+            x = start_x + i * (card_width + card_gap)
+            
+            # Card background
+            pdf.set_fill_color(*card['color'])
+            pdf.rect(x, card_y, card_width, card_height, 'F')
+            
+            # Rounded corner effect (small white triangles)
+            pdf.set_fill_color(255, 255, 255)
+            
+            # Large percentage
+            pdf.set_xy(x, card_y + 5)
+            pdf.set_font('Helvetica', 'B', 18)
+            pdf.set_text_color(255, 255, 255)
+            pdf.cell(card_width, 10, card['value'], align='C')
+            
+            # Label
+            pdf.set_xy(x, card_y + 18)
+            pdf.set_font('Helvetica', '', 8)
+            pdf.cell(card_width, 5, card['label'], align='C')
+            
+            # Sublabel
+            pdf.set_xy(x, card_y + 24)
+            pdf.set_font('Helvetica', '', 6)
+            pdf.set_text_color(230, 230, 250)
+            pdf.cell(card_width, 5, card['sublabel'], align='C')
+        
+        pdf.set_y(card_y + card_height + 15)
+    
+    # ========== CHARTS SECTION ==========
+    for idx, chart_info in enumerate(all_chart_data):
+        chart_data = chart_info.get('data', [])
+        if not chart_data:
             continue
         
-        df = pd.DataFrame(data)
-        config = chart_info.get("config", {})
-        x_field = config.get("x_field")
-        y_field = config.get("y_field")
+        chart_y = pdf.get_y()
         
-        # Aggregate data for chart
-        chart_data = []
-        if x_field and x_field in df.columns:
-            if y_field and y_field in df.columns:
-                grouped = df.groupby(x_field)[y_field].sum().reset_index()
-                grouped.columns = ["name", "value"]
-            else:
-                grouped = df.groupby(x_field).size().reset_index()
-                grouped.columns = ["name", "value"]
-            chart_data = grouped.sort_values('value', ascending=False).head(10).to_dict(orient='records')
+        # Check if we need a new page
+        if chart_y > 200:
+            pdf.add_page()
+            chart_y = pdf.get_y()
         
-        # Chart Title
+        # Section divider line
+        pdf.set_draw_color(*primary_color)
+        pdf.set_line_width(0.5)
+        pdf.line(15, chart_y, 195, chart_y)
+        pdf.ln(5)
+        
+        # Chart title with accent
+        title_y = pdf.get_y()
+        pdf.set_fill_color(*primary_color)
+        pdf.rect(15, title_y, 4, 10, 'F')
+        
+        pdf.set_xy(22, title_y)
         pdf.set_font('Helvetica', 'B', 14)
-        pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 10, f"{idx + 1}. {chart_info['title']}", new_x='LMARGIN', new_y='NEXT')
+        pdf.set_text_color(30, 41, 59)
+        pdf.cell(0, 10, chart_info['title'], new_x='LMARGIN', new_y='NEXT')
         pdf.ln(3)
         
-        # Draw simple bar chart
-        if chart_data:
-            chart_x = 20
-            chart_y = pdf.get_y()
-            chart_width = 170
-            chart_height = 60
-            
-            max_val = max(d.get('value', 0) for d in chart_data) or 1
-            bar_width = chart_width / len(chart_data) * 0.7
-            gap = chart_width / len(chart_data) * 0.3
-            
-            # Draw bars
-            colors = [(139, 92, 246), (6, 182, 212), (16, 185, 129), (245, 158, 11), (239, 68, 68)]
-            
-            for i, d in enumerate(chart_data):
-                bar_height = (d.get('value', 0) / max_val) * chart_height
-                x = chart_x + i * (bar_width + gap)
-                y = chart_y + chart_height - bar_height
-                
-                color = colors[i % len(colors)]
-                pdf.set_fill_color(*color)
-                pdf.rect(x, y, bar_width, bar_height, style='F')
-                
-                # Label
-                pdf.set_font('Helvetica', '', 7)
-                pdf.set_text_color(100, 116, 139)
-                label = str(d.get('name', ''))[:10]
-                pdf.set_xy(x, chart_y + chart_height + 2)
-                pdf.cell(bar_width, 4, label, align='C')
-            
-            pdf.set_y(chart_y + chart_height + 15)
+        # Calculate chart dimensions
+        chart_start_y = pdf.get_y()
+        chart_width = 85
+        chart_height = 55
         
-        # Add data table if requested
-        if request.include_data_tables and chart_data:
-            pdf.ln(5)
-            pdf.set_font('Helvetica', 'B', 10)
-            pdf.set_fill_color(124, 58, 237)
+        max_val = max(d.get('value', 0) for d in chart_data) or 1
+        total_val = sum(d.get('value', 0) for d in chart_data)
+        
+        # ===== LEFT SIDE: BAR CHART =====
+        bar_x = 20
+        bar_count = min(len(chart_data), 6)
+        bar_total_width = 70
+        bar_width = bar_total_width / bar_count * 0.7
+        bar_gap = bar_total_width / bar_count * 0.3
+        
+        # Y-axis labels
+        pdf.set_font('Helvetica', '', 7)
+        pdf.set_text_color(150, 150, 150)
+        for i, val in enumerate([max_val, max_val/2, 0]):
+            y_pos = chart_start_y + (i * chart_height / 2)
+            pdf.set_xy(10, y_pos - 2)
+            pdf.cell(8, 4, f"{int(val):,}", align='R')
+        
+        # Grid lines
+        pdf.set_draw_color(230, 230, 230)
+        pdf.set_line_width(0.2)
+        for i in range(3):
+            y_line = chart_start_y + (i * chart_height / 2)
+            pdf.line(bar_x, y_line, bar_x + bar_total_width, y_line)
+        
+        # Draw bars with alternating colors
+        bar_colors = [primary_color, accent_color, (100, 116, 139), primary_color, accent_color]
+        
+        for i, d in enumerate(chart_data[:bar_count]):
+            bar_height = (d.get('value', 0) / max_val) * chart_height
+            x = bar_x + i * (bar_width + bar_gap)
+            y = chart_start_y + chart_height - bar_height
+            
+            color = bar_colors[i % len(bar_colors)]
+            pdf.set_fill_color(*color)
+            pdf.rect(x, y, bar_width, bar_height, 'F')
+            
+            # Value on top of bar
+            pdf.set_font('Helvetica', 'B', 7)
+            pdf.set_text_color(*color)
+            pdf.set_xy(x, y - 5)
+            pdf.cell(bar_width, 4, f"{int(d.get('value', 0)):,}", align='C')
+            
+            # Category label below
+            pdf.set_font('Helvetica', '', 6)
+            pdf.set_text_color(80, 80, 80)
+            pdf.set_xy(x, chart_start_y + chart_height + 2)
+            pdf.cell(bar_width, 4, str(d.get('name', ''))[:8], align='C')
+        
+        # ===== RIGHT SIDE: CALLOUT BOXES =====
+        callout_x = 110
+        callout_width = 80
+        callout_item_height = 12
+        
+        # Top items as callout cards
+        for i, d in enumerate(chart_data[:4]):
+            cy = chart_start_y + i * (callout_item_height + 3)
+            percentage = int((d.get('value', 0) / total_val * 100)) if total_val > 0 else 0
+            
+            # Callout background color
+            if i == 0:
+                pdf.set_fill_color(*accent_color)
+                text_color = (255, 255, 255)
+            elif i == 1:
+                pdf.set_fill_color(*primary_color)
+                text_color = (255, 255, 255)
+            else:
+                pdf.set_fill_color(241, 245, 249)
+                text_color = (30, 41, 59)
+            
+            # Draw callout box
+            pdf.rect(callout_x, cy, callout_width, callout_item_height, 'F')
+            
+            # Percentage badge
+            badge_width = 18
+            pdf.set_fill_color(*accent_color if i > 1 else (255, 255, 255))
+            pdf.rect(callout_x + 2, cy + 2, badge_width, callout_item_height - 4, 'F')
+            
+            pdf.set_font('Helvetica', 'B', 9)
+            if i > 1:
+                pdf.set_text_color(255, 255, 255)
+            else:
+                pdf.set_text_color(*accent_color if i == 0 else primary_color)
+            pdf.set_xy(callout_x + 2, cy + 2)
+            pdf.cell(badge_width, callout_item_height - 4, f"{percentage}%", align='C')
+            
+            # Category name
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.set_text_color(*text_color)
+            pdf.set_xy(callout_x + badge_width + 5, cy + 2)
+            pdf.cell(callout_width - badge_width - 8, 5, str(d.get('name', ''))[:20])
+            
+            # Value
+            pdf.set_font('Helvetica', '', 6)
+            pdf.set_xy(callout_x + badge_width + 5, cy + 7)
+            pdf.cell(callout_width - badge_width - 8, 4, f"Value: {d.get('value', 0):,.0f}")
+        
+        pdf.set_y(chart_start_y + chart_height + 15)
+        
+        # ===== DATA TABLE (if enabled) =====
+        if request.include_data_tables:
+            table_y = pdf.get_y()
+            
+            if table_y > 230:
+                pdf.add_page()
+                table_y = pdf.get_y()
+            
+            # Table header
+            pdf.set_fill_color(*primary_color)
             pdf.set_text_color(255, 255, 255)
-            pdf.cell(95, 8, 'Category', border=1, fill=True, align='C')
-            pdf.cell(95, 8, 'Value', border=1, fill=True, align='C', new_x='LMARGIN', new_y='NEXT')
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.cell(90, 8, '  Category', border=0, fill=True)
+            pdf.cell(45, 8, 'Value', border=0, fill=True, align='R')
+            pdf.cell(45, 8, 'Percentage  ', border=0, fill=True, align='R', new_x='LMARGIN', new_y='NEXT')
             
-            pdf.set_font('Helvetica', '', 9)
-            pdf.set_text_color(30, 41, 59)
+            # Table rows
+            pdf.set_font('Helvetica', '', 8)
+            for i, row in enumerate(chart_data[:8]):
+                pct = int((row.get('value', 0) / total_val * 100)) if total_val > 0 else 0
+                
+                if i % 2 == 0:
+                    pdf.set_fill_color(248, 250, 252)
+                else:
+                    pdf.set_fill_color(255, 255, 255)
+                
+                pdf.set_text_color(30, 41, 59)
+                pdf.cell(90, 7, f"  {str(row.get('name', ''))[:35]}", border=0, fill=True)
+                pdf.cell(45, 7, f"{row.get('value', 0):,.0f}", border=0, fill=True, align='R')
+                
+                # Percentage with mini bar
+                pdf.set_text_color(*accent_color)
+                pdf.cell(45, 7, f"{pct}%  ", border=0, fill=True, align='R', new_x='LMARGIN', new_y='NEXT')
             
-            for i, row in enumerate(chart_data):
-                fill = i % 2 == 0
-                pdf.set_fill_color(248, 250, 252) if fill else pdf.set_fill_color(255, 255, 255)
-                pdf.cell(95, 7, str(row.get('name', ''))[:40], border=1, fill=fill)
-                pdf.cell(95, 7, f"{row.get('value', 0):,.2f}", border=1, fill=fill, align='R', new_x='LMARGIN', new_y='NEXT')
+            pdf.ln(8)
         
-        pdf.ln(10)
-        
-        # Add new page if needed
-        if pdf.get_y() > 240:
-            pdf.add_page()
+        pdf.ln(5)
     
     # Generate PDF bytes
     try:
@@ -1801,11 +1995,20 @@ async def export_report_pdf(request: ReportExportRequest):
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
 @api_router.get("/reports/export/pdf/{dashboard_id}")
-async def export_dashboard_pdf(dashboard_id: str, include_tables: bool = True):
+async def export_dashboard_pdf(
+    dashboard_id: str, 
+    include_tables: bool = True,
+    title: Optional[str] = None,
+    subtitle: Optional[str] = None,
+    company_name: Optional[str] = None
+):
     """Quick endpoint to export a dashboard as PDF"""
     return await export_report_pdf(ReportExportRequest(
         dashboard_id=dashboard_id,
-        include_data_tables=include_tables
+        include_data_tables=include_tables,
+        title=title,
+        subtitle=subtitle,
+        company_name=company_name
     ))
 
 # =============================================================================
