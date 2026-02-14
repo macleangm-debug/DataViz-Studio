@@ -97,9 +97,94 @@ const COLOR_THEMES = {
   mono: ['#6b7280', '#9ca3af', '#d1d5db', '#4b5563', '#374151'],
 };
 
+// Generate annotation config for ECharts markLine and markPoint
+const generateAnnotationConfig = (annotations = [], data = []) => {
+  const markLine = { data: [], silent: false, symbol: ['none', 'none'] };
+  const markPoint = { data: [], symbol: 'pin', symbolSize: 40 };
+  const markArea = { data: [] };
+  
+  annotations.forEach(annotation => {
+    if (annotation.type === 'line') {
+      if (annotation.axis === 'y') {
+        // Horizontal reference line
+        markLine.data.push({
+          name: annotation.label || '',
+          yAxis: annotation.value,
+          label: { 
+            show: true, 
+            formatter: annotation.label || `${annotation.value}`,
+            position: 'end',
+            color: annotation.color || '#f59e0b'
+          },
+          lineStyle: { 
+            color: annotation.color || '#f59e0b', 
+            type: annotation.lineStyle || 'dashed',
+            width: 2
+          }
+        });
+      } else {
+        // Vertical reference line (at x-axis point)
+        markLine.data.push({
+          name: annotation.label || '',
+          xAxis: annotation.value,
+          label: { 
+            show: true, 
+            formatter: annotation.label || annotation.value,
+            position: 'end',
+            color: annotation.color || '#f59e0b'
+          },
+          lineStyle: { 
+            color: annotation.color || '#f59e0b', 
+            type: annotation.lineStyle || 'dashed',
+            width: 2
+          }
+        });
+      }
+    } else if (annotation.type === 'text') {
+      // Find the data point index for the x value
+      const dataIndex = data.findIndex(d => d.name === annotation.xValue);
+      if (dataIndex >= 0) {
+        markPoint.data.push({
+          name: annotation.label,
+          coord: [annotation.xValue, annotation.yValue || data[dataIndex]?.value],
+          value: annotation.label,
+          label: {
+            show: true,
+            formatter: annotation.label,
+            color: '#fff',
+            fontSize: 10
+          },
+          itemStyle: { color: annotation.color || '#8b5cf6' }
+        });
+      }
+    } else if (annotation.type === 'region') {
+      markArea.data.push([
+        { 
+          name: annotation.label || '',
+          xAxis: annotation.startX,
+          itemStyle: { 
+            color: (annotation.color || '#8b5cf6') + '30' // Add transparency
+          },
+          label: {
+            show: true,
+            position: 'insideTop',
+            formatter: annotation.label || '',
+            color: annotation.color || '#8b5cf6'
+          }
+        },
+        { xAxis: annotation.endX }
+      ]);
+    }
+  });
+  
+  return { markLine, markPoint, markArea };
+};
+
 // Generate ECharts options based on chart type and data
 const generateChartOptions = (chartType, data, config, theme = 'violet') => {
   const colors = COLOR_THEMES[theme] || COLOR_THEMES.violet;
+  const annotations = config?.annotations || [];
+  const annotationConfig = generateAnnotationConfig(annotations, data);
   
   const baseOptions = {
     color: colors,
