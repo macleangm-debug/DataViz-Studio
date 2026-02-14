@@ -31,7 +31,9 @@ import {
   Brain,
   FileText,
   Share2,
-  Plug
+  Plug,
+  HelpCircle,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
