@@ -6,7 +6,7 @@
     "infrastructure_issues": [
       {
         "issue": "External URL mapping not working correctly",
-        "details": "Public URL https://analytics-hub-329.preview.emergentagent.com redirects to Emergent homepage instead of DataViz Studio app",
+        "details": "Public URL https://layout-customizer-1.preview.emergentagent.com redirects to Emergent homepage instead of DataViz Studio app",
         "impact": "External users cannot access the application, but backend services work perfectly locally",
         "fix_priority": "MEDIUM",
         "workaround": "Backend APIs accessible via localhost:8001, frontend via localhost:3000"
