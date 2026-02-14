@@ -248,7 +248,8 @@ Exports:
 ## Test Status
 - **Backend Tests:** 100% (24/24 passed)
 - **Frontend Tests:** 100% (all features verified)
-- **Report Builder Tests:** 93% (26/28 passed - all UI features working)
+- **Report Builder Tests:** 100% (27/27 passed - all UI features including custom color picker)
+- **Dashboard Templates Tests:** 100% (all 6 templates verified)
 - **Test Credentials:** test@dataviz.com / test123
 - **Test Data:** Sales Data (14 rows), 5 columns
 
@@ -256,6 +257,7 @@ Exports:
 - External preview URL occasionally has platform caching issues
 - PostgreSQL/MySQL connections require actual database servers to test fully
 - Report Builder uses sample data for preview (not connected to live database charts)
+- Template widgets store in backend but may not render on dashboard detail page (MEDIUM priority)
 
 ## Next Recommended Task
-Consider implementing **Custom Color Picker** for the Report Builder to allow users to define their own color themes beyond the 6 presets.
+Consider implementing **Scheduled Report Delivery via Email** using SendGrid or Resend integration to allow users to schedule automatic report exports.
