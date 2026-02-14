@@ -30,7 +30,11 @@ import {
   FileDown,
   ZoomIn,
   Filter,
-  RefreshCw
+  RefreshCw,
+  MessageSquare,
+  Minus,
+  Type,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -39,6 +43,7 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Slider } from '../components/ui/slider';
 import { Switch } from '../components/ui/switch';
+import { Textarea } from '../components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -61,6 +66,13 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Annotation types for charts
+const ANNOTATION_TYPES = [
+  { value: 'text', label: 'Text Label', icon: Type, description: 'Add a text note at a specific point' },
+  { value: 'line', label: 'Reference Line', icon: Minus, description: 'Draw a horizontal or vertical line' },
+  { value: 'region', label: 'Highlight Region', icon: Layers, description: 'Shade an area on the chart' },
+];
 
 // Extended chart types with ECharts support
 const CHART_TYPES = [
