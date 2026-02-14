@@ -173,6 +173,18 @@ function App() {
               <SettingsPage />
             </ProtectedRoute>
           } />
+          
+          {/* Help Center */}
+          <Route path="/help" element={
+            <ProtectedRoute>
+              <HelpCenterPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/help/:articleId" element={
+            <ProtectedRoute>
+              <HelpCenterPage />
+            </ProtectedRoute>
+          } />
 
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
