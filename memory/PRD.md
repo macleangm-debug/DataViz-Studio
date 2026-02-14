@@ -228,10 +228,11 @@ Exports:
 - [x] PDF report export
 - [x] Chart drill-down
 - [x] **Report Builder with Infographic Layout** (Feb 14, 2026)
+- [x] **Custom Color Picker for Report Builder** (Feb 14, 2026)
+- [x] **Dashboard Templates** (Feb 14, 2026)
 
 ### P2 (Medium Priority)
-- [ ] Custom Color Picker for Report Builder themes
-- [ ] Dashboard templates
+- [ ] Template widget rendering on dashboard detail page (widgets store correctly but may not render)
 - [ ] Chart annotations
 - [ ] Data transformation/cleaning tools
 - [ ] Scheduled report delivery via email
