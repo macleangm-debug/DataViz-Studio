@@ -501,15 +501,17 @@ export function DataTransformPage() {
               <CardContent>
                 <ScrollArea className="h-[200px]">
                   <div className="space-y-2">
-                    {columns.map((col) => {
-                      const stats = columnStats[col] || {};
+                    {columns.map((col, idx) => {
+                      const colName = typeof col === 'object' ? col.name : col;
+                      const colType = typeof col === 'object' ? col.type : 'unknown';
+                      const stats = columnStats[colName] || {};
                       return (
-                        <div key={col} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                        <div key={colName || idx} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-xs">
-                              {stats.dtype || 'unknown'}
+                              {stats.dtype || colType || 'unknown'}
                             </Badge>
-                            <span className="text-sm font-medium">{col}</span>
+                            <span className="text-sm font-medium">{colName}</span>
                           </div>
                           {stats.missing > 0 && (
                             <Badge variant="destructive" className="text-xs">
