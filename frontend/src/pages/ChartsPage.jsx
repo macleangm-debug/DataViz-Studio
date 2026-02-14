@@ -643,8 +643,40 @@ const ChartStudio = ({
         donut: isDonut,
         smooth: isSmooth,
         showArea,
+        annotations,
       }
     });
+  };
+  
+  // Add new annotation
+  const handleAddAnnotation = () => {
+    if (!newAnnotation.label) {
+      toast.error('Please enter a label for the annotation');
+      return;
+    }
+    
+    const annotation = { ...newAnnotation, id: Date.now().toString() };
+    setAnnotations([...annotations, annotation]);
+    setShowAnnotationDialog(false);
+    setNewAnnotation({
+      type: 'line',
+      label: '',
+      axis: 'y',
+      value: '',
+      color: '#f59e0b',
+      lineStyle: 'dashed',
+      xValue: '',
+      yValue: '',
+      startX: '',
+      endX: ''
+    });
+    toast.success('Annotation added');
+  };
+  
+  // Delete annotation
+  const handleDeleteAnnotation = (id) => {
+    setAnnotations(annotations.filter(a => a.id !== id));
+    toast.success('Annotation removed');
   };
 
   const config = {
@@ -653,6 +685,7 @@ const ChartStudio = ({
     donut: isDonut,
     smooth: isSmooth,
     showArea,
+    annotations,
   };
 
   return (
