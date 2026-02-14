@@ -147,6 +147,13 @@ class ReportExportRequest(BaseModel):
     chart_ids: Optional[List[str]] = None
     include_data_tables: bool = True
     title: Optional[str] = None
+    subtitle: Optional[str] = None
+    company_name: Optional[str] = None
+    report_date: Optional[str] = None
+    header_color: Optional[str] = "#3B82F6"  # Blue default
+    accent_color: Optional[str] = "#EF4444"  # Red/coral accent
+    include_summary_cards: bool = True
+    layout_style: str = "infographic"  # infographic, classic, minimal
 
 
 # =============================================================================
