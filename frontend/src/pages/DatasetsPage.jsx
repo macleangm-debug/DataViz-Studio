@@ -12,7 +12,8 @@ import {
   Plus,
   FileSpreadsheet,
   Columns,
-  Rows3
+  Rows3,
+  Wand2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
