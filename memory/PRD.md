@@ -378,6 +378,67 @@ Exports:
   - PUT /api/templates/{id} - Update custom template
   - DELETE /api/templates/{id} - Delete custom template
 
+## Session 12 (Feb 15, 2026) - Comprehensive Help Center
+- [x] **Help Center Page** (`/help` route)
+  - Hero section with search bar
+  - Stats showing 24 articles, 10 FAQs, AI Assistant
+  - 5 tabbed navigation (Overview, FAQ, Troubleshooting, Shortcuts, What's New)
+
+- [x] **Overview Tab**
+  - 6 category cards with gradient colors and icons:
+    - Getting Started (green) - Learn basics
+    - Dashboards (violet) - Create/customize dashboards
+    - Charts & Visualization (blue) - Create visualizations
+    - Report Builder (rose) - Build reports
+    - Data Management (amber) - Import/transform data
+    - Widget Types (teal) - Explore widgets
+  - Popular Articles list (5 quick links)
+  - Quick Actions: Chat with AI, Browse FAQs, Troubleshooting
+
+- [x] **FAQ Tab**
+  - 10 FAQs covering templates, PDF export, chart types, annotations, etc.
+  - Accordion expand/collapse animation
+  - Search filtering for questions and answers
+
+- [x] **Troubleshooting Tab**
+  - 6 common issues with severity badges (low/medium/high)
+  - Problem descriptions with solutions
+  - Issues covered: widgets not loading, PDF blanks, upload fails, etc.
+
+- [x] **Shortcuts Tab**
+  - 10 keyboard shortcuts organized by category
+  - Categories: General, Reports, Navigation, Help
+  - Visual key badges (Ctrl, Shift, Enter, etc.)
+
+- [x] **What's New Tab**
+  - 4 version entries with release dates
+  - Feature lists for each version
+  - Version badges (major/minor) with star highlights
+
+- [x] **AI-Powered Assistant**
+  - Floating chat button (data-testid: help-assistant-btn)
+  - Chat panel with GPT-4o integration via emergentintegrations
+  - Welcome message with capabilities list
+  - 8 suggested questions
+  - Conversation history context
+  - Copy, feedback (thumbs up/down), reset buttons
+  - Fallback responses when AI unavailable
+
+- [x] **Backend API**
+  - `POST /api/help/assistant` - AI chat endpoint
+  - Uses DATAVIZ_SYSTEM_PROMPT with full feature documentation
+  - Handles conversation_history for context
+  - Returns {response, status: "success"|"fallback"}
+
+**Files Created/Modified:**
+- `/app/frontend/src/pages/HelpCenterPage.jsx` - Complete Help Center with all tabs
+- `/app/frontend/src/components/HelpAssistant.jsx` - AI chat component
+- `/app/backend/server.py` - Added /api/help/assistant endpoint with DATAVIZ_SYSTEM_PROMPT
+- `/app/backend/.env` - Added EMERGENT_LLM_KEY for AI integration
+
+**Test Status:** 100% (11 backend, 15 frontend tests passed)
+
 ## Next Recommended Task
 - **Scheduled Report Delivery via Email** using SendGrid or Resend integration
 - **Backend Refactoring** - Modularize `server.py` routes into separate files
+- **Individual Widget Resizing** in Report Builder (drag handles)
