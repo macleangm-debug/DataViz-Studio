@@ -1640,6 +1640,121 @@ async def delete_template(template_id: str, request: Request):
     return {"message": "Template deleted"}
 
 # =============================================================================
+# Help Center / AI Assistant Routes
+# =============================================================================
+
+class HelpAssistantRequest(BaseModel):
+    message: str
+    conversation_history: List[Dict[str, str]] = []
+
+DATAVIZ_SYSTEM_PROMPT = """You are the DataViz Studio AI Assistant, a helpful expert on the DataViz Studio platform.
+
+DataViz Studio is a comprehensive data visualization and analytics platform with these key features:
+
+## Core Features:
+1. **Dashboard Builder**: Create interactive dashboards with 12+ widget types (stat cards, charts, tables, gauges, progress bars, maps, funnels, heatmaps, scorecards, lists, timelines, sparklines)
+2. **Dashboard Templates**: 10 preset templates (Sales, Marketing, Customer, Financial, Operations, HR, Product, Executive, IT, Project) plus custom templates users can create
+3. **Report Builder**: WYSIWYG editor for infographic-style reports with:
+   - Drag-and-drop section reordering
+   - Width controls (25%, 50%, 75%, 100%) for side-by-side layouts
+   - Text/notes blocks with editable titles
+   - 6 color themes plus custom colors
+   - Multi-page PDF export with headers and footers
+4. **Chart Types**: Bar, Line, Area, Pie, Donut, Scatter, Radar, Heatmap, Funnel
+5. **Chart Annotations**: Add notes, reference lines, and highlights to charts
+6. **Data Transformation**: Filter rows, rename columns, change data types, calculate fields, fill missing values
+
+## Key Workflows:
+- **Creating dashboards**: Go to Dashboards → Create New → Choose template or blank
+- **Using templates**: Click "Templates" button → Browse presets or custom → Click to create
+- **Saving as template**: Open dashboard → Click "Save as Template" → Enter name
+- **Building reports**: Go to Report Builder → Add sections → Customize → Export PDF
+- **Uploading data**: Data page → Upload → CSV, Excel, or JSON files (up to 50MB)
+- **Transforming data**: Datasets → Click transform icon → Apply operations → Save
+
+## Tips:
+- Use keyboard shortcut Ctrl+S to save, Ctrl+P for PDF export
+- Dashboards auto-save as you edit
+- Custom templates appear in "My Templates" tab
+- PDF export captures all sections with smart page breaks
+
+Be concise, friendly, and accurate. If asked about features not in DataViz Studio, politely say so. Format responses with markdown for readability when helpful."""
+
+@api_router.post("/help/assistant")
+async def help_assistant_chat(request_data: HelpAssistantRequest, request: Request):
+    """AI-powered Help Assistant for DataViz Studio"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="AI Assistant not configured")
+        
+        # Create unique session for conversation continuity
+        session_id = f"help-{uuid.uuid4()}"
+        
+        # Initialize chat with DataViz-specific system prompt
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=session_id,
+            system_message=DATAVIZ_SYSTEM_PROMPT
+        ).with_model("openai", "gpt-4o")
+        
+        # Build context from conversation history
+        context_messages = []
+        for msg in request_data.conversation_history[-6:]:  # Keep last 6 messages for context
+            if msg.get("role") == "user":
+                context_messages.append(f"User: {msg.get('content', '')}")
+            elif msg.get("role") == "assistant":
+                context_messages.append(f"Assistant: {msg.get('content', '')}")
+        
+        # Create the message with context
+        full_message = request_data.message
+        if context_messages:
+            context_str = "\n".join(context_messages)
+            full_message = f"Previous conversation:\n{context_str}\n\nUser's new question: {request_data.message}"
+        
+        user_message = UserMessage(text=full_message)
+        
+        # Get response from AI
+        response = await chat.send_message(user_message)
+        
+        return {"response": response, "status": "success"}
+        
+    except ImportError as e:
+        logger.error(f"Import error in help assistant: {e}")
+        # Fallback to rule-based responses if LLM not available
+        return {"response": get_fallback_response(request_data.message), "status": "fallback"}
+    except Exception as e:
+        logger.error(f"Help assistant error: {e}")
+        return {"response": get_fallback_response(request_data.message), "status": "fallback"}
+
+def get_fallback_response(message: str) -> str:
+    """Provide helpful responses when AI is unavailable"""
+    message_lower = message.lower()
+    
+    if "template" in message_lower:
+        return "To use templates: Go to Dashboards → Click 'Templates' → Choose from 10 preset templates (Sales, Marketing, etc.) or your custom templates → Click to create a new dashboard instantly."
+    elif "pdf" in message_lower or "export" in message_lower:
+        return "To export to PDF: Open Report Builder → Add your sections and charts → Click 'Export PDF' in the top-right → Your multi-page PDF with headers and footers will download automatically."
+    elif "chart" in message_lower:
+        return "DataViz Studio supports 9 chart types: Bar, Line, Area, Pie, Donut, Scatter, Radar, Heatmap, and Funnel. Each can be customized with colors and annotations."
+    elif "dashboard" in message_lower:
+        return "To create a dashboard: Go to Dashboards → Create New → Choose a template or start blank → Add widgets like stat cards, charts, tables, gauges, and more."
+    elif "upload" in message_lower or "data" in message_lower:
+        return "To upload data: Go to Data page → Click 'Upload Data' → Select a CSV, Excel (.xlsx), or JSON file (up to 50MB) → Your data is ready for visualization."
+    elif "widget" in message_lower:
+        return "DataViz Studio supports 12 widget types: Stat cards, Charts, Tables, Gauges, Progress bars, Maps, Funnels, Heatmaps, Scorecards, Lists, Timelines, and Sparklines."
+    elif "transform" in message_lower:
+        return "To transform data: Go to Datasets → Click the transform icon (wand) → Apply operations like filter, rename, calculate fields → Preview and save changes."
+    elif "resize" in message_lower or "width" in message_lower:
+        return "In Report Builder, each section has a width dropdown (25%, 50%, 75%, 100%). Use these to create side-by-side layouts like 50%/50% or 25%/75%."
+    elif "annotation" in message_lower:
+        return "To add chart annotations: Open the chart editor → Go to 'Annotations' tab → Add text labels, reference lines, or highlight regions with custom colors and styles."
+    else:
+        return "I'm here to help with DataViz Studio! You can ask about:\n• Creating dashboards and using templates\n• Building and exporting reports to PDF\n• Chart types and annotations\n• Uploading and transforming data\n• Widget types and customization\n\nWhat would you like to know?"
+
+# =============================================================================
 # Widget Routes
 # =============================================================================
 
