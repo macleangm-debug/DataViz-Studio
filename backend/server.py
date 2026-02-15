@@ -1534,7 +1534,7 @@ async def list_templates(request: Request):
         cursor = db.templates.find({"user_id": user_id}, {"_id": 0})
         custom_templates = await cursor.to_list(length=100)
         return {"preset": PRESET_TEMPLATES, "custom": custom_templates}
-    except:
+    except Exception:
         # If not authenticated, return only presets
         return {"preset": PRESET_TEMPLATES, "custom": []}
 
