@@ -274,24 +274,43 @@ const ReportSection = ({ section, index, theme, isPreview, onUpdate, onDelete, o
       
       case 'intro':
       case 'conclusion':
+      case 'text_block':
         return (
           <div className="p-4">
             {!isPreview ? (
-              <textarea
-                value={section.content || ''}
-                onChange={(e) => onUpdate(index, { ...section, content: e.target.value })}
-                placeholder={section.type === 'intro' 
-                  ? 'Enter your introduction text here. Describe the purpose and scope of this report...'
-                  : 'Enter your conclusion text here. Summarize the key findings and recommendations...'
-                }
-                className="w-full h-24 p-3 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                data-testid={`section-content-${index}`}
-              />
+              <>
+                {section.type === 'text_block' && (
+                  <input
+                    type="text"
+                    value={section.title || 'Notes'}
+                    onChange={(e) => onUpdate(index, { ...section, title: e.target.value })}
+                    className="w-full mb-2 p-2 border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Section title..."
+                    data-testid={`section-title-input-${index}`}
+                  />
+                )}
+                <textarea
+                  value={section.content || ''}
+                  onChange={(e) => onUpdate(index, { ...section, content: e.target.value })}
+                  placeholder={
+                    section.type === 'intro' 
+                      ? 'Enter your introduction text here. Describe the purpose and scope of this report...'
+                      : section.type === 'conclusion'
+                      ? 'Enter your conclusion text here. Summarize the key findings and recommendations...'
+                      : 'Add your notes, observations, or comments here...'
+                  }
+                  className="w-full h-24 p-3 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  data-testid={`section-content-${index}`}
+                />
+              </>
             ) : (
-              <p className="text-gray-700 text-sm leading-relaxed">
-                {section.content || (section.type === 'intro' 
-                  ? 'This report provides a comprehensive analysis of the data collected...'
-                  : 'In conclusion, the analysis reveals significant insights that can guide strategic decisions...'
+              <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                {section.content || (
+                  section.type === 'intro' 
+                    ? 'This report provides a comprehensive analysis of the data collected...'
+                    : section.type === 'conclusion'
+                    ? 'In conclusion, the analysis reveals significant insights that can guide strategic decisions...'
+                    : 'Notes and observations...'
                 )}
               </p>
             )}
