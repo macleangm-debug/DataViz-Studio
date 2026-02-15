@@ -1,1211 +1,931 @@
+/**
+ * HelpCenter Component - Main Help Center Page for DataViz Studio
+ */
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, Book, HelpCircle, MessageCircle, Keyboard, 
-  ChevronRight, ChevronDown, ExternalLink, Play, Star,
-  BarChart3, PieChart, Table, FileText, Download, Upload,
-  Layout, Palette, Settings, Database, Sparkles, Zap,
-  AlertCircle, CheckCircle, Info, ArrowRight, Clock,
-  TrendingUp, Users, Target, Activity, Layers, X,
-  Monitor, MousePointer, Grid, Columns, Image
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Search, HelpCircle, ChevronRight, ChevronDown, Users, BarChart3, Settings, 
+  Zap, AlertCircle, ThumbsUp, ThumbsDown, Keyboard, ArrowLeft, ClipboardList, 
+  Sparkles, Layout, FileText, Database, Layers, Play, PieChart, LineChart,
+  Upload, Table, Gauge, Map
 } from 'lucide-react';
+import { HelpAssistant } from '../components/HelpAssistant';
 import { DashboardLayout } from '../layouts/DashboardLayout';
-import HelpAssistant, { HelpAssistantButton } from '../components/HelpAssistant';
-import { useAuthStore } from '../store';
 
-// =============================================================================
-// SCREENSHOT/IMAGE DATA - Using preview URLs
-// =============================================================================
+function cn(...classes) { return classes.filter(Boolean).join(' '); }
 
-const SCREENSHOT_BASE = process.env.REACT_APP_BACKEND_URL || '';
-
-// Helper to get screenshot path
-const getScreenshotUrl = (path) => `/images/docs/${path}`;
-
-// =============================================================================
-// DETAILED ARTICLE CONTENT WITH SCREENSHOTS
-// =============================================================================
-
-const DETAILED_ARTICLES = {
-  'getting-started': {
-    title: 'Getting Started with DataViz Studio',
-    icon: Play,
-    color: 'from-green-500 to-emerald-600',
-    sections: [
-      {
-        title: 'Welcome to DataViz Studio',
-        content: `DataViz Studio is your complete data visualization and analytics platform. 
-        Transform raw data into beautiful, interactive dashboards and reports.`,
-        features: [
-          'Upload CSV, Excel, or JSON files instantly',
-          'Create interactive dashboards with 12+ widget types',
-          'Build professional infographic-style reports',
-          'Get AI-powered insights from your data',
-          'Export to PDF with one click'
-        ],
-        screenshot: {
-          description: 'Main Dashboard showing Quick Actions, Statistics, and Recent Datasets',
-          elements: [
-            { label: 'Stats Cards', position: 'top', desc: 'View counts of Datasets, Dashboards, Charts, and Data Sources' },
-            { label: 'Quick Actions', position: 'middle', desc: 'Upload Data, Create Dashboard, New Chart, AI Insights' },
-            { label: 'Recent Datasets', position: 'bottom', desc: 'Your recently uploaded data files' }
-          ]
-        }
-      },
-      {
-        title: 'Navigating the Interface',
-        content: `The sidebar on the left provides access to all major features. The top bar includes global search and user settings.`,
-        features: [
-          'Home - Your personalized dashboard overview',
-          'Data - Upload files, manage datasets, connect databases',
-          'Visualize - Create dashboards and charts',
-          'Analyze - AI Insights and statistics',
-          'Export - Report Builder, share, and export options',
-          'Settings - Profile, appearance, and preferences'
-        ],
-        screenshot: {
-          description: 'Sidebar Navigation with all main sections',
-          elements: [
-            { label: 'Sidebar', position: 'left', desc: 'Main navigation menu' },
-            { label: 'Search Bar', position: 'top', desc: 'Search datasets, dashboards, and charts' },
-            { label: 'User Menu', position: 'top-right', desc: 'Profile and logout options' }
-          ]
-        }
-      }
+// ========== DATAVIZ STUDIO HELP CATEGORIES ==========
+const HELP_CATEGORIES = [
+  {
+    id: 'getting-started', title: 'Getting Started', icon: Play,
+    description: 'Learn the basics of DataViz Studio', color: 'emerald',
+    articles: [
+      { id: 'welcome', title: 'Welcome to DataViz Studio', readTime: '3 min', popular: true },
+      { id: 'dashboard-overview', title: 'Dashboard Overview', readTime: '4 min' },
+      { id: 'navigation', title: 'Navigating the Interface', readTime: '3 min' },
     ]
   },
-  'dashboards': {
-    title: 'Creating & Managing Dashboards',
-    icon: Layout,
-    color: 'from-violet-500 to-purple-600',
-    sections: [
-      {
-        title: 'Dashboard Templates',
-        content: `Start quickly with one of 10 pre-built dashboard templates, or create your own from scratch.`,
-        features: [
-          'Sales Dashboard - Revenue, orders, and sales metrics',
-          'Marketing Analytics - Campaign performance and traffic',
-          'Customer Insights - Behavior and demographics',
-          'Financial Summary - P&L, cash flow, budgets',
-          'Operations Monitor - Inventory and logistics',
-          'Executive Summary - High-level KPIs',
-          '...and 4 more specialized templates'
-        ],
-        steps: [
-          'Go to Visualize > Dashboards',
-          'Click the "Templates" button in the top-right',
-          'Browse Preset templates or your My Templates',
-          'Click any template to create a new dashboard instantly'
-        ],
-        screenshot: {
-          description: 'Templates Dialog showing 10 preset templates with category filter',
-          elements: [
-            { label: 'Preset Tab', position: 'top', desc: '10 pre-built templates' },
-            { label: 'My Templates Tab', position: 'top', desc: 'Your saved custom templates' },
-            { label: 'Category Filter', position: 'top-right', desc: 'Filter by sales, marketing, finance, etc.' },
-            { label: 'Template Cards', position: 'center', desc: 'Click to create dashboard' }
-          ]
-        }
-      },
-      {
-        title: 'Adding Widgets',
-        content: `Dashboards are built from widgets - individual components that display your data.`,
-        features: [
-          'Stat Cards - Show key metrics with icons',
-          'Charts - Bar, Line, Pie, Area, and more',
-          'Tables - Display tabular data',
-          'Gauges - Show progress towards goals',
-          'Maps - Geographic visualizations',
-          'Sparklines - Mini inline charts'
-        ],
-        steps: [
-          'Open a dashboard or create a new one',
-          'Click "Add Widget" button',
-          'Select widget type from the panel',
-          'Configure the widget settings',
-          'Drag to position and resize as needed'
-        ],
-        screenshot: {
-          description: 'Dashboard Builder with widgets and Add Widget panel',
-          elements: [
-            { label: 'Add Widget Button', position: 'top-right', desc: 'Opens widget selection panel' },
-            { label: 'Widget Grid', position: 'center', desc: 'Drag to reposition widgets' },
-            { label: 'Widget Settings', position: 'right', desc: 'Configure data source and appearance' }
-          ]
-        }
-      },
-      {
-        title: 'Saving as Template',
-        content: `Save any dashboard as a reusable template for future use or sharing with your team.`,
-        steps: [
-          'Open the dashboard you want to save',
-          'Click "Save as Template" in the header',
-          'Enter a name and optional description',
-          'Click Save',
-          'Find your template in the "My Templates" tab'
-        ],
-        screenshot: {
-          description: 'Save as Template button and dialog',
-          elements: [
-            { label: 'Save as Template Button', position: 'top', desc: 'In dashboard header' },
-            { label: 'Template Name Input', position: 'center', desc: 'Name your template' },
-            { label: 'Save Button', position: 'bottom', desc: 'Creates the template' }
-          ]
-        }
-      }
+  {
+    id: 'dashboards', title: 'Dashboards', icon: Layout,
+    description: 'Create and customize interactive dashboards', color: 'violet',
+    articles: [
+      { id: 'create-dashboard', title: 'Creating Your First Dashboard', readTime: '5 min', popular: true },
+      { id: 'templates', title: 'Using Dashboard Templates', readTime: '4 min' },
+      { id: 'widgets', title: 'Adding & Configuring Widgets', readTime: '6 min' },
+      { id: 'save-template', title: 'Saving as Custom Template', readTime: '3 min' },
     ]
   },
-  'charts': {
-    title: 'Charts & Visualizations',
-    icon: BarChart3,
-    color: 'from-blue-500 to-cyan-600',
-    sections: [
-      {
-        title: 'Chart Types',
-        content: `DataViz Studio supports 9 different chart types to visualize your data.`,
-        features: [
-          'Bar Chart - Compare values across categories',
-          'Line Chart - Show trends over time',
-          'Area Chart - Visualize cumulative totals',
-          'Pie Chart - Show proportions of a whole',
-          'Donut Chart - Like pie with center space',
-          'Scatter Plot - Show correlation between variables',
-          'Radar Chart - Multi-dimensional comparison',
-          'Heatmap - Density and intensity visualization',
-          'Funnel Chart - Stage-based conversion'
-        ],
-        screenshot: {
-          description: 'Chart Studio with chart type selector and live preview',
-          elements: [
-            { label: 'Chart Type Selector', position: 'left', desc: '9 chart types to choose from' },
-            { label: 'Data Configuration', position: 'left', desc: 'Select X and Y axis fields' },
-            { label: 'Live Preview', position: 'center', desc: 'See chart update in real-time' },
-            { label: 'Style Options', position: 'right', desc: 'Colors, labels, and formatting' }
-          ]
-        }
-      },
-      {
-        title: 'Adding Annotations',
-        content: `Annotations help highlight important data points, trends, or reference values on your charts.`,
-        features: [
-          'Text Labels - Add notes to specific points',
-          'Reference Lines - Horizontal or vertical markers',
-          'Highlight Regions - Shade areas of interest'
-        ],
-        steps: [
-          'Open Chart Studio or edit an existing chart',
-          'Scroll to the Annotations section',
-          'Click "Add Annotation"',
-          'Choose annotation type (Text, Line, or Region)',
-          'Configure position, label, and color',
-          'Toggle visibility on/off as needed'
-        ],
-        screenshot: {
-          description: 'Annotations panel showing different annotation types',
-          elements: [
-            { label: 'Add Annotation Button', position: 'top', desc: 'Opens annotation dialog' },
-            { label: 'Annotation List', position: 'center', desc: 'Manage existing annotations' },
-            { label: 'Toggle Switch', position: 'right', desc: 'Show/hide each annotation' }
-          ]
-        }
-      }
+  {
+    id: 'charts', title: 'Charts & Visualization', icon: BarChart3,
+    description: 'Create stunning data visualizations', color: 'blue',
+    articles: [
+      { id: 'chart-types', title: 'Chart Types Guide', readTime: '8 min', popular: true },
+      { id: 'chart-studio', title: 'Using Chart Studio', readTime: '6 min' },
+      { id: 'annotations', title: 'Adding Annotations', readTime: '4 min' },
+      { id: 'chart-styling', title: 'Styling & Customization', readTime: '5 min' },
     ]
   },
-  'reports': {
-    title: 'Report Builder',
-    icon: FileText,
-    color: 'from-rose-500 to-pink-600',
-    sections: [
-      {
-        title: 'Report Builder Overview',
-        content: `Create professional, infographic-style reports with the WYSIWYG Report Builder.`,
-        features: [
-          'Customizable header with title, subtitle, and company name',
-          '6 built-in color themes plus custom colors',
-          'Drag-and-drop section reordering',
-          'Side-by-side layouts (25%, 50%, 75%, 100% widths)',
-          'Real-time preview panel',
-          'Multi-page PDF export'
-        ],
-        screenshot: {
-          description: 'Report Builder interface with header settings and preview',
-          elements: [
-            { label: 'Header Settings', position: 'top', desc: 'Title, subtitle, company name' },
-            { label: 'Theme Selector', position: 'top-right', desc: 'Choose color theme' },
-            { label: 'Preview Panel', position: 'center', desc: 'Live report preview' },
-            { label: 'Export PDF Button', position: 'top-right', desc: 'Generate PDF download' }
-          ]
-        }
-      },
-      {
-        title: 'Adding Sections',
-        content: `Reports are built from sections. Add any combination of charts, stats, tables, and text.`,
-        features: [
-          'Key Metrics - 4 stat cards with icons',
-          'Bar Chart - Vertical bar visualization',
-          'Pie Chart - Circular proportions',
-          'Line Chart - Trend visualization',
-          'Data Table - Tabular information',
-          'Text/Notes - Custom text blocks',
-          'Introduction/Conclusion - Narrative sections'
-        ],
-        steps: [
-          'Scroll to the "Add Section" panel',
-          'Click on the section type you want',
-          'The section appears in the preview',
-          'Use arrows to reorder sections',
-          'Use the trash icon to remove sections'
-        ],
-        screenshot: {
-          description: 'Add Section panel with 7 section types',
-          elements: [
-            { label: 'Section Type Buttons', position: 'center', desc: 'Click to add section' },
-            { label: 'Reorder Arrows', position: 'right', desc: 'Move sections up/down' },
-            { label: 'Delete Button', position: 'right', desc: 'Remove section' }
-          ]
-        }
-      },
-      {
-        title: 'Section Resizing',
-        content: `Create flexible layouts by adjusting the width of each section.`,
-        features: [
-          '100% - Full width section',
-          '75% - Three-quarter width',
-          '50% - Half width (side-by-side layouts)',
-          '25% - Quarter width (4 columns)'
-        ],
-        steps: [
-          'Find the width dropdown in the section header',
-          'Click to open width options',
-          'Select desired width (25%, 50%, 75%, 100%)',
-          'Sections automatically flow side-by-side'
-        ],
-        screenshot: {
-          description: 'Width dropdown showing resize options',
-          elements: [
-            { label: 'Width Dropdown', position: 'top-right', desc: 'Per-section width control' },
-            { label: 'Side-by-side Preview', position: 'center', desc: 'Two 50% sections together' }
-          ]
-        }
-      },
-      {
-        title: 'PDF Export',
-        content: `Export your report as a professional PDF document with automatic page breaks.`,
-        features: [
-          'Automatic page breaks at section boundaries',
-          'Continuation header on pages 2+',
-          'Footer with DataViz Studio branding',
-          'Page numbers on all pages',
-          'High-quality 2x resolution'
-        ],
-        steps: [
-          'Click "Preview" to see final layout',
-          'Click "Export PDF" button',
-          'Wait for generation (few seconds)',
-          'PDF downloads automatically',
-          'Filename includes timestamp'
-        ],
-        screenshot: {
-          description: 'Export PDF button and multi-page preview',
-          elements: [
-            { label: 'Export PDF Button', position: 'top-right', desc: 'Generates and downloads PDF' },
-            { label: 'Preview Mode', position: 'center', desc: 'Shows exact PDF layout' }
-          ]
-        }
-      }
+  {
+    id: 'reports', title: 'Report Builder', icon: FileText,
+    description: 'Build professional infographic reports', color: 'rose',
+    articles: [
+      { id: 'report-overview', title: 'Report Builder Overview', readTime: '5 min', popular: true },
+      { id: 'add-sections', title: 'Adding Report Sections', readTime: '4 min' },
+      { id: 'themes', title: 'Themes & Custom Colors', readTime: '3 min' },
+      { id: 'pdf-export', title: 'Exporting to PDF', readTime: '3 min' },
     ]
   },
-  'data': {
-    title: 'Data Management',
-    icon: Database,
-    color: 'from-amber-500 to-orange-600',
-    sections: [
-      {
-        title: 'Uploading Data',
-        content: `Import your data from CSV, Excel, or JSON files in seconds.`,
-        features: [
-          'Drag-and-drop file upload',
-          'CSV with automatic delimiter detection',
-          'Excel (.xlsx, .xls) with sheet selection',
-          'JSON with nested structure parsing',
-          'Up to 50MB file size'
-        ],
-        steps: [
-          'Go to Data > Upload Data',
-          'Drag your file or click "Browse Files"',
-          'Wait for upload and parsing',
-          'Preview your data structure',
-          'Dataset is now ready for visualization'
-        ],
-        screenshot: {
-          description: 'Upload Data page with drag-drop zone',
-          elements: [
-            { label: 'Drop Zone', position: 'center', desc: 'Drag files here' },
-            { label: 'Browse Button', position: 'center', desc: 'Open file picker' },
-            { label: 'Supported Formats', position: 'bottom', desc: 'CSV, Excel, JSON icons' }
-          ]
-        }
-      },
-      {
-        title: 'Data Transformation',
-        content: `Clean and prepare your data with built-in transformation tools.`,
-        features: [
-          'Filter Rows - Remove rows based on conditions',
-          'Rename Column - Change column names',
-          'Change Type - Convert data types',
-          'Calculate Field - Create computed columns',
-          'Fill Missing - Handle null values',
-          'Drop Column - Remove unwanted columns',
-          'Sort Data - Order by any column'
-        ],
-        steps: [
-          'Go to Data > Datasets',
-          'Click the transform icon (wand) on a dataset',
-          'Add transformation steps',
-          'Preview changes before applying',
-          'Click "Save Changes" to apply permanently'
-        ],
-        screenshot: {
-          description: 'Data Transform page with transformation steps',
-          elements: [
-            { label: 'Transformation Panel', position: 'left', desc: 'Add and configure steps' },
-            { label: 'Data Preview', position: 'right', desc: 'See changes in real-time' },
-            { label: 'Save Changes Button', position: 'bottom', desc: 'Apply transformations' }
-          ]
-        }
-      },
-      {
-        title: 'Database Connections',
-        content: `Connect directly to MongoDB, PostgreSQL, or MySQL databases for real-time data.`,
-        features: [
-          'MongoDB - Connect to document databases',
-          'PostgreSQL - Enterprise SQL databases',
-          'MySQL - Popular relational databases',
-          'Test connection before saving',
-          'Scheduled data refresh',
-          'Schema introspection'
-        ],
-        steps: [
-          'Go to Data > Database Connections',
-          'Click "Add Connection"',
-          'Select database type',
-          'Enter connection details (host, port, credentials)',
-          'Click "Test Connection" to verify',
-          'Click "Save" to create connection',
-          'Use "Sync" to pull data'
-        ],
-        screenshot: {
-          description: 'Database Connections page with MongoDB, PostgreSQL, MySQL options',
-          elements: [
-            { label: 'Database Type Cards', position: 'top', desc: 'MongoDB, PostgreSQL, MySQL' },
-            { label: 'Add Connection Button', position: 'top-right', desc: 'Opens connection dialog' },
-            { label: 'Connection List', position: 'center', desc: 'Manage existing connections' }
-          ]
-        }
-      }
+  {
+    id: 'data', title: 'Data Management', icon: Database,
+    description: 'Import, transform, and manage your data', color: 'amber',
+    articles: [
+      { id: 'upload-data', title: 'Uploading Data Files', readTime: '4 min' },
+      { id: 'data-transform', title: 'Data Transformation Tools', readTime: '7 min' },
+      { id: 'database-connections', title: 'Connecting to Databases', readTime: '6 min' },
+      { id: 'scheduled-refresh', title: 'Scheduled Data Refresh', readTime: '4 min' },
     ]
   },
-  'widgets': {
-    title: 'Widget Types Reference',
-    icon: Layers,
-    color: 'from-teal-500 to-green-600',
-    sections: [
-      {
-        title: 'Stat Cards',
-        content: `Display key metrics prominently with icons and trend indicators.`,
-        features: [
-          'Large number display',
-          'Customizable icon and color',
-          'Trend arrow (up/down)',
-          'Percentage change indicator',
-          'Description text'
-        ],
-        screenshot: {
-          description: 'Stat card widget showing revenue with trend',
-          elements: [
-            { label: 'Value', position: 'center', desc: 'Large metric number' },
-            { label: 'Icon', position: 'top-left', desc: 'Visual indicator' },
-            { label: 'Trend', position: 'bottom', desc: 'Change percentage' }
-          ]
-        }
-      },
-      {
-        title: 'Gauges & Progress',
-        content: `Visualize progress towards goals with circular gauges and progress bars.`,
-        features: [
-          'Circular gauge with needle',
-          'Progress bar (horizontal)',
-          'Custom min/max values',
-          'Color zones (green/yellow/red)',
-          'Target markers'
-        ],
-        screenshot: {
-          description: 'Gauge widget showing completion percentage',
-          elements: [
-            { label: 'Gauge Arc', position: 'center', desc: 'Visual progress indicator' },
-            { label: 'Value Display', position: 'center', desc: 'Current value' },
-            { label: 'Target Line', position: 'right', desc: 'Goal marker' }
-          ]
-        }
-      },
-      {
-        title: 'Tables & Lists',
-        content: `Display structured data in sortable, filterable tables.`,
-        features: [
-          'Column sorting (click header)',
-          'Pagination for large datasets',
-          'Column visibility toggle',
-          'Row selection',
-          'Export table data'
-        ],
-        screenshot: {
-          description: 'Data table widget with sorting and pagination',
-          elements: [
-            { label: 'Column Headers', position: 'top', desc: 'Click to sort' },
-            { label: 'Data Rows', position: 'center', desc: 'Your tabular data' },
-            { label: 'Pagination', position: 'bottom', desc: 'Navigate pages' }
-          ]
-        }
-      },
-      {
-        title: 'Maps & Heatmaps',
-        content: `Geographic and density visualizations for location-based data.`,
-        features: [
-          'World map with regions',
-          'US state map',
-          'Marker placement',
-          'Color intensity by value',
-          'Hover tooltips'
-        ],
-        screenshot: {
-          description: 'Map widget showing regional data',
-          elements: [
-            { label: 'Map View', position: 'center', desc: 'Geographic visualization' },
-            { label: 'Legend', position: 'bottom', desc: 'Color scale' },
-            { label: 'Tooltip', position: 'center', desc: 'Hover for details' }
-          ]
-        }
-      }
+  {
+    id: 'widgets', title: 'Widget Types', icon: Layers,
+    description: 'Explore all 12 widget types', color: 'teal',
+    articles: [
+      { id: 'stat-cards', title: 'Stat Cards', readTime: '3 min' },
+      { id: 'gauges', title: 'Gauges & Progress Bars', readTime: '4 min' },
+      { id: 'tables', title: 'Tables & Lists', readTime: '4 min' },
+      { id: 'maps', title: 'Maps & Heatmaps', readTime: '5 min' },
     ]
-  }
-};
-
-// =============================================================================
-// HELP CATEGORIES (simplified)
-// =============================================================================
-
-const HELP_CATEGORIES = Object.entries(DETAILED_ARTICLES).map(([id, data]) => ({
-  id,
-  title: data.title,
-  icon: data.icon,
-  color: data.color,
-  description: data.sections[0]?.content?.substring(0, 60) + '...',
-  articles: data.sections.map(s => ({ title: s.title, path: `#${s.title.toLowerCase().replace(/\s+/g, '-')}` }))
-}));
+  },
+];
 
 const FAQ_DATA = [
   {
-    question: "How do I create a dashboard from a template?",
-    answer: "Go to Dashboards page, click the 'Templates' button in the header. You'll see 10 preset templates (Sales, Marketing, Customer, etc.) plus your custom templates. Click any template to instantly create a new dashboard with pre-configured widgets.",
-    category: "dashboards"
+    category: 'Getting Started',
+    questions: [
+      { q: 'What is DataViz Studio?', a: 'DataViz Studio is a comprehensive data visualization and analytics platform. Upload data, create interactive dashboards with 12+ widget types, build infographic-style reports, and get AI-powered insights.' },
+      { q: 'How do I upload my data?', a: 'Go to Data > Upload Data. You can drag-and-drop or browse for CSV, Excel (.xlsx), or JSON files up to 50MB. Data is automatically parsed and ready for visualization.' },
+      { q: 'Is there a free trial?', a: 'Yes! DataViz Studio offers a free tier with basic features including dashboard creation, chart building, and data upload. Upgrade anytime for advanced features.' },
+    ]
   },
   {
-    question: "How do I export a report to PDF?",
-    answer: "In the Report Builder, click the 'Export PDF' button in the top-right corner. The report will automatically switch to preview mode and generate a multi-page PDF with headers and footers. The PDF is downloaded to your device.",
-    category: "reports"
+    category: 'Dashboards & Templates',
+    questions: [
+      { q: 'How do I create a dashboard from a template?', a: 'Go to Dashboards page, click "Templates" button. Choose from 10 preset templates (Sales, Marketing, Finance, etc.) or your custom templates. Click any template to create a new dashboard instantly.' },
+      { q: 'Can I save my dashboard as a template?', a: 'Yes! Open your dashboard, click "Save as Template" in the header. Enter a name and description. Your template appears in the "My Templates" tab for future use.' },
+      { q: 'What widget types are available?', a: 'DataViz Studio supports 12 widget types: Stat cards, Charts, Tables, Gauges, Progress bars, Maps, Funnels, Heatmaps, Scorecards, Lists, Timelines, and Sparklines.' },
+    ]
   },
   {
-    question: "What chart types are available?",
-    answer: "DataViz Studio supports 9 chart types: Bar, Line, Area, Pie, Donut, Scatter, Radar, Heatmap, and Funnel. Each chart type can be customized with colors, annotations, and interactive features.",
-    category: "charts"
+    category: 'Reports & Export',
+    questions: [
+      { q: 'How do I export a report to PDF?', a: 'In Report Builder, click "Export PDF" in the top-right. The report generates a multi-page PDF with headers, footers, and page numbers. Downloads automatically.' },
+      { q: 'Can I resize sections in reports?', a: 'Yes! Each section has a width dropdown (25%, 50%, 75%, 100%). Create side-by-side layouts like 50%/50% or 25%/75%.' },
+      { q: 'What themes are available?', a: '6 preset themes (Blue & Coral, Purple & Teal, Green & Orange, etc.) plus custom colors. Click theme selector to preview and apply.' },
+    ]
   },
   {
-    question: "How do I save a dashboard as a template?",
-    answer: "Open your dashboard and click 'Save as Template' in the header. Enter a name and optional description, then click Save. Your template will appear in the 'My Templates' tab of the Templates dialog.",
-    category: "dashboards"
+    category: 'Data & Charts',
+    questions: [
+      { q: 'What chart types are supported?', a: '9 chart types: Bar, Line, Area, Pie, Donut, Scatter, Radar, Heatmap, and Funnel. Each can be customized with colors and annotations.' },
+      { q: 'How do I add annotations to charts?', a: 'In Chart Studio, go to Annotations section. Add text labels, reference lines, or highlight regions. Each annotation can be customized with position, color, and style.' },
+      { q: 'How do I transform my data?', a: 'Go to Datasets, click transform icon (wand). Apply operations: filter rows, rename columns, change types, calculate fields, fill missing values. Preview before saving.' },
+    ]
   },
-  {
-    question: "How do I add annotations to a chart?",
-    answer: "Open the chart editor and navigate to the 'Annotations' tab. You can add text labels, reference lines, or highlight regions. Each annotation can be customized with position, color, and style.",
-    category: "charts"
-  },
-  {
-    question: "How do I transform my dataset?",
-    answer: "From the Datasets page, click the transform icon (wand) on any dataset. You can filter rows, rename columns, change data types, calculate new fields, fill missing values, and more. Preview changes before applying.",
-    category: "data"
-  },
-  {
-    question: "What widget types can I add to dashboards?",
-    answer: "DataViz Studio supports 12 widget types: Stat cards, Charts, Tables, Gauges, Progress bars, Maps, Funnels, Heatmaps, Scorecards, Lists, Timelines, and Sparklines. Each has unique configuration options.",
-    category: "widgets"
-  },
-  {
-    question: "How do I resize sections in Report Builder?",
-    answer: "In the Report Builder, each section has a width dropdown (25%, 50%, 75%, 100%) in its header. Select the desired width to resize. You can create side-by-side layouts like 50%/50% or 25%/75%.",
-    category: "reports"
-  },
-  {
-    question: "Can I use custom colors in my reports?",
-    answer: "Yes! Click the theme selector in the Report Builder header. Choose from 6 preset themes or click 'Custom Colors' to pick your own primary and accent colors using the color picker.",
-    category: "reports"
-  },
-  {
-    question: "How do I upload data?",
-    answer: "Go to Data page and click 'Upload Data'. You can upload CSV, Excel (.xlsx), or JSON files. After upload, the data is automatically parsed and you can start creating visualizations immediately.",
-    category: "data"
-  }
 ];
 
 const TROUBLESHOOTING_DATA = [
-  {
-    problem: "Dashboard widgets not loading",
-    solution: "Try refreshing the page. If the issue persists, check your internet connection. Widgets require an active connection to fetch data from the server.",
-    severity: "medium"
-  },
-  {
-    problem: "PDF export shows blank pages",
-    solution: "Make sure you're in Preview mode before exporting. Also ensure all charts have loaded completely. Try waiting a few seconds after switching to Preview before clicking Export.",
-    severity: "low"
-  },
-  {
-    problem: "Data upload fails",
-    solution: "Check that your file is in a supported format (CSV, XLSX, JSON). Ensure the file size is under 50MB. For CSV files, verify the delimiter is comma-separated.",
-    severity: "medium"
-  },
-  {
-    problem: "Chart annotations not displaying",
-    solution: "Annotations may be positioned outside the visible chart area. Try adjusting the position values. Also ensure the annotation type matches your chart type.",
-    severity: "low"
-  },
-  {
-    problem: "Template not saving",
-    solution: "Ensure you're logged in. Template saving requires authentication. Check that you've entered a template name before clicking Save.",
-    severity: "high"
-  },
-  {
-    problem: "Session expired / Logged out unexpectedly",
-    solution: "Sessions expire after inactivity. Simply log in again to continue. Your dashboards and reports are saved automatically.",
-    severity: "low"
-  }
+  { id: 'widgets-loading', title: 'Dashboard widgets not loading', symptoms: ['Blank widgets', 'Loading spinner stuck', 'Error message'], solutions: ['Refresh the page', 'Check internet connection', 'Clear browser cache', 'Ensure data source is connected', 'Contact support if persists'] },
+  { id: 'pdf-blank', title: 'PDF export shows blank pages', symptoms: ['Empty pages', 'Missing charts', 'Cut-off content'], solutions: ['Switch to Preview mode first', 'Wait for all charts to load', 'Check section widths', 'Try different browser', 'Reduce number of sections'] },
+  { id: 'upload-fails', title: 'Data upload fails', symptoms: ['Upload error', 'File rejected', 'Parsing error'], solutions: ['Check file format (CSV, XLSX, JSON)', 'Ensure file under 50MB', 'Verify CSV delimiter is comma', 'Check for special characters', 'Try re-saving the file'] },
+  { id: 'chart-annotations', title: 'Annotations not displaying', symptoms: ['Missing labels', 'Invisible lines', 'No regions'], solutions: ['Check annotation position values', 'Ensure chart type supports annotations', 'Toggle annotation visibility', 'Verify color contrast', 'Refresh the chart'] },
+  { id: 'template-save', title: 'Template not saving', symptoms: ['Save button unresponsive', 'Error on save', 'Template missing'], solutions: ['Ensure you are logged in', 'Enter template name', 'Check network connection', 'Try refreshing page', 'Contact support'] },
+  { id: 'session-expired', title: 'Session expired unexpectedly', symptoms: ['Logged out', 'Session timeout', 'Lost changes'], solutions: ['Log in again', 'Check "Remember me" option', 'Dashboards auto-save', 'Enable browser cookies', 'Clear browser data'] },
 ];
 
 const KEYBOARD_SHORTCUTS = [
-  { keys: ['Ctrl', 'S'], action: 'Save current work', category: 'General' },
-  { keys: ['Ctrl', 'Z'], action: 'Undo last action', category: 'General' },
-  { keys: ['Ctrl', 'Shift', 'Z'], action: 'Redo action', category: 'General' },
-  { keys: ['Ctrl', 'P'], action: 'Export to PDF', category: 'Reports' },
-  { keys: ['Ctrl', 'N'], action: 'Create new item', category: 'General' },
-  { keys: ['Esc'], action: 'Close dialog/modal', category: 'Navigation' },
-  { keys: ['?'], action: 'Open Help Center', category: 'Help' },
-  { keys: ['Ctrl', 'K'], action: 'Quick search', category: 'Navigation' },
-  { keys: ['Tab'], action: 'Navigate between elements', category: 'Navigation' },
-  { keys: ['Enter'], action: 'Confirm/Submit', category: 'General' }
+  { category: 'General', shortcuts: [{ keys: ['Ctrl', 'S'], action: 'Save current work' }, { keys: ['Ctrl', 'Z'], action: 'Undo last action' }, { keys: ['Ctrl', 'Shift', 'Z'], action: 'Redo action' }, { keys: ['Ctrl', 'N'], action: 'Create new item' }] },
+  { category: 'Reports', shortcuts: [{ keys: ['Ctrl', 'P'], action: 'Export to PDF' }, { keys: ['Ctrl', 'E'], action: 'Toggle edit/preview mode' }] },
+  { category: 'Navigation', shortcuts: [{ keys: ['Ctrl', 'K'], action: 'Open quick search' }, { keys: ['Esc'], action: 'Close modal/dialog' }, { keys: ['Tab'], action: 'Navigate elements' }] },
+  { category: 'Help', shortcuts: [{ keys: ['?'], action: 'Open Help Center' }, { keys: ['Ctrl', '/'], action: 'Show keyboard shortcuts' }] },
 ];
 
 const WHATS_NEW = [
-  {
-    version: "2.6.0",
-    date: "Feb 2026",
-    title: "Comprehensive Help Center",
-    features: [
-      "Visual documentation with screenshots",
-      "AI-powered Help Assistant (GPT-4o)",
-      "Searchable FAQs and troubleshooting",
-      "Keyboard shortcuts reference"
-    ],
-    type: "major"
-  },
-  {
-    version: "2.5.0",
-    date: "Feb 2026",
-    title: "Dashboard Template Library",
-    features: [
-      "10 preset dashboard templates",
-      "Save dashboards as custom templates",
-      "Category filtering for templates",
-      "Edit and delete custom templates",
-      "12 widget types supported"
-    ],
-    type: "major"
-  },
-  {
-    version: "2.4.0",
-    date: "Feb 2026",
-    title: "Chart Resizing & Refactoring",
-    features: [
-      "Width control for report sections (25%, 50%, 75%, 100%)",
-      "Improved Report Builder performance",
-      "Modular component architecture"
-    ],
-    type: "minor"
-  },
-  {
-    version: "2.3.0",
-    date: "Feb 2026",
-    title: "Text/Notes Blocks",
-    features: [
-      "Add custom text blocks anywhere in reports",
-      "Editable section titles",
-      "Flexible notes and observations"
-    ],
-    type: "minor"
-  },
-  {
-    version: "2.2.0",
-    date: "Feb 2026",
-    title: "Multi-Page PDF Export",
-    features: [
-      "Intelligent page breaks",
-      "Continuation headers on page 2+",
-      "Branded footers with page numbers"
-    ],
-    type: "major"
-  }
+  { version: '2.6.0', date: 'February 2026', highlights: [
+    { type: 'feature', title: 'Help Center Redesign', description: 'New sidebar navigation, improved search, and AI Assistant' },
+    { type: 'feature', title: 'Visual Documentation', description: 'Detailed articles with features, steps, and visual guides' }
+  ]},
+  { version: '2.5.0', date: 'February 2026', highlights: [
+    { type: 'feature', title: 'Dashboard Template Library', description: '10 preset templates + save your own custom templates' },
+    { type: 'feature', title: '12 Widget Types', description: 'Stat cards, gauges, maps, funnels, heatmaps, and more' }
+  ]},
+  { version: '2.4.0', date: 'February 2026', highlights: [
+    { type: 'feature', title: 'Section Resizing', description: 'Width controls (25%, 50%, 75%, 100%) for flexible layouts' },
+    { type: 'improvement', title: 'Performance', description: 'Faster Report Builder with modular components' }
+  ]},
+  { version: '2.3.0', date: 'February 2026', highlights: [
+    { type: 'feature', title: 'Text/Notes Blocks', description: 'Add custom text sections anywhere in reports' },
+    { type: 'feature', title: 'Custom Color Picker', description: 'Choose your own primary and accent colors' }
+  ]},
+  { version: '2.2.0', date: 'February 2026', highlights: [
+    { type: 'feature', title: 'Multi-Page PDF Export', description: 'Smart page breaks with headers and footers' },
+    { type: 'feature', title: 'Chart Annotations', description: 'Text labels, reference lines, highlight regions' }
+  ]},
 ];
 
-// =============================================================================
-// COMPONENTS
-// =============================================================================
+// ========== ARTICLE CONTENT ==========
+const ARTICLE_CONTENT = {
+  'welcome': { 
+    title: 'Welcome to DataViz Studio', 
+    content: `Welcome to DataViz Studio - your complete data visualization and analytics platform!
 
-const CategoryCard = ({ category, onClick }) => {
-  const Icon = category.icon;
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
-    >
-      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-4`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{category.title}</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{category.description}</p>
-      <div className="flex items-center text-violet-600 dark:text-violet-400 text-sm font-medium">
-        <span>{category.articles.length} articles</span>
-        <ChevronRight className="w-4 h-4 ml-1" />
-      </div>
-    </motion.div>
-  );
+## What You Can Do
+
+### Upload & Manage Data
+- Import CSV, Excel (.xlsx), or JSON files up to 50MB
+- Connect to MongoDB, PostgreSQL, or MySQL databases
+- Transform and clean data with built-in tools
+- Schedule automatic data refresh
+
+### Create Interactive Dashboards
+- Choose from 10 preset dashboard templates
+- Add 12 different widget types
+- Customize layouts and styling
+- Save your own templates for reuse
+
+### Build Professional Reports
+- WYSIWYG Report Builder with infographic layout
+- 6 color themes plus custom colors
+- Side-by-side sections (25%, 50%, 75%, 100%)
+- Multi-page PDF export with headers/footers
+
+### Visualize with Charts
+- 9 chart types: Bar, Line, Area, Pie, Donut, Scatter, Radar, Heatmap, Funnel
+- Add annotations (text labels, reference lines, highlight regions)
+- AI-powered chart suggestions
+
+### Get AI Insights
+- Ask questions about your data
+- Get automatic trend analysis
+- Receive visualization recommendations
+
+## Quick Start Guide
+1. **Upload Data** - Go to Data > Upload Data
+2. **Create Dashboard** - Go to Dashboards > New Dashboard
+3. **Add Widgets** - Click "Add Widget" and configure
+4. **Build Report** - Go to Export > Report Builder
+5. **Export PDF** - Click "Export PDF" when ready` 
+  },
+  'dashboard-overview': { 
+    title: 'Dashboard Overview', 
+    content: `The main Dashboard is your command center in DataViz Studio.
+
+## Main Elements
+
+### Statistics Cards (Top Row)
+- **Datasets** - Number of uploaded data files
+- **Dashboards** - Total dashboards created
+- **Charts** - Individual charts created
+- **Data Sources** - Connected databases
+
+### Quick Actions (Middle Section)
+Fast access to common tasks:
+- **Upload Data** - Import new files
+- **Create Dashboard** - Start building
+- **New Chart** - Create visualization
+- **AI Insights** - Get data analysis
+
+### Recent Datasets (Bottom)
+Shows your recently uploaded or modified data files with:
+- File name
+- Row and column counts
+- Last modified date
+- Quick actions (view, transform, delete)
+
+## Navigation Sidebar
+The left sidebar provides access to all features:
+- **Home** - Dashboard overview
+- **Data** - Upload, datasets, database connections
+- **Visualize** - Dashboards and charts
+- **Analyze** - AI Insights and statistics
+- **Export** - Report Builder, share options
+- **Settings** - Profile, appearance, preferences` 
+  },
+  'templates': { 
+    title: 'Using Dashboard Templates', 
+    content: `DataViz Studio includes 10 pre-built dashboard templates to get you started quickly.
+
+## Available Templates
+
+### Sales Dashboard
+- Revenue tracking, order metrics
+- Sales funnel, regional breakdown
+- 9 widgets included
+
+### Marketing Analytics
+- Campaign performance, traffic sources
+- Conversion metrics, engagement
+- 9 widgets included
+
+### Customer Insights
+- Customer segments, demographics
+- Behavior analysis, satisfaction
+- 9 widgets included
+
+### Financial Summary
+- P&L overview, cash flow
+- Budget tracking, expenses
+- 8 widgets included
+
+### Operations Monitor
+- Inventory levels, order status
+- Logistics, supply chain
+- 8 widgets included
+
+### And 5 More...
+- Web Analytics, Executive Summary
+- Project Tracker, Support Dashboard
+- Blank Canvas (start from scratch)
+
+## How to Use Templates
+1. Go to **Dashboards** page
+2. Click **"Templates"** button (top-right)
+3. Browse **Preset** tab or **My Templates** tab
+4. Use **Category Filter** to narrow options
+5. **Click any template** to create dashboard
+
+## Saving Custom Templates
+1. Open your finished dashboard
+2. Click **"Save as Template"** in header
+3. Enter **name** and **description**
+4. Click **Save**
+5. Find it in **"My Templates"** tab` 
+  },
+  'chart-types': { 
+    title: 'Chart Types Guide', 
+    content: `DataViz Studio supports 9 chart types for visualizing your data.
+
+## Bar Chart
+**Best for:** Comparing values across categories
+- Vertical or horizontal orientation
+- Grouped or stacked bars
+- Custom colors per category
+
+## Line Chart
+**Best for:** Showing trends over time
+- Multiple series support
+- Smooth or stepped lines
+- Area fill option
+
+## Area Chart
+**Best for:** Cumulative totals, part-to-whole
+- Stacked or overlapping
+- Gradient fill options
+- Trend visualization
+
+## Pie Chart
+**Best for:** Proportions of a whole
+- Up to 10 slices recommended
+- Labels and percentages
+- Exploded slice option
+
+## Donut Chart
+**Best for:** Similar to pie, with center space
+- Center label/value display
+- Ring thickness control
+- Good for single metrics
+
+## Scatter Plot
+**Best for:** Correlation between variables
+- X/Y axis mapping
+- Point size and color
+- Trend line option
+
+## Radar Chart
+**Best for:** Multi-dimensional comparison
+- 3-8 dimensions ideal
+- Multiple series overlay
+- Skills/performance analysis
+
+## Heatmap
+**Best for:** Density visualization
+- Color intensity by value
+- Grid-based layout
+- Time-based patterns
+
+## Funnel Chart
+**Best for:** Stage-based conversion
+- Sales pipeline
+- User journey stages
+- Dropout analysis` 
+  },
+  'report-overview': { 
+    title: 'Report Builder Overview', 
+    content: `Create professional, infographic-style reports with the WYSIWYG Report Builder.
+
+## Key Features
+
+### Header Settings
+- **Report Title** - Main heading
+- **Subtitle** - Secondary description
+- **Company Name** - Optional branding
+
+### Color Themes
+6 preset themes available:
+- Blue & Coral (default)
+- Purple & Teal
+- Green & Orange
+- Slate & Amber
+- Indigo & Rose
+- Cyan & Pink
+
+Plus **Custom Colors** option!
+
+### Section Types
+Add any combination of:
+- **Key Metrics** - 4 stat cards with icons
+- **Bar Chart** - Vertical bar visualization
+- **Pie Chart** - Circular proportions
+- **Line Chart** - Trend visualization
+- **Data Table** - Tabular information
+- **Text/Notes** - Custom text blocks
+- **Introduction/Conclusion** - Narrative
+
+### Layout Features
+- **Width Control** - 25%, 50%, 75%, 100%
+- **Drag Reorder** - Up/down arrows
+- **Delete Sections** - Trash button
+- **Real-time Preview** - See changes instantly
+
+## PDF Export
+- **Multi-page** - Smart page breaks
+- **Continuation Headers** - On pages 2+
+- **Footers** - Branding + page numbers
+- **High Quality** - 2x resolution` 
+  },
+  'pdf-export': { 
+    title: 'Exporting to PDF', 
+    content: `Export your reports as professional PDF documents.
+
+## How to Export
+
+### Step 1: Prepare Report
+- Add all sections you need
+- Configure section widths
+- Review content in preview
+
+### Step 2: Switch to Preview
+- Click **"Preview"** button
+- Verify layout looks correct
+- Check all charts are loaded
+
+### Step 3: Export
+- Click **"Export PDF"** button
+- Wait for generation (few seconds)
+- PDF downloads automatically
+
+## PDF Features
+
+### Page Breaks
+- Intelligent automatic breaks
+- Sections don't split mid-content
+- Clean page transitions
+
+### Headers
+- Report title on page 1
+- "Report Title (continued)" on pages 2+
+- Consistent styling
+
+### Footers
+- DataViz Studio branding
+- Page numbers (Page X of Y)
+- On all pages
+
+### Quality
+- 2x resolution rendering
+- Crisp text and charts
+- Professional appearance
+
+## Filename Format
+\`Report_Title_YYYYMMDD_HHMMSS.pdf\`
+
+## Troubleshooting
+- Blank pages? → Ensure Preview mode
+- Missing charts? → Wait for load
+- Cut off content? → Adjust section widths` 
+  },
+  'upload-data': { 
+    title: 'Uploading Data Files', 
+    content: `Import your data from CSV, Excel, or JSON files.
+
+## Supported Formats
+
+### CSV Files
+- Comma-separated values
+- Auto-delimiter detection
+- UTF-8 encoding recommended
+
+### Excel Files
+- .xlsx and .xls formats
+- First sheet imported
+- Headers from row 1
+
+### JSON Files
+- Array of objects format
+- Nested structure parsing
+- Auto field detection
+
+## File Size Limit
+Maximum **50MB** per file
+
+## How to Upload
+
+### Step 1: Navigate
+Go to **Data > Upload Data**
+
+### Step 2: Select File
+- **Drag and drop** file onto zone
+- Or click **"Browse Files"**
+
+### Step 3: Wait for Processing
+- Upload progress shown
+- Automatic parsing
+- Preview appears
+
+### Step 4: Confirm
+- Review column names
+- Check data types
+- Dataset ready!
+
+## After Upload
+Your dataset is immediately available for:
+- Dashboard widgets
+- Chart Studio
+- Data transformation
+- AI Insights analysis` 
+  },
+  'data-transform': { 
+    title: 'Data Transformation Tools', 
+    content: `Clean and prepare your data with built-in transformation tools.
+
+## Available Transformations
+
+### Filter Rows
+Remove rows based on conditions:
+- Equals, not equals
+- Greater than, less than
+- Contains, starts with
+- Is null, is not null
+- 10+ operators available
+
+### Rename Column
+Change column names for clarity
+
+### Change Type
+Convert data types:
+- String (text)
+- Integer (whole numbers)
+- Float (decimals)
+- Date/DateTime
+- Boolean (true/false)
+
+### Calculate Field
+Create computed columns:
+- Math operations (+, -, *, /)
+- Concatenation
+- Conditional logic
+
+### Fill Missing
+Handle null values:
+- Replace with value
+- Use mean/median/mode
+- Forward/backward fill
+- Drop rows with nulls
+
+### Drop Column
+Remove unwanted columns
+
+### Sort Data
+Order by any column (asc/desc)
+
+## How to Transform
+
+### Step 1: Open Transform
+Go to **Data > Datasets**, click **transform icon** (wand)
+
+### Step 2: Add Steps
+Click **"Add Transformation"**, select type
+
+### Step 3: Configure
+Set parameters for each step
+
+### Step 4: Preview
+Click **"Preview"** to see changes
+
+### Step 5: Apply
+Click **"Save Changes"** to apply permanently
+
+## Tips
+- Steps can be toggled on/off
+- Reorder steps as needed
+- Preview before saving!` 
+  },
 };
 
-const ScreenshotPreview = ({ screenshot }) => (
-  <div className="bg-gray-900 rounded-xl p-4 mb-6">
-    <div className="flex items-center gap-2 mb-3">
-      <Monitor className="w-4 h-4 text-gray-400" />
-      <span className="text-sm text-gray-400">{screenshot.description}</span>
-    </div>
-    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-      <div className="grid gap-3">
-        {screenshot.elements.map((element, idx) => (
-          <div key={idx} className="flex items-start gap-3 text-sm">
-            <div className="w-2 h-2 rounded-full bg-violet-500 mt-1.5 flex-shrink-0" />
-            <div>
-              <span className="text-violet-400 font-medium">{element.label}</span>
-              <span className="text-gray-500 mx-2">—</span>
-              <span className="text-gray-300">{element.desc}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-    <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
-      <Image className="w-3 h-3" />
-      <span>Visual guide - Navigate to this page to see the actual interface</span>
-    </div>
-  </div>
-);
+// ========== MAIN COMPONENT ==========
+export function HelpCenterPage({ isDark = true }) {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || null);
+  const [activeArticle, setActiveArticle] = useState(searchParams.get('article') || null);
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'home');
+  const [expandedFaq, setExpandedFaq] = useState(null);
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [articleFeedback, setArticleFeedback] = useState({});
+  const [expandedCategory, setExpandedCategory] = useState(null);
 
-const ArticleSection = ({ section, index }) => (
-  <div className="mb-8">
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 font-semibold text-sm">
-        {index + 1}
-      </div>
-      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{section.title}</h3>
-    </div>
-    
-    <p className="text-gray-600 dark:text-gray-300 mb-4">{section.content}</p>
-    
-    {section.features && (
-      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 mb-4">
-        <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          Features
-        </h4>
-        <ul className="space-y-2">
-          {section.features.map((feature, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
-              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-              {feature}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
-    
-    {section.steps && (
-      <div className="bg-violet-50 dark:bg-violet-900/20 rounded-lg p-4 mb-4">
-        <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-          <MousePointer className="w-4 h-4 text-violet-500" />
-          Step-by-Step
-        </h4>
-        <ol className="space-y-2">
-          {section.steps.map((step, idx) => (
-            <li key={idx} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
-              <span className="w-5 h-5 rounded-full bg-violet-200 dark:bg-violet-800 text-violet-700 dark:text-violet-300 flex items-center justify-center text-xs font-medium flex-shrink-0">
-                {idx + 1}
-              </span>
-              {step}
-            </li>
-          ))}
-        </ol>
-      </div>
-    )}
-    
-    {section.screenshot && <ScreenshotPreview screenshot={section.screenshot} />}
-  </div>
-);
+  const bgPrimary = isDark ? 'bg-[#0a1628]' : 'bg-gray-50';
+  const bgSecondary = isDark ? 'bg-[#0f1d32]' : 'bg-white';
+  const borderColor = isDark ? 'border-white/10' : 'border-gray-200';
+  const textPrimary = isDark ? 'text-white' : 'text-gray-900';
+  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-600';
+  const textMuted = isDark ? 'text-gray-500' : 'text-gray-400';
+  const hoverBg = isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100';
 
-const DetailedArticleView = ({ categoryId, onClose }) => {
-  const article = DETAILED_ARTICLES[categoryId];
-  if (!article) return null;
-  
-  const Icon = article.icon;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full my-8 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className={`p-6 bg-gradient-to-br ${article.color}`}>
-          <div className="flex items-center justify-between text-white">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                <Icon className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">{article.title}</h2>
-                <p className="text-white/70 text-sm">{article.sections.length} sections</p>
-              </div>
-            </div>
-            <button 
-              onClick={onClose} 
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-        
-        {/* Content */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
-          {article.sections.map((section, index) => (
-            <ArticleSection key={index} section={section} index={index} />
-          ))}
-        </div>
-        
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Was this helpful? Use the AI Assistant for more questions.
-            </p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors text-sm font-medium"
-            >
-              Close Guide
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
+  const searchResults = searchQuery.trim() ? HELP_CATEGORIES.flatMap(cat => cat.articles.filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase())).map(a => ({ ...a, category: cat }))) : [];
 
-const FAQItem = ({ faq, isOpen, onToggle }) => (
-  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-    <button
-      onClick={onToggle}
-      className="w-full px-4 py-3 flex items-center justify-between bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-    >
-      <span className="font-medium text-gray-900 dark:text-white text-left">{faq.question}</span>
-      <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-    </button>
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          className="overflow-hidden"
-        >
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 text-sm">
-            {faq.answer}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-);
-
-const TroubleshootingItem = ({ item }) => {
-  const severityColors = {
-    low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    high: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  const handleArticleClick = (categoryId, articleId) => {
+    setActiveCategory(categoryId);
+    setActiveArticle(articleId);
+    setActiveTab('article');
+    setSearchParams({ tab: 'article', category: categoryId, article: articleId });
   };
 
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-amber-500" />
-          <span className="font-medium text-gray-900 dark:text-white">{item.problem}</span>
-        </div>
-        <span className={`text-xs px-2 py-1 rounded-full ${severityColors[item.severity]}`}>
-          {item.severity}
-        </span>
-      </div>
-      <div className="flex items-start gap-2 mt-3">
-        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-        <p className="text-sm text-gray-600 dark:text-gray-300">{item.solution}</p>
-      </div>
-    </div>
-  );
-};
+  const getArticleContent = (articleId) => ARTICLE_CONTENT[articleId] || { title: 'Article Not Found', content: 'This article is not available yet. Please check back later or use the AI Assistant for help.' };
 
-const KeyboardShortcut = ({ shortcut }) => (
-  <div className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-    <span className="text-sm text-gray-700 dark:text-gray-300">{shortcut.action}</span>
-    <div className="flex items-center gap-1">
-      {shortcut.keys.map((key, index) => (
-        <React.Fragment key={index}>
-          <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300 shadow-sm">
-            {key}
-          </kbd>
-          {index < shortcut.keys.length - 1 && <span className="text-gray-400 text-xs">+</span>}
-        </React.Fragment>
-      ))}
-    </div>
-  </div>
-);
+  const colorMap = {
+    emerald: 'text-emerald-500',
+    violet: 'text-violet-500',
+    blue: 'text-blue-500',
+    rose: 'text-rose-500',
+    amber: 'text-amber-500',
+    teal: 'text-teal-500',
+  };
 
-const WhatsNewItem = ({ item }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-2">
-        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-          item.type === 'major' 
-            ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
-            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-        }`}>
-          v{item.version}
-        </span>
-        <span className="text-sm text-gray-500 dark:text-gray-400">{item.date}</span>
-      </div>
-      {item.type === 'major' && <Star className="w-4 h-4 text-amber-500" />}
-    </div>
-    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{item.title}</h4>
-    <ul className="space-y-1">
-      {item.features.map((feature, index) => (
-        <li key={index} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <Zap className="w-3 h-3 text-violet-500" />
-          {feature}
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-// =============================================================================
-// MAIN HELP CENTER PAGE
-// =============================================================================
-
-const HelpCenterPage = () => {
-  const { token } = useAuthStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('overview');
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [openFAQ, setOpenFAQ] = useState(null);
-  const [showAssistant, setShowAssistant] = useState(false);
-
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: Book },
-    { id: 'faq', label: 'FAQ', icon: HelpCircle },
-    { id: 'troubleshooting', label: 'Troubleshooting', icon: AlertCircle },
-    { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
-    { id: 'whats-new', label: "What's New", icon: Sparkles },
-  ];
-
-  const filteredFAQs = FAQ_DATA.filter(faq =>
-    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const groupedShortcuts = KEYBOARD_SHORTCUTS.reduce((acc, shortcut) => {
-    if (!acc[shortcut.category]) acc[shortcut.category] = [];
-    acc[shortcut.category].push(shortcut);
-    return acc;
-  }, {});
-
-  return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900" data-testid="help-center-page">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 text-white">
-          <div className="max-w-6xl mx-auto px-6 py-16">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold mb-4">How can we help you?</h1>
-              <p className="text-lg text-white/80 mb-8">
-                Search our knowledge base or browse categories below
-              </p>
-              
-              {/* Search */}
-              <div className="max-w-2xl mx-auto relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for help articles..."
-                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
-                  data-testid="help-search-input"
-                />
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'article':
+        const article = getArticleContent(activeArticle);
+        return (
+          <div className="space-y-6">
+            <button onClick={() => { setActiveTab('home'); setSearchParams({}); }} className={cn("flex items-center gap-2 text-sm", textSecondary, hoverBg, "px-3 py-2 rounded-lg")}>
+              <ArrowLeft className="w-4 h-4" />Back to Help Center
+            </button>
+            <div className={cn(bgSecondary, borderColor, "border rounded-xl p-6")}>
+              <h1 className={cn("text-2xl font-bold mb-6", textPrimary)}>{article.title}</h1>
+              <div className={cn("prose prose-invert max-w-none", textSecondary)}>
+                {article.content.split('\n').map((line, idx) => {
+                  if (line.startsWith('## ')) {
+                    return <h2 key={idx} className={cn("text-xl font-bold mt-6 mb-3", textPrimary)}>{line.replace('## ', '')}</h2>;
+                  }
+                  if (line.startsWith('### ')) {
+                    return <h3 key={idx} className={cn("text-lg font-semibold mt-4 mb-2", textPrimary)}>{line.replace('### ', '')}</h3>;
+                  }
+                  if (line.startsWith('- ')) {
+                    return <li key={idx} className={cn("ml-4", textSecondary)}>{line.replace('- ', '')}</li>;
+                  }
+                  if (line.match(/^\d+\./)) {
+                    return <li key={idx} className={cn("ml-4 list-decimal", textSecondary)}>{line.replace(/^\d+\.\s*/, '')}</li>;
+                  }
+                  if (line.startsWith('**') && line.endsWith('**')) {
+                    return <p key={idx} className={cn("font-semibold", textPrimary)}>{line.replace(/\*\*/g, '')}</p>;
+                  }
+                  if (line.trim() === '') {
+                    return <br key={idx} />;
+                  }
+                  return <p key={idx} className={textSecondary}>{line}</p>;
+                })}
               </div>
-
-              {/* Quick Stats */}
-              <div className="flex items-center justify-center gap-8 mt-8 text-sm">
-                <div className="flex items-center gap-2">
-                  <Book className="w-4 h-4" />
-                  <span>{HELP_CATEGORIES.reduce((acc, cat) => acc + cat.articles.length, 0)} articles</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>{FAQ_DATA.length} FAQs</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  <span>AI Assistant</span>
-                </div>
+            </div>
+            <div className={cn(bgSecondary, borderColor, "border rounded-xl p-4")}>
+              <p className={cn("text-sm font-medium mb-3", textPrimary)}>Was this article helpful?</p>
+              <div className="flex gap-2">
+                <button onClick={() => setArticleFeedback(p => ({ ...p, [activeArticle]: 'yes' }))} className={cn("flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors", articleFeedback[activeArticle] === 'yes' ? "bg-green-500/20 text-green-400" : cn(hoverBg, textSecondary))}>
+                  <ThumbsUp className="w-4 h-4" />Yes, thanks!
+                </button>
+                <button onClick={() => setArticleFeedback(p => ({ ...p, [activeArticle]: 'no' }))} className={cn("flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors", articleFeedback[activeArticle] === 'no' ? "bg-red-500/20 text-red-400" : cn(hoverBg, textSecondary))}>
+                  <ThumbsDown className="w-4 h-4" />Could be better
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        );
 
-        {/* Tabs */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="flex items-center gap-1 overflow-x-auto py-2">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                    data-testid={`tab-${tab.id}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <div className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  Browse by Category
-                </h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {HELP_CATEGORIES.map((category) => (
-                    <CategoryCard
-                      key={category.id}
-                      category={category}
-                      onClick={() => setSelectedCategory(category.id)}
-                    />
-                  ))}
-                </div>
+      case 'faq':
+        return (
+          <div className="space-y-6">
+            <h2 className={cn("text-xl font-bold", textPrimary)}>Frequently Asked Questions</h2>
+            {FAQ_DATA.map((cat, catIdx) => (
+              <div key={catIdx} className="space-y-3">
+                <h3 className={cn("font-semibold text-violet-400")}>{cat.category}</h3>
+                {cat.questions.map((faq, qIdx) => {
+                  const faqId = `${catIdx}-${qIdx}`;
+                  const isExpanded = expandedFaq === faqId;
+                  return (
+                    <div key={qIdx} className={cn(bgSecondary, borderColor, "border rounded-xl overflow-hidden")}>
+                      <button onClick={() => setExpandedFaq(isExpanded ? null : faqId)} className={cn("w-full flex items-center justify-between p-4 text-left", hoverBg)}>
+                        <span className={cn("font-medium", textPrimary)}>{faq.q}</span>
+                        <ChevronDown className={cn("w-5 h-5 transition-transform", textSecondary, isExpanded && "rotate-180")} />
+                      </button>
+                      {isExpanded && <div className={cn("px-4 pb-4", textSecondary)}>{faq.a}</div>}
+                    </div>
+                  );
+                })}
               </div>
+            ))}
+          </div>
+        );
 
-              {/* Popular Articles */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  Popular Articles
-                </h2>
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
-                  {[
-                    { title: 'Getting Started with DataViz Studio', icon: Play, color: 'text-green-500', category: 'getting-started' },
-                    { title: 'Creating Dashboards from Templates', icon: Layout, color: 'text-violet-500', category: 'dashboards' },
-                    { title: 'Exporting Reports to PDF', icon: Download, color: 'text-blue-500', category: 'reports' },
-                    { title: 'Understanding Widget Types', icon: Layers, color: 'text-amber-500', category: 'widgets' },
-                    { title: 'Data Transformation Guide', icon: Database, color: 'text-rose-500', category: 'data' },
-                  ].map((article, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedCategory(article.category)}
-                      className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors w-full text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <article.icon className={`w-5 h-5 ${article.color}`} />
-                        <span className="text-gray-900 dark:text-white">{article.title}</span>
+      case 'troubleshooting':
+        return (
+          <div className="space-y-6">
+            <h2 className={cn("text-xl font-bold", textPrimary)}>Troubleshooting Guide</h2>
+            <p className={textSecondary}>Find solutions to common issues</p>
+            {TROUBLESHOOTING_DATA.map((issue) => (
+              <div key={issue.id} className={cn(bgSecondary, borderColor, "border rounded-xl p-4 cursor-pointer transition-colors", hoverBg)} onClick={() => setSelectedIssue(selectedIssue === issue.id ? null : issue.id)}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500" />
+                    <h3 className={cn("font-semibold", textPrimary)}>{issue.title}</h3>
+                  </div>
+                  <ChevronRight className={cn("w-5 h-5 transition-transform", textSecondary, selectedIssue === issue.id && "rotate-90")} />
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3 ml-8">
+                  {issue.symptoms.map((s, idx) => <span key={idx} className={cn("text-xs px-2 py-1 rounded-full", isDark ? "bg-white/10" : "bg-gray-100", textSecondary)}>{s}</span>)}
+                </div>
+                {selectedIssue === issue.id && (
+                  <div className="mt-4 ml-8 pt-4 border-t border-white/10">
+                    <p className={cn("text-sm font-medium mb-3", textPrimary)}>Solutions:</p>
+                    <ol className="list-decimal list-inside space-y-2">
+                      {issue.solutions.map((sol, idx) => <li key={idx} className={cn("text-sm", textSecondary)}>{sol}</li>)}
+                    </ol>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'shortcuts':
+        return (
+          <div className="space-y-6">
+            <h2 className={cn("text-xl font-bold", textPrimary)}>Keyboard Shortcuts</h2>
+            <p className={textSecondary}>Speed up your workflow with these shortcuts</p>
+            {KEYBOARD_SHORTCUTS.map((group, idx) => (
+              <div key={idx} className={cn(bgSecondary, borderColor, "border rounded-xl p-5")}>
+                <h3 className={cn("font-semibold mb-4 text-violet-400")}>{group.category}</h3>
+                <div className="space-y-3">
+                  {group.shortcuts.map((s, sIdx) => (
+                    <div key={sIdx} className="flex items-center justify-between">
+                      <span className={textSecondary}>{s.action}</span>
+                      <div className="flex gap-1">
+                        {s.keys.map((key, kIdx) => (
+                          <React.Fragment key={kIdx}>
+                            <kbd className={cn("px-2.5 py-1 text-xs rounded font-mono", isDark ? "bg-white/10 border border-white/20" : "bg-gray-100 border border-gray-300", textPrimary)}>{key}</kbd>
+                            {kIdx < s.keys.length - 1 && <span className={textMuted}>+</span>}
+                          </React.Fragment>
+                        ))}
                       </div>
-                      <ArrowRight className="w-4 h-4 text-gray-400" />
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
+            ))}
+          </div>
+        );
 
-              {/* Quick Actions */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  Quick Actions
-                </h2>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <button
-                    onClick={() => setShowAssistant(true)}
-                    className="bg-gradient-to-br from-violet-500 to-purple-600 text-white rounded-xl p-6 text-left hover:shadow-lg transition-shadow"
-                  >
-                    <MessageCircle className="w-8 h-8 mb-3" />
-                    <h3 className="font-semibold mb-1">Chat with AI</h3>
-                    <p className="text-sm text-white/80">Get instant answers from our AI assistant</p>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('faq')}
-                    className="bg-white dark:bg-gray-800 rounded-xl p-6 text-left border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
-                  >
-                    <HelpCircle className="w-8 h-8 mb-3 text-blue-500" />
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Browse FAQs</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Find answers to common questions</p>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('troubleshooting')}
-                    className="bg-white dark:bg-gray-800 rounded-xl p-6 text-left border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
-                  >
-                    <AlertCircle className="w-8 h-8 mb-3 text-amber-500" />
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Troubleshooting</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Solve common issues</p>
-                  </button>
+      case 'whats-new':
+        return (
+          <div className="space-y-6">
+            <h2 className={cn("text-xl font-bold", textPrimary)}>What's New in DataViz Studio</h2>
+            <p className={textSecondary}>Latest features and improvements</p>
+            {WHATS_NEW.map((release, idx) => (
+              <div key={idx} className={cn(bgSecondary, borderColor, "border rounded-xl p-5")}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className={cn("px-3 py-1 rounded-full text-sm font-semibold bg-violet-500/20 text-violet-400")}>v{release.version}</span>
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <span className={textMuted}>{release.date}</span>
+                </div>
+                <div className="space-y-3">
+                  {release.highlights.map((item, hIdx) => (
+                    <div key={hIdx} className="flex items-start gap-3">
+                      <span className={cn("px-2 py-0.5 text-xs rounded mt-0.5", item.type === 'feature' ? "bg-green-500/20 text-green-400" : "bg-blue-500/20 text-blue-400")}>{item.type}</span>
+                      <div>
+                        <p className={cn("font-medium", textPrimary)}>{item.title}</p>
+                        <p className={cn("text-sm", textSecondary)}>{item.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
+        );
 
-          {/* FAQ Tab */}
-          {activeTab === 'faq' && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Frequently Asked Questions
-              </h2>
-              {filteredFAQs.length > 0 ? (
-                filteredFAQs.map((faq, index) => (
-                  <FAQItem
-                    key={index}
-                    faq={faq}
-                    isOpen={openFAQ === index}
-                    onToggle={() => setOpenFAQ(openFAQ === index ? null : index)}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <HelpCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No FAQs found matching "{searchQuery}"</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Troubleshooting Tab */}
-          {activeTab === 'troubleshooting' && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Troubleshooting Guide
-              </h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {TROUBLESHOOTING_DATA.map((item, index) => (
-                  <TroubleshootingItem key={index} item={item} />
+      default: // home
+        return (
+          <div className="space-y-6">
+            {/* Quick Links */}
+            <div className={cn(bgSecondary, borderColor, "border rounded-xl p-5")}>
+              <h2 className={cn("font-semibold mb-4", textPrimary)}>Quick Links</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { tab: 'faq', icon: HelpCircle, label: 'FAQs', color: 'text-blue-400' },
+                  { tab: 'troubleshooting', icon: AlertCircle, label: 'Troubleshooting', color: 'text-amber-400' },
+                  { tab: 'shortcuts', icon: Keyboard, label: 'Shortcuts', color: 'text-green-400' },
+                  { tab: 'whats-new', icon: Sparkles, label: "What's New", color: 'text-violet-400' },
+                ].map(({ tab, icon: Icon, label, color }) => (
+                  <button key={tab} onClick={() => setActiveTab(tab)} className={cn("flex items-center gap-3 px-4 py-3 rounded-xl transition-all", isDark ? "bg-white/5 hover:bg-white/10" : "bg-gray-100 hover:bg-gray-200", borderColor, "border hover:border-violet-500/30")}>
+                    <Icon className={cn("w-5 h-5", color)} />
+                    <span className={cn("text-sm font-medium", textPrimary)}>{label}</span>
+                  </button>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Shortcuts Tab */}
-          {activeTab === 'shortcuts' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Keyboard Shortcuts
-              </h2>
-              {Object.entries(groupedShortcuts).map(([category, shortcuts]) => (
-                <div key={category}>
-                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">{category}</h3>
-                  <div className="space-y-2">
-                    {shortcuts.map((shortcut, index) => (
-                      <KeyboardShortcut key={index} shortcut={shortcut} />
+            {/* Popular Articles */}
+            <div className={cn(bgSecondary, borderColor, "border rounded-xl p-5")}>
+              <h2 className={cn("font-semibold mb-4", textPrimary)}>Popular Articles</h2>
+              <div className="grid md:grid-cols-2 gap-3">
+                {HELP_CATEGORIES.flatMap(cat => cat.articles.filter(a => a.popular).map(a => ({ ...a, category: cat }))).slice(0, 4).map((article) => {
+                  const Icon = article.category.icon;
+                  return (
+                    <button key={article.id} onClick={() => handleArticleClick(article.category.id, article.id)} className={cn("flex items-center gap-4 p-4 rounded-xl text-left transition-all", isDark ? "bg-white/5 hover:bg-white/10" : "bg-gray-100 hover:bg-gray-200", borderColor, "border hover:border-violet-500/30")}>
+                      <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", isDark ? "bg-white/10" : "bg-gray-200")}>
+                        <Icon className={cn("w-5 h-5", colorMap[article.category.color])} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={cn("font-medium", textPrimary)}>{article.title}</h3>
+                        <p className={cn("text-sm", textMuted)}>{article.category.title} • {article.readTime}</p>
+                      </div>
+                      <ChevronRight className={cn("w-5 h-5", textMuted)} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Categories Preview */}
+            {HELP_CATEGORIES.slice(0, 3).map((category) => {
+              const Icon = category.icon;
+              return (
+                <div key={category.id} className={cn(bgSecondary, borderColor, "border rounded-xl p-5")}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", isDark ? "bg-white/10" : "bg-gray-200")}>
+                      <Icon className={cn("w-5 h-5", colorMap[category.color])} />
+                    </div>
+                    <div>
+                      <h2 className={cn("font-semibold", textPrimary)}>{category.title}</h2>
+                      <p className={cn("text-sm", textMuted)}>{category.description}</p>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {category.articles.slice(0, 2).map((article) => (
+                      <button key={article.id} onClick={() => handleArticleClick(category.id, article.id)} className={cn("text-left p-4 rounded-xl transition-all", isDark ? "bg-white/5 hover:bg-white/10" : "bg-gray-100 hover:bg-gray-200", borderColor, "border hover:border-violet-500/30")}>
+                        <h3 className={cn("font-medium mb-1", textPrimary)}>{article.title}</h3>
+                        <p className={cn("text-sm", textMuted)}>{article.readTime} read</p>
+                      </button>
                     ))}
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        );
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <div className={cn("min-h-screen", bgPrimary)} data-testid="help-center-page">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className={cn("text-3xl font-bold mb-2", textPrimary)}>Help Center</h1>
+          <p className={textSecondary}>Find answers, tutorials, and documentation for DataViz Studio</p>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-8">
+          <Search className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5", textMuted)} />
+          <input 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+            placeholder="Search articles, FAQs, and more..." 
+            className={cn("w-full pl-12 py-4 rounded-xl text-sm", bgSecondary, borderColor, "border", textPrimary, "placeholder-gray-500 outline-none focus:ring-2 focus:ring-violet-500/50")} 
+            data-testid="help-search-input"
+          />
+          {searchQuery && searchResults.length > 0 && (
+            <div className={cn("absolute top-full left-0 right-0 mt-2 max-h-80 overflow-y-auto z-50 rounded-xl shadow-xl", bgSecondary, borderColor, "border")}>
+              {searchResults.map((result, idx) => (
+                <button key={idx} onClick={() => { handleArticleClick(result.category.id, result.id); setSearchQuery(''); }} className={cn("w-full text-left px-4 py-3 border-b last:border-0", borderColor, hoverBg)}>
+                  <p className={cn("text-sm font-medium", textPrimary)}>{result.title}</p>
+                  <p className={cn("text-xs", textMuted)}>{result.category.title} • {result.readTime}</p>
+                </button>
               ))}
             </div>
           )}
-
-          {/* What's New Tab */}
-          {activeTab === 'whats-new' && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                What's New in DataViz Studio
-              </h2>
-              <div className="space-y-4">
-                {WHATS_NEW.map((item, index) => (
-                  <WhatsNewItem key={index} item={item} />
-                ))}
-              </div>
+          {searchQuery && searchResults.length === 0 && (
+            <div className={cn("absolute top-full left-0 right-0 mt-2 p-4 rounded-xl shadow-xl text-center", bgSecondary, borderColor, "border")}>
+              <p className={textSecondary}>No results found for "{searchQuery}"</p>
             </div>
           )}
         </div>
 
-        {/* Detailed Article Modal */}
-        <AnimatePresence>
-          {selectedCategory && (
-            <DetailedArticleView 
-              categoryId={selectedCategory} 
-              onClose={() => setSelectedCategory(null)} 
-            />
-          )}
-        </AnimatePresence>
+        {/* Main Layout */}
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <div className={cn("w-72 flex-shrink-0 rounded-xl p-5 h-fit sticky top-4", bgSecondary, borderColor, "border")}>
+            <div className="flex items-center gap-2 mb-5">
+              <div className="p-1.5 rounded-lg bg-violet-500/10">
+                <ClipboardList className="w-4 h-4 text-violet-500" />
+              </div>
+              <h2 className={cn("font-semibold", textPrimary)}>Categories</h2>
+            </div>
+            <nav className="space-y-1">
+              {HELP_CATEGORIES.map((category) => {
+                const Icon = category.icon;
+                const isExpanded = expandedCategory === category.id;
+                return (
+                  <div key={category.id}>
+                    <button onClick={() => setExpandedCategory(isExpanded ? null : category.id)} className={cn("w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors", isExpanded ? cn(isDark ? "bg-white/5" : "bg-gray-100", textPrimary) : cn(textSecondary, hoverBg))}>
+                      <div className="flex items-center gap-3">
+                        <Icon className={cn("w-4 h-4", colorMap[category.color])} />
+                        <span>{category.title}</span>
+                      </div>
+                      <ChevronRight className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-90")} />
+                    </button>
+                    {isExpanded && (
+                      <div className="ml-10 mt-1 space-y-1">
+                        {category.articles.map((article) => (
+                          <button key={article.id} onClick={() => handleArticleClick(category.id, article.id)} className={cn("w-full text-left px-3 py-1.5 text-sm transition-colors rounded", textMuted, "hover:text-violet-400")}>
+                            {article.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+            
+            {/* Sidebar Links */}
+            <div className={cn("mt-6 pt-4 border-t space-y-1", borderColor)}>
+              {[
+                { tab: 'faq', icon: HelpCircle, label: 'FAQs' },
+                { tab: 'troubleshooting', icon: AlertCircle, label: 'Troubleshooting' },
+                { tab: 'shortcuts', icon: Keyboard, label: 'Shortcuts' },
+                { tab: 'whats-new', icon: Sparkles, label: "What's New" },
+              ].map(({ tab, icon: Icon, label }) => (
+                <button key={tab} onClick={() => { setActiveTab(tab); setSearchParams({ tab }); }} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors", activeTab === tab ? cn(isDark ? "bg-white/5" : "bg-gray-100", textPrimary) : cn(textSecondary, hoverBg))} data-testid={`tab-${tab}`}>
+                  <Icon className="w-4 h-4 text-violet-500/70" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 min-w-0">
+            {renderContent()}
+          </div>
+        </div>
 
         {/* AI Assistant */}
-        {!showAssistant && <HelpAssistantButton onClick={() => setShowAssistant(true)} />}
-        <HelpAssistant 
-          isOpen={showAssistant} 
-          onClose={() => setShowAssistant(false)} 
-          token={token}
-        />
+        <HelpAssistant isDark={isDark} />
       </div>
     </DashboardLayout>
   );
-};
+}
 
 export default HelpCenterPage;
