@@ -64,6 +64,8 @@ import {
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
+import SaveAsTemplateButton from '../components/SaveAsTemplateButton';
+
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const WIDGET_TYPES = [
