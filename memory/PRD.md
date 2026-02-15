@@ -438,6 +438,37 @@ Exports:
 
 **Test Status:** 100% (11 backend, 15 frontend tests passed)
 
+## Session 12b (Feb 15, 2026) - Enhanced Help Center with Visual Documentation
+- [x] **Detailed Article Views**
+  - Click any category card to open rich article modal
+  - Each article has multiple numbered sections
+  - Gradient header with icon matching category color
+
+- [x] **Article Content Structure**
+  - **Features section**: Checkmark list of capabilities
+  - **Step-by-Step section**: Numbered instructions with purple badges
+  - **Visual Guide section**: Dark background with UI element descriptions
+    - Lists key interface components (labels, positions, descriptions)
+    - "Navigate to this page to see the actual interface" prompt
+
+- [x] **6 Comprehensive Documentation Categories**
+  - Getting Started (2 sections): Welcome, Interface navigation
+  - Dashboards (3 sections): Templates, Adding Widgets, Save as Template
+  - Charts (2 sections): Chart Types (9 types), Annotations
+  - Report Builder (4 sections): Overview, Adding Sections, Resizing, PDF Export
+  - Data Management (3 sections): Upload, Transform, Database Connections
+  - Widget Types (4 sections): Stat Cards, Gauges, Tables, Maps
+
+- [x] **DETAILED_ARTICLES Data Structure**
+  - Each category contains: title, icon, color, sections[]
+  - Each section contains: title, content, features[], steps[], screenshot{}
+  - Screenshot object describes UI elements without actual images
+
+**Files Modified:**
+- `/app/frontend/src/pages/HelpCenterPage.jsx` - Added DETAILED_ARTICLES, ArticleSection, ScreenshotPreview, DetailedArticleView components
+
+**Test Status:** 100% (11/11 frontend tests passed)
+
 ## Next Recommended Task
 - **Scheduled Report Delivery via Email** using SendGrid or Resend integration
 - **Backend Refactoring** - Modularize `server.py` routes into separate files
