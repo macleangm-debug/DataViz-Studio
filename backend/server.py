@@ -1522,6 +1522,124 @@ async def update_dashboard_layout(dashboard_id: str, layout: DashboardLayoutUpda
     return {"status": "updated"}
 
 # =============================================================================
+# Template Routes (Dashboard Templates)
+# =============================================================================
+
+@api_router.get("/templates")
+async def list_templates(request: Request):
+    """List all templates (preset + user's custom)"""
+    try:
+        user = await get_current_user(request)
+        user_id = user.get("id") or user.get("user_id")
+        cursor = db.templates.find({"user_id": user_id}, {"_id": 0})
+        custom_templates = await cursor.to_list(length=100)
+        return {"preset": PRESET_TEMPLATES, "custom": custom_templates}
+    except:
+        # If not authenticated, return only presets
+        return {"preset": PRESET_TEMPLATES, "custom": []}
+
+@api_router.post("/templates")
+async def create_template(template: TemplateCreate, request: Request):
+    """Create a new custom template"""
+    user = await get_current_user(request)
+    user_id = user.get("id") or user.get("user_id")
+    
+    template_id = str(uuid.uuid4())
+    template_doc = {
+        "id": template_id,
+        "user_id": user_id,
+        "name": template.name,
+        "description": template.description,
+        "widgets": template.widgets,
+        "icon": template.icon or "LayoutDashboard",
+        "color": template.color or "from-blue-500 to-blue-600",
+        "category": template.category or "custom",
+        "is_preset": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.templates.insert_one(template_doc)
+    return {"id": template_id, "message": "Template created successfully"}
+
+@api_router.post("/templates/from-dashboard/{dashboard_id}")
+async def save_dashboard_as_template(dashboard_id: str, request: Request, name: str = None, description: str = None):
+    """Save an existing dashboard as a reusable template"""
+    user = await get_current_user(request)
+    user_id = user.get("id") or user.get("user_id")
+    
+    # Get the dashboard
+    dashboard = await db.dashboards.find_one({"id": dashboard_id})
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    
+    # Get widgets for this dashboard
+    cursor = db.widgets.find({"dashboard_id": dashboard_id}, {"_id": 0})
+    widgets = await cursor.to_list(length=100)
+    
+    # Convert widgets to template format (remove dashboard-specific IDs)
+    template_widgets = []
+    for w in widgets:
+        template_widgets.append({
+            "type": w.get("type"),
+            "title": w.get("title"),
+            "config": w.get("config", {}),
+            "position": w.get("position", {"x": 0, "y": 0, "w": 4, "h": 3})
+        })
+    
+    template_id = str(uuid.uuid4())
+    template_doc = {
+        "id": template_id,
+        "user_id": user_id,
+        "name": name or f"{dashboard.get('name')} Template",
+        "description": description or dashboard.get("description", ""),
+        "widgets": template_widgets,
+        "icon": "LayoutDashboard",
+        "color": "from-indigo-500 to-indigo-600",
+        "category": "custom",
+        "is_preset": False,
+        "source_dashboard_id": dashboard_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.templates.insert_one(template_doc)
+    return {"id": template_id, "message": "Dashboard saved as template"}
+
+@api_router.put("/templates/{template_id}")
+async def update_template(template_id: str, template: TemplateUpdate, request: Request):
+    """Update a custom template"""
+    user = await get_current_user(request)
+    user_id = user.get("id") or user.get("user_id")
+    
+    # Check ownership
+    existing = await db.templates.find_one({"id": template_id, "user_id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found or access denied")
+    
+    update_data = {k: v for k, v in template.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.templates.update_one(
+        {"id": template_id},
+        {"$set": update_data}
+    )
+    return {"message": "Template updated"}
+
+@api_router.delete("/templates/{template_id}")
+async def delete_template(template_id: str, request: Request):
+    """Delete a custom template"""
+    user = await get_current_user(request)
+    user_id = user.get("id") or user.get("user_id")
+    
+    result = await db.templates.delete_one({"id": template_id, "user_id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found or access denied")
+    
+    return {"message": "Template deleted"}
+
+# =============================================================================
 # Widget Routes
 # =============================================================================
 
