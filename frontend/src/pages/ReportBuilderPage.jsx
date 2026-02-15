@@ -31,6 +31,7 @@ const SECTION_TYPES = [
   { id: 'pie_chart', name: 'Pie Chart', icon: PieChart, description: 'Circular chart' },
   { id: 'line_chart', name: 'Line Chart', icon: TrendingUp, description: 'Trend lines' },
   { id: 'data_table', name: 'Data Table', icon: Table, description: 'Tabular data' },
+  { id: 'text_block', name: 'Text/Notes', icon: FileText, description: 'Add custom notes anywhere' },
   { id: 'conclusion', name: 'Conclusion', icon: FileText, description: 'Summary text' },
 ];
 
