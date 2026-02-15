@@ -296,10 +296,12 @@ Exports:
 
 ## Test Status
 - **Backend Tests:** 100% (13/13 tests for chart/transform features)
-- **Frontend Tests:** 100% (21/21 tests for Report Builder Text/Notes Block)
+- **Frontend Tests:** 100% (19/19 tests for Chart Resizing & Refactoring)
 - **Chart Annotations:** PASS - All 3 annotation types working
 - **Data Transformation:** PASS - All 7 transformation types working
 - **Report Builder Text/Notes Block:** PASS - Feb 14, 2026
+- **Chart Resizing:** PASS - Feb 15, 2026 (all 4 width options working)
+- **Code Refactoring:** PASS - Feb 15, 2026 (6 components extracted)
 - **Test Credentials:** test@dataviz.com / test123
 - **Test Data:** Sales Data 2026 (10 rows, 3 columns: Region, Sales, Quarter)
 
@@ -320,7 +322,26 @@ Exports:
   - Theme changes apply to text block section headers
   - Export PDF includes text blocks in the output
 
+## Session 10 (Feb 15, 2026) - Chart Resizing & Code Refactoring
+- [x] **Chart/Section Resizing in Report Builder**
+  - Width dropdown selector (25%, 50%, 75%, 100%) added to each section header
+  - Test ID: `resize-width-{index}` for each section
+  - Visual resize confirmation - sections correctly resize to selected width
+  - Side-by-side layouts now support 25%/75% or 75%/25% combinations
+  - All width options work correctly: 25% (quarter), 50% (half), 75% (three-quarters), 100% (full)
+
+- [x] **Code Refactoring - Report Builder Components**
+  - Extracted components to `/app/frontend/src/components/report/`
+  - **ReportBuilderPage.jsx** reduced from 1100+ lines to ~300 lines
+  - Components extracted:
+    - `StatCard.jsx` - Infographic stat card with icons
+    - `ChartPreviews.jsx` - Bar, Pie, Line chart and DataTable previews
+    - `ThemeSelector.jsx` - Theme selection dropdown with custom color picker
+    - `ReportSection.jsx` - Main section container with WIDTH_OPTIONS and resize logic
+    - `AddSectionPanel.jsx` - Add section button grid
+    - `index.js` - Barrel file exporting all components
+  - All functionality preserved and verified via testing agent
+
 ## Next Recommended Task
-- **Chart Resizing** - Allow resizing individual charts within the Report Builder (currently only reordering is supported)
 - **Scheduled Report Delivery via Email** using SendGrid or Resend integration
-- **Code Refactoring** - Break down `ReportBuilderPage.jsx` into smaller components and modularize `server.py` routes
+- **Backend Refactoring** - Modularize `server.py` routes into separate files
