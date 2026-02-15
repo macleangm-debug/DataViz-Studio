@@ -750,12 +750,14 @@ const ReportBuilderPage = () => {
   
   // Reference for the report canvas
   const reportCanvasRef = useRef(null);
+  const headerRef = useRef(null);
+  const contentRef = useRef(null);
+  const footerRef = useRef(null);
   
-  // Export PDF using client-side generation
+  // Export PDF using client-side generation with proper multi-page support
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      // Get the report canvas element
       const reportElement = reportCanvasRef.current;
       if (!reportElement) {
         toast.error('Report canvas not found');
@@ -763,25 +765,14 @@ const ReportBuilderPage = () => {
         return;
       }
       
-      // Temporarily switch to preview mode for clean export
+      // Switch to preview mode for clean export
       const wasInEditMode = !isPreview;
       if (wasInEditMode) {
         setIsPreview(true);
-        // Wait for state to update and re-render
         await new Promise(resolve => setTimeout(resolve, 300));
       }
       
-      // Use html2canvas to capture the report
-      const canvas = await html2canvas(reportElement, {
-        scale: 2, // Higher quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: 1200,
-      });
-      
       // Create PDF with A4 dimensions
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -790,34 +781,107 @@ const ReportBuilderPage = () => {
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const usableWidth = pdfWidth - (margin * 2);
+      const usableHeight = pdfHeight - (margin * 2);
+      const footerHeight = 15; // Space for footer on each page
+      const contentHeight = usableHeight - footerHeight;
       
-      // Calculate dimensions to fit the canvas
-      const canvasAspect = canvas.width / canvas.height;
-      const pageAspect = pdfWidth / pdfHeight;
+      // Capture the full report as canvas
+      const canvas = await html2canvas(reportElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1200,
+      });
       
-      let imgWidth, imgHeight;
+      const imgData = canvas.toDataURL('image/png');
       
-      if (canvasAspect > pageAspect) {
-        // Canvas is wider - fit to width
-        imgWidth = pdfWidth - 20; // 10mm margins
-        imgHeight = imgWidth / canvasAspect;
+      // Calculate how the image maps to PDF pages
+      const imgWidth = usableWidth;
+      const imgHeight = (canvas.height * usableWidth) / canvas.width;
+      
+      // Check if we need multiple pages
+      if (imgHeight <= contentHeight) {
+        // Single page - simple case
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+        
+        // Add footer
+        addFooter(pdf, pdfWidth, pdfHeight, margin, 1, 1);
       } else {
-        // Canvas is taller - may need multiple pages
-        imgWidth = pdfWidth - 20;
-        imgHeight = imgWidth / canvasAspect;
+        // Multi-page handling
+        const totalPages = Math.ceil(imgHeight / contentHeight);
+        
+        // Calculate the portion of image per page (in source image pixels)
+        const pixelsPerPage = (contentHeight / imgHeight) * canvas.height;
+        
+        for (let page = 0; page < totalPages; page++) {
+          if (page > 0) {
+            pdf.addPage();
+          }
+          
+          // Calculate source and destination coordinates
+          const sourceY = page * pixelsPerPage;
+          const sourceHeight = Math.min(pixelsPerPage, canvas.height - sourceY);
+          const destHeight = (sourceHeight / canvas.height) * imgHeight;
+          
+          // Create a temporary canvas for this page's portion
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sourceHeight;
+          const ctx = pageCanvas.getContext('2d');
+          
+          // Draw the portion of the original canvas
+          ctx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sourceHeight,  // Source rectangle
+            0, 0, canvas.width, sourceHeight          // Destination rectangle
+          );
+          
+          const pageImgData = pageCanvas.toDataURL('image/png');
+          
+          // Add "Page X of Y" continuation header on pages 2+
+          let yOffset = margin;
+          if (page > 0) {
+            pdf.setFontSize(9);
+            pdf.setTextColor(128, 128, 128);
+            pdf.text(`${reportConfig.title} (continued)`, margin, margin + 3);
+            pdf.setDrawColor(200, 200, 200);
+            pdf.line(margin, margin + 5, pdfWidth - margin, margin + 5);
+            yOffset = margin + 8;
+          }
+          
+          // Add the image portion
+          pdf.addImage(pageImgData, 'PNG', margin, yOffset, imgWidth, destHeight);
+          
+          // Add footer to each page
+          addFooter(pdf, pdfWidth, pdfHeight, margin, page + 1, totalPages);
+        }
       }
       
-      // If content is taller than one page, scale to fit
-      if (imgHeight > pdfHeight - 20) {
-        const scaleFactor = (pdfHeight - 20) / imgHeight;
-        imgHeight = pdfHeight - 20;
-        imgWidth = imgWidth * scaleFactor;
+      // Helper function to add footer
+      function addFooter(pdfDoc, width, height, m, currentPage, totalPages) {
+        const footerY = height - m - 5;
+        
+        // Footer line
+        pdfDoc.setDrawColor(59, 130, 246); // Blue line
+        pdfDoc.setLineWidth(0.5);
+        pdfDoc.line(m, footerY - 3, width - m, footerY - 3);
+        
+        // DataViz Studio text centered
+        pdfDoc.setFontSize(10);
+        pdfDoc.setTextColor(59, 130, 246);
+        const footerText = 'DataViz Studio';
+        const textWidth = pdfDoc.getTextWidth(footerText);
+        pdfDoc.text(footerText, (width - textWidth) / 2, footerY);
+        
+        // Page number on right
+        pdfDoc.setFontSize(8);
+        pdfDoc.setTextColor(128, 128, 128);
+        const pageText = `Page ${currentPage} of ${totalPages}`;
+        pdfDoc.text(pageText, width - m - pdfDoc.getTextWidth(pageText), footerY);
       }
-      
-      // Center horizontally
-      const xOffset = (pdfWidth - imgWidth) / 2;
-      
-      pdf.addImage(imgData, 'PNG', xOffset, 10, imgWidth, imgHeight);
       
       // Generate filename
       const fileName = `${reportConfig.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -830,7 +894,7 @@ const ReportBuilderPage = () => {
         setIsPreview(false);
       }
       
-      toast.success('Report exported successfully!');
+      toast.success(`Report exported successfully! (${Math.ceil(imgHeight / contentHeight)} page${Math.ceil(imgHeight / contentHeight) > 1 ? 's' : ''})`);
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Failed to export PDF. Please try again.');
