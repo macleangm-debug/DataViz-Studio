@@ -16,7 +16,7 @@ fi
 
 # Create temp directory and download
 echo "📦 Downloading DataViz module package..."
-curl -L -o /tmp/dataviz_module.zip https://viz-builder-4.preview.emergentagent.com/dataviz_module_export.zip
+curl -L -o /tmp/dataviz_module.zip https://help-center-ai.preview.emergentagent.com/dataviz_module_export.zip
 
 # Check if download succeeded
 if [ ! -f "/tmp/dataviz_module.zip" ]; then
