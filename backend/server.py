@@ -129,6 +129,20 @@ class WidgetCreate(BaseModel):
 class DashboardLayoutUpdate(BaseModel):
     widgets: List[Dict[str, Any]]
 
+class TemplateCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    widgets: List[Dict[str, Any]] = []
+    icon: Optional[str] = "LayoutDashboard"
+    color: Optional[str] = "from-blue-500 to-blue-600"
+    category: Optional[str] = "custom"
+
+class TemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+
 class ScheduleConfig(BaseModel):
     conn_id: str
     interval_type: str  # hourly, daily, weekly, custom
