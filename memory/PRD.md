@@ -122,12 +122,23 @@ DataViz Studio is an interactive analytics and visualization platform that enabl
 
 - [x] **PDF Export (Client-Side)**
   - Using html2canvas + jsPDF for client-side PDF generation
-  - Captures the exact visual layout from the preview
+  - Multi-page support with intelligent page breaks
+  - Continuation header on pages 2+ ("Report Title (continued)")
+  - Footer with DataViz Studio branding and page numbers on all pages
   - Auto-switches to preview mode for clean export
   - Downloads as PDF with timestamped filename
   - High-quality 2x scale rendering
 
-- [x] **Custom Color Picker** (NEW)
+- [x] **Flexible Text/Notes Blocks** (Feb 14, 2026)
+  - Add custom text blocks anywhere in the report
+  - Editable section title (e.g., "Notes", "Observations", "Analysis")
+  - Multi-line textarea for content entry
+  - Reorderable via up/down arrows alongside other sections
+  - Deletable with section delete button
+  - Renders as styled text in preview and PDF export
+  - Works alongside Introduction and Conclusion sections
+
+- [x] **Custom Color Picker**
   - Primary and Accent color selection with native color picker inputs
   - Hex text input fields for precise color entry
   - Live preview of custom colors before applying
@@ -285,9 +296,10 @@ Exports:
 
 ## Test Status
 - **Backend Tests:** 100% (13/13 tests for chart/transform features)
-- **Frontend Tests:** 100% (22 tests for annotations + transformations)
+- **Frontend Tests:** 100% (21/21 tests for Report Builder Text/Notes Block)
 - **Chart Annotations:** PASS - All 3 annotation types working
 - **Data Transformation:** PASS - All 7 transformation types working
+- **Report Builder Text/Notes Block:** PASS - Feb 14, 2026
 - **Test Credentials:** test@dataviz.com / test123
 - **Test Data:** Sales Data 2026 (10 rows, 3 columns: Region, Sales, Quarter)
 
@@ -297,5 +309,18 @@ Exports:
 - Report Builder uses sample data for preview (not connected to live database charts)
 - Template widgets created without dataset links (users need to link data sources)
 
+## Session 9 (Feb 14, 2026) - Text/Notes Block Verification
+- [x] **Verified Text/Notes Block Feature in Report Builder**
+  - Button `add-text_block-btn` in Add Section panel works
+  - Editable title field `section-title-input-{index}` for custom section names
+  - Editable content textarea `section-content-{index}` for notes
+  - Move up/down buttons reorder sections correctly
+  - Delete button removes section from report
+  - Preview mode shows text block content as plain styled text
+  - Theme changes apply to text block section headers
+  - Export PDF includes text blocks in the output
+
 ## Next Recommended Task
-Consider implementing **Scheduled Report Delivery via Email** using SendGrid or Resend integration to allow users to schedule automatic report exports.
+- **Chart Resizing** - Allow resizing individual charts within the Report Builder (currently only reordering is supported)
+- **Scheduled Report Delivery via Email** using SendGrid or Resend integration
+- **Code Refactoring** - Break down `ReportBuilderPage.jsx` into smaller components and modularize `server.py` routes
