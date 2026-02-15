@@ -204,6 +204,200 @@ REPORT_THEMES = {
     "cyan_pink": {"primary": "#06B6D4", "accent": "#EC4899", "name": "Cyan & Pink"},
 }
 
+# =============================================================================
+# Dashboard Preset Templates (10 templates with 12 widget types)
+# =============================================================================
+PRESET_TEMPLATES = [
+    {
+        "id": "preset_sales",
+        "name": "Sales Dashboard",
+        "description": "Track revenue, orders, and sales performance",
+        "icon": "DollarSign",
+        "color": "from-emerald-500 to-emerald-600",
+        "category": "sales",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Total Revenue", "config": {"aggregation": "sum", "format": "currency", "icon": "DollarSign"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Orders", "config": {"aggregation": "count", "icon": "ShoppingCart"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Avg Order Value", "config": {"aggregation": "mean", "format": "currency", "icon": "TrendingUp"}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "gauge", "title": "Sales Target", "config": {"min": 0, "max": 100, "target": 80, "unit": "%"}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Revenue Trend", "config": {"chart_type": "area", "color": "#10b981"}, "position": {"x": 0, "y": 2, "w": 8, "h": 4}},
+            {"type": "chart", "title": "Sales by Category", "config": {"chart_type": "pie"}, "position": {"x": 8, "y": 2, "w": 4, "h": 4}},
+            {"type": "funnel", "title": "Sales Funnel", "config": {"stages": ["Leads", "Qualified", "Proposal", "Negotiation", "Closed"]}, "position": {"x": 0, "y": 6, "w": 4, "h": 4}},
+            {"type": "table", "title": "Top Products", "config": {"columns": ["Product", "Sales", "Revenue"], "limit": 5}, "position": {"x": 4, "y": 6, "w": 4, "h": 4}},
+            {"type": "chart", "title": "Monthly Comparison", "config": {"chart_type": "bar"}, "position": {"x": 8, "y": 6, "w": 4, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_marketing",
+        "name": "Marketing Analytics",
+        "description": "Monitor campaigns, traffic, and conversion rates",
+        "icon": "Target",
+        "color": "from-violet-500 to-violet-600",
+        "category": "marketing",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Total Visitors", "config": {"aggregation": "sum", "icon": "Users"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Conversion Rate", "config": {"aggregation": "mean", "format": "percent", "icon": "Percent"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Leads Generated", "config": {"aggregation": "count", "icon": "UserPlus"}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "sparkline", "title": "Cost per Lead", "config": {"format": "currency", "trend": "down_good"}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Traffic Over Time", "config": {"chart_type": "area", "color": "#8b5cf6"}, "position": {"x": 0, "y": 2, "w": 8, "h": 4}},
+            {"type": "chart", "title": "Traffic Sources", "config": {"chart_type": "donut"}, "position": {"x": 8, "y": 2, "w": 4, "h": 4}},
+            {"type": "funnel", "title": "Conversion Funnel", "config": {"stages": ["Visitors", "Signups", "Activated", "Paid"]}, "position": {"x": 0, "y": 6, "w": 4, "h": 4}},
+            {"type": "heatmap", "title": "Activity by Hour", "config": {"x_axis": "hour", "y_axis": "day"}, "position": {"x": 4, "y": 6, "w": 4, "h": 4}},
+            {"type": "list", "title": "Top Campaigns", "config": {"metric": "conversions", "limit": 5}, "position": {"x": 8, "y": 6, "w": 4, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_customers",
+        "name": "Customer Insights",
+        "description": "Understand customer behavior and demographics",
+        "icon": "Users",
+        "color": "from-blue-500 to-blue-600",
+        "category": "customers",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Total Customers", "config": {"aggregation": "count", "icon": "Users"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "New This Month", "config": {"aggregation": "count", "icon": "UserPlus"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "gauge", "title": "Retention Rate", "config": {"min": 0, "max": 100, "target": 85, "unit": "%"}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "gauge", "title": "NPS Score", "config": {"min": -100, "max": 100, "target": 50}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Customer Growth", "config": {"chart_type": "line", "color": "#3b82f6"}, "position": {"x": 0, "y": 2, "w": 6, "h": 4}},
+            {"type": "chart", "title": "Customer Segments", "config": {"chart_type": "pie"}, "position": {"x": 6, "y": 2, "w": 3, "h": 4}},
+            {"type": "chart", "title": "Age Distribution", "config": {"chart_type": "bar"}, "position": {"x": 9, "y": 2, "w": 3, "h": 4}},
+            {"type": "map", "title": "Customers by Region", "config": {"map_type": "choropleth"}, "position": {"x": 0, "y": 6, "w": 6, "h": 4}},
+            {"type": "table", "title": "Top Customers", "config": {"columns": ["Name", "Orders", "Lifetime Value"], "limit": 5}, "position": {"x": 6, "y": 6, "w": 6, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_operations",
+        "name": "Operations Monitor",
+        "description": "Track inventory, orders, and fulfillment",
+        "icon": "Activity",
+        "color": "from-amber-500 to-amber-600",
+        "category": "operations",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Pending Orders", "config": {"aggregation": "count", "icon": "Clock"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "In Stock Items", "config": {"aggregation": "count", "icon": "Package"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Low Stock Alerts", "config": {"aggregation": "count", "icon": "AlertTriangle", "alert": True}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "gauge", "title": "Fulfillment Rate", "config": {"min": 0, "max": 100, "target": 95, "unit": "%"}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Orders by Status", "config": {"chart_type": "donut"}, "position": {"x": 0, "y": 2, "w": 4, "h": 4}},
+            {"type": "chart", "title": "Daily Orders", "config": {"chart_type": "bar", "color": "#f59e0b"}, "position": {"x": 4, "y": 2, "w": 8, "h": 4}},
+            {"type": "progress", "title": "Shipping Goals", "config": {"targets": [{"name": "Same Day", "current": 85, "target": 90}, {"name": "Next Day", "current": 95, "target": 95}]}, "position": {"x": 0, "y": 6, "w": 4, "h": 4}},
+            {"type": "table", "title": "Recent Orders", "config": {"columns": ["Order ID", "Customer", "Status", "Total"], "limit": 8}, "position": {"x": 4, "y": 6, "w": 8, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_financial",
+        "name": "Financial Summary",
+        "description": "Monitor P&L, cash flow, and financial health",
+        "icon": "TrendingUp",
+        "color": "from-rose-500 to-rose-600",
+        "category": "finance",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Total Revenue", "config": {"aggregation": "sum", "format": "currency", "icon": "DollarSign"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Total Expenses", "config": {"aggregation": "sum", "format": "currency", "icon": "CreditCard"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "scorecard", "title": "Net Profit", "config": {"format": "currency", "comparison": "last_month"}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "scorecard", "title": "Profit Margin", "config": {"format": "percent", "target": 25}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Revenue vs Expenses", "config": {"chart_type": "line", "multi_series": True}, "position": {"x": 0, "y": 2, "w": 8, "h": 4}},
+            {"type": "chart", "title": "Expense Breakdown", "config": {"chart_type": "pie"}, "position": {"x": 8, "y": 2, "w": 4, "h": 4}},
+            {"type": "chart", "title": "Monthly P&L", "config": {"chart_type": "bar", "stacked": True}, "position": {"x": 0, "y": 6, "w": 6, "h": 4}},
+            {"type": "chart", "title": "Cash Flow", "config": {"chart_type": "waterfall"}, "position": {"x": 6, "y": 6, "w": 6, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_analytics",
+        "name": "Web Analytics",
+        "description": "Website performance, traffic, and user behavior",
+        "icon": "BarChart3",
+        "color": "from-cyan-500 to-cyan-600",
+        "category": "analytics",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Page Views", "config": {"aggregation": "sum", "icon": "Eye"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Unique Visitors", "config": {"aggregation": "count", "icon": "Users"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "sparkline", "title": "Bounce Rate", "config": {"format": "percent", "trend": "down_good"}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "sparkline", "title": "Avg Session", "config": {"format": "duration"}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Traffic Over Time", "config": {"chart_type": "area", "color": "#06b6d4"}, "position": {"x": 0, "y": 2, "w": 8, "h": 4}},
+            {"type": "chart", "title": "Traffic Sources", "config": {"chart_type": "donut"}, "position": {"x": 8, "y": 2, "w": 4, "h": 4}},
+            {"type": "heatmap", "title": "Visits by Day/Hour", "config": {"x_axis": "hour", "y_axis": "weekday"}, "position": {"x": 0, "y": 6, "w": 4, "h": 4}},
+            {"type": "list", "title": "Top Pages", "config": {"metric": "views", "limit": 5}, "position": {"x": 4, "y": 6, "w": 4, "h": 4}},
+            {"type": "chart", "title": "Device Breakdown", "config": {"chart_type": "bar"}, "position": {"x": 8, "y": 6, "w": 4, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_executive",
+        "name": "Executive Summary",
+        "description": "High-level KPIs and business health overview",
+        "icon": "Briefcase",
+        "color": "from-slate-600 to-slate-700",
+        "category": "executive",
+        "is_preset": True,
+        "widgets": [
+            {"type": "scorecard", "title": "Revenue", "config": {"format": "currency", "comparison": "last_quarter", "target": 1000000}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "scorecard", "title": "Customers", "config": {"comparison": "last_quarter"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "scorecard", "title": "MRR", "config": {"format": "currency", "comparison": "last_month"}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "scorecard", "title": "Churn Rate", "config": {"format": "percent", "trend": "down_good"}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Quarterly Performance", "config": {"chart_type": "bar", "multi_series": True}, "position": {"x": 0, "y": 2, "w": 6, "h": 4}},
+            {"type": "gauge", "title": "Q4 Target Progress", "config": {"min": 0, "max": 100, "target": 100, "unit": "%"}, "position": {"x": 6, "y": 2, "w": 3, "h": 4}},
+            {"type": "gauge", "title": "Customer Satisfaction", "config": {"min": 0, "max": 100, "target": 90, "unit": "%"}, "position": {"x": 9, "y": 2, "w": 3, "h": 4}},
+            {"type": "chart", "title": "Revenue by Region", "config": {"chart_type": "pie"}, "position": {"x": 0, "y": 6, "w": 4, "h": 4}},
+            {"type": "map", "title": "Global Performance", "config": {"map_type": "bubble"}, "position": {"x": 4, "y": 6, "w": 8, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_project",
+        "name": "Project Tracker",
+        "description": "Track project progress, tasks, and milestones",
+        "icon": "FolderKanban",
+        "color": "from-indigo-500 to-indigo-600",
+        "category": "project",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Active Projects", "config": {"aggregation": "count", "icon": "Folder"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Tasks Completed", "config": {"aggregation": "count", "icon": "CheckCircle"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Overdue Tasks", "config": {"aggregation": "count", "icon": "AlertCircle", "alert": True}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "gauge", "title": "On-Time Delivery", "config": {"min": 0, "max": 100, "target": 90, "unit": "%"}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "progress", "title": "Project Progress", "config": {"targets": [{"name": "Project Alpha", "current": 75, "target": 100}, {"name": "Project Beta", "current": 45, "target": 100}]}, "position": {"x": 0, "y": 2, "w": 4, "h": 4}},
+            {"type": "chart", "title": "Tasks by Status", "config": {"chart_type": "donut"}, "position": {"x": 4, "y": 2, "w": 4, "h": 4}},
+            {"type": "chart", "title": "Team Workload", "config": {"chart_type": "bar"}, "position": {"x": 8, "y": 2, "w": 4, "h": 4}},
+            {"type": "timeline", "title": "Upcoming Milestones", "config": {"limit": 5}, "position": {"x": 0, "y": 6, "w": 6, "h": 4}},
+            {"type": "table", "title": "Recent Activity", "config": {"columns": ["Task", "Assignee", "Status", "Due Date"], "limit": 6}, "position": {"x": 6, "y": 6, "w": 6, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_support",
+        "name": "Support Dashboard",
+        "description": "Track tickets, response times, and satisfaction",
+        "icon": "Headphones",
+        "color": "from-orange-500 to-orange-600",
+        "category": "support",
+        "is_preset": True,
+        "widgets": [
+            {"type": "stat", "title": "Open Tickets", "config": {"aggregation": "count", "icon": "Ticket"}, "position": {"x": 0, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Avg Response Time", "config": {"format": "duration", "icon": "Clock"}, "position": {"x": 3, "y": 0, "w": 3, "h": 2}},
+            {"type": "gauge", "title": "CSAT Score", "config": {"min": 0, "max": 100, "target": 90, "unit": "%"}, "position": {"x": 6, "y": 0, "w": 3, "h": 2}},
+            {"type": "stat", "title": "Resolved Today", "config": {"aggregation": "count", "icon": "CheckCircle"}, "position": {"x": 9, "y": 0, "w": 3, "h": 2}},
+            {"type": "chart", "title": "Tickets Over Time", "config": {"chart_type": "area", "color": "#f97316"}, "position": {"x": 0, "y": 2, "w": 8, "h": 4}},
+            {"type": "chart", "title": "Tickets by Category", "config": {"chart_type": "pie"}, "position": {"x": 8, "y": 2, "w": 4, "h": 4}},
+            {"type": "chart", "title": "Tickets by Priority", "config": {"chart_type": "bar"}, "position": {"x": 0, "y": 6, "w": 4, "h": 4}},
+            {"type": "list", "title": "Top Agents", "config": {"metric": "resolved", "limit": 5}, "position": {"x": 4, "y": 6, "w": 4, "h": 4}},
+            {"type": "heatmap", "title": "Ticket Volume by Hour", "config": {"x_axis": "hour", "y_axis": "weekday"}, "position": {"x": 8, "y": 6, "w": 4, "h": 4}},
+        ]
+    },
+    {
+        "id": "preset_blank",
+        "name": "Blank Canvas",
+        "description": "Start from scratch with an empty dashboard",
+        "icon": "Layers",
+        "color": "from-gray-400 to-gray-500",
+        "category": "custom",
+        "is_preset": True,
+        "widgets": []
+    }
+]
+
 
 # =============================================================================
 # Auth Routes
