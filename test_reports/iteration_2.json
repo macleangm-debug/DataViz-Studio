@@ -15,7 +15,7 @@
     "infrastructure_issues": [
       {
         "issue": "External URL mapping not working correctly", 
-        "details": "Public URL https://layout-customizer-1.preview.emergentagent.com returns 404 for all API endpoints",
+        "details": "Public URL https://viz-export-pro.preview.emergentagent.com returns 404 for all API endpoints",
         "impact": "External users cannot access the application",
         "fix_priority": "MEDIUM",
         "workaround": "Backend APIs accessible via localhost:8001"
