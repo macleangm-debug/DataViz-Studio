@@ -1,764 +1,685 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Search,
-  BookOpen,
-  ChevronRight,
-  ArrowLeft,
-  Home,
-  BarChart3,
-  Database,
-  Brain,
-  Upload,
-  LayoutDashboard,
-  Settings,
-  FileDown,
-  ZoomIn,
-  Calendar,
-  Play,
-  PieChart,
-  LineChart,
-  Table,
-  Sparkles,
-  HelpCircle,
-  ExternalLink
+import { 
+  Search, Book, HelpCircle, MessageCircle, Keyboard, 
+  ChevronRight, ChevronDown, ExternalLink, Play, Star,
+  BarChart3, PieChart, Table, FileText, Download, Upload,
+  Layout, Palette, Settings, Database, Sparkles, Zap,
+  AlertCircle, CheckCircle, Info, ArrowRight, Clock,
+  TrendingUp, Users, Target, Activity, Layers
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Input } from '../components/ui/input';
-import { Badge } from '../components/ui/badge';
-import { ScrollArea } from '../components/ui/scroll-area';
 import { DashboardLayout } from '../layouts/DashboardLayout';
+import HelpAssistant, { HelpAssistantButton } from '../components/HelpAssistant';
+import { useAuthStore } from '../store';
 
-// Content parser - converts markdown images to HTML
-const parseContent = (content) => {
-  if (!content) return '';
-  
-  // Parse markdown images: ![Alt text](/images/docs/filename.jpg)
-  let parsed = content.replace(
-    /!\[(.*?)\]\((.*?)\)/g, 
-    '<img src="$2" alt="$1" class="rounded-lg border my-4 shadow-lg max-w-full" />'
-  );
-  
-  // Parse headers
-  parsed = parsed.replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold mt-6 mb-3 text-foreground">$1</h3>');
-  parsed = parsed.replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold mt-8 mb-4 text-foreground">$1</h2>');
-  parsed = parsed.replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-8 mb-4 text-foreground">$1</h1>');
-  
-  // Parse bold and italic
-  parsed = parsed.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
-  parsed = parsed.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  
-  // Parse inline code
-  parsed = parsed.replace(/`(.*?)`/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">$1</code>');
-  
-  // Parse bullet lists
-  parsed = parsed.replace(/^- (.*$)/gm, '<li class="ml-4 mb-2">$1</li>');
-  parsed = parsed.replace(/(<li.*<\/li>\n?)+/g, '<ul class="list-disc list-inside my-4 space-y-1">$&</ul>');
-  
-  // Parse numbered lists
-  parsed = parsed.replace(/^\d+\. (.*$)/gm, '<li class="ml-4 mb-2">$1</li>');
-  
-  // Parse paragraphs (lines not already wrapped)
-  parsed = parsed.replace(/^(?!<[hulo]|<li|<img)(.*\S.*)$/gm, '<p class="mb-4 text-muted-foreground leading-relaxed">$1</p>');
-  
-  return parsed;
-};
+// =============================================================================
+// DATAVIZ STUDIO HELP CENTER DATA
+// =============================================================================
 
-// Help Center Articles Data
-const HELP_ARTICLES = {
-  'getting-started': {
+const HELP_CATEGORIES = [
+  {
     id: 'getting-started',
-    title: 'Getting Started with DataViz Studio',
-    category: 'Basics',
-    icon: Home,
-    description: 'Learn the basics of DataViz Studio and start visualizing your data in minutes.',
-    content: `
-# Getting Started with DataViz Studio
-
-Welcome to DataViz Studio! This guide will help you get up and running quickly.
-
-![DataViz Studio Dashboard](/images/docs/dashboard-overview.svg)
-
-## What is DataViz Studio?
-
-DataViz Studio is a powerful data visualization platform that helps you:
-
-- **Upload and manage datasets** from various sources
-- **Create interactive charts** with our Chart Studio
-- **Build custom dashboards** with drag-and-drop widgets
-- **Get AI-powered insights** using GPT-5.2
-- **Connect to external databases** (MongoDB, PostgreSQL, MySQL)
-- **Export professional PDF reports**
-
-## Quick Start Steps
-
-### 1. Upload Your Data
-
-Navigate to **Data > Upload** to import your first dataset. We support:
-- CSV files
-- Excel spreadsheets (.xlsx)
-- JSON files
-
-![Upload Data Page](/images/docs/upload-data.svg)
-
-### 2. Create Your First Chart
-
-Go to **Visualize > Charts** and click **Create Chart** to open the Chart Studio.
-
-### 3. Build a Dashboard
-
-Use the Dashboard Builder to arrange your charts and widgets in a custom layout.
-
-### 4. Get AI Insights
-
-Visit **Analyze > AI Insights** to ask questions about your data using natural language.
-    `
+    title: 'Getting Started',
+    icon: Play,
+    color: 'from-green-500 to-emerald-600',
+    description: 'Learn the basics of DataViz Studio',
+    articles: [
+      { title: 'Welcome to DataViz Studio', path: '#welcome' },
+      { title: 'Creating Your First Dashboard', path: '#first-dashboard' },
+      { title: 'Uploading Data', path: '#uploading-data' },
+      { title: 'Understanding the Interface', path: '#interface' },
+    ]
   },
-  'chart-studio': {
-    id: 'chart-studio',
-    title: 'Using the Chart Studio',
-    category: 'Visualization',
+  {
+    id: 'dashboards',
+    title: 'Dashboards',
+    icon: Layout,
+    color: 'from-violet-500 to-purple-600',
+    description: 'Create and customize dashboards',
+    articles: [
+      { title: 'Dashboard Templates', path: '#templates' },
+      { title: 'Adding Widgets', path: '#widgets' },
+      { title: 'Saving as Template', path: '#save-template' },
+      { title: 'Dashboard Layouts', path: '#layouts' },
+    ]
+  },
+  {
+    id: 'charts',
+    title: 'Charts & Visualization',
     icon: BarChart3,
-    description: 'Create stunning visualizations with our powerful Chart Studio featuring 9 chart types.',
-    content: `
-# Chart Studio Guide
-
-The Chart Studio is your creative workspace for building powerful visualizations.
-
-![Chart Studio Interface](/images/docs/chart-studio.svg)
-
-## Available Chart Types
-
-DataViz Studio offers 9 professional chart types powered by Apache ECharts:
-
-- **Bar Chart** - Compare categories
-- **Line Chart** - Show trends over time
-- **Pie Chart** - Display proportions
-- **Area Chart** - Visualize cumulative data
-- **Scatter Plot** - Show correlations
-- **Radar Chart** - Compare multiple variables
-- **Funnel Chart** - Visualize conversion flows
-- **Gauge Chart** - Display single metrics
-- **Heatmap** - Show data density
-
-## Creating a Chart
-
-### Step 1: Open Chart Studio
-
-Navigate to **Visualize > Charts** and click the **Create Chart** button.
-
-![Create Chart Button](/images/docs/create-chart-btn.svg)
-
-### Step 2: Configure Your Chart
-
-1. Enter a **Chart Name**
-2. Select your **Dataset**
-3. Choose a **Chart Type**
-4. Select **X-Axis Field** (category)
-5. Select **Y-Axis Field** (value) - optional
-6. Choose **Aggregation** method (count, sum, average, etc.)
-
-### Step 3: Customize Appearance
-
-![Chart Style Options](/images/docs/chart-style-options.svg)
-
-- Choose from 6 **Color Themes**: Violet, Ocean, Forest, Sunset, Berry, Mono
-- Toggle **Show Legend** and **Show Labels**
-- For pie charts, enable **Donut Style**
-- For line charts, enable **Smooth Curves** and **Area Fill**
-
-### Step 4: Preview and Save
-
-The live preview updates in real-time as you configure. Click **Save Chart** when satisfied.
-
-## AI-Powered Suggestions
-
-Click **Get AI Suggestions** after selecting a dataset to receive intelligent chart recommendations based on your data structure.
-    `
+    color: 'from-blue-500 to-cyan-600',
+    description: 'Create stunning visualizations',
+    articles: [
+      { title: 'Chart Types Guide', path: '#chart-types' },
+      { title: 'Adding Annotations', path: '#annotations' },
+      { title: 'Customizing Colors', path: '#colors' },
+      { title: 'Interactive Features', path: '#interactive' },
+    ]
   },
-  'database-connections': {
-    id: 'database-connections',
-    title: 'Connecting to Databases',
-    category: 'Data Sources',
+  {
+    id: 'reports',
+    title: 'Report Builder',
+    icon: FileText,
+    color: 'from-rose-500 to-pink-600',
+    description: 'Build professional reports',
+    articles: [
+      { title: 'Report Builder Overview', path: '#report-overview' },
+      { title: 'Adding Sections', path: '#sections' },
+      { title: 'Resizing Components', path: '#resizing' },
+      { title: 'PDF Export', path: '#pdf-export' },
+    ]
+  },
+  {
+    id: 'data',
+    title: 'Data Management',
     icon: Database,
-    description: 'Connect to MongoDB, PostgreSQL, or MySQL databases for real-time data sync.',
-    content: `
-# Database Connections
-
-Connect DataViz Studio to your external databases for real-time data synchronization.
-
-![Database Connections Page](/images/docs/database-connections.svg)
-
-## Supported Databases
-
-- **MongoDB** - NoSQL document database
-- **PostgreSQL** - Advanced relational database
-- **MySQL** - Popular relational database
-
-## Adding a Connection
-
-### Step 1: Navigate to Database Connections
-
-Go to **Data > Database Connections** and click **Add Connection**.
-
-### Step 2: Enter Connection Details
-
-![Add Connection Dialog](/images/docs/add-connection-dialog.svg)
-
-Fill in the required fields:
-- **Connection Name** - A friendly name for this connection
-- **Database Type** - MongoDB, PostgreSQL, or MySQL
-- **Host** - Database server address
-- **Port** - Database port (defaults: MongoDB 27017, PostgreSQL 5432, MySQL 3306)
-- **Database** - Database name to connect to
-- **Username** - Database user (optional for MongoDB)
-- **Password** - Database password
-
-### Step 3: Test Connection
-
-Click **Test** to verify the connection works before saving.
-
-### Step 4: Sync Data
-
-After adding the connection, click **Sync** to import data from your database tables/collections into DataViz Studio datasets.
-
-## Scheduled Data Refresh
-
-![Schedule Dialog](/images/docs/schedule-dialog.svg)
-
-Set up automatic data synchronization:
-
-1. Click the **Schedule** button on a connection
-2. Enable **Scheduled Refresh**
-3. Choose interval: **Hourly**, **Daily**, **Weekly**, or **Custom Cron**
-4. Click **Save Schedule**
-
-Your data will automatically refresh at the configured intervals.
-    `
+    color: 'from-amber-500 to-orange-600',
+    description: 'Import, transform, and manage data',
+    articles: [
+      { title: 'Importing Datasets', path: '#import' },
+      { title: 'Data Transformation', path: '#transform' },
+      { title: 'Connecting Sources', path: '#sources' },
+      { title: 'Data Refresh', path: '#refresh' },
+    ]
   },
-  'ai-insights': {
-    id: 'ai-insights',
-    title: 'AI-Powered Insights',
-    category: 'Analysis',
-    icon: Brain,
-    description: 'Use GPT-5.2 to ask questions about your data and get intelligent insights.',
-    content: `
-# AI-Powered Insights
-
-DataViz Studio integrates GPT-5.2 to provide intelligent analysis of your data.
-
-![AI Insights Page](/images/docs/ai-insights.svg)
-
-## How It Works
-
-The AI Insights feature analyzes your datasets and can:
-
-- **Summarize data** - Get quick overviews
-- **Identify trends** - Discover patterns automatically
-- **Suggest visualizations** - Recommend the best charts
-- **Detect anomalies** - Find unusual data points
-- **Answer questions** - Ask anything about your data
-
-## Using AI Insights
-
-### Step 1: Navigate to AI Insights
-
-Go to **Analyze > AI Insights** from the sidebar.
-
-### Step 2: Select a Dataset (Optional)
-
-Use the dropdown to focus on a specific dataset, or leave as "All datasets" for cross-dataset analysis.
-
-### Step 3: Ask a Question
-
-Type your question in the chat input. Try suggested prompts like:
-- "Summarize this dataset"
-- "What are the key trends?"
-- "Show me anomalies"
-
-### Step 4: Review Insights
-
-The AI will analyze your data and provide detailed insights with actionable recommendations.
-
-## Example Questions
-
-- "What is the average sales by category?"
-- "Which products are underperforming?"
-- "Identify the top 5 customers by revenue"
-- "Are there any unusual patterns in the last month?"
-- "What visualization would best show this data?"
-    `
-  },
-  'dashboard-builder': {
-    id: 'dashboard-builder',
-    title: 'Building Dashboards',
-    category: 'Visualization',
-    icon: LayoutDashboard,
-    description: 'Create interactive dashboards with drag-and-drop widgets.',
-    content: `
-# Dashboard Builder Guide
-
-Create powerful, interactive dashboards with our drag-and-drop builder.
-
-![Dashboard Builder](/images/docs/dashboard-builder.svg)
-
-## Widget Types
-
-The Dashboard Builder supports multiple widget types:
-
-- **Stat Cards** - Display key metrics (count, sum, average, max, min)
-- **Chart Widgets** - Embed any chart type
-- **Table Widgets** - Show data in tabular format
-- **Text Blocks** - Add titles, descriptions, and notes
-
-## Creating a Dashboard
-
-### Step 1: Navigate to Dashboards
-
-Go to **Visualize > Dashboards** and click **Create Dashboard**.
-
-### Step 2: Add Widgets
-
-Click **Add Widget** and select the widget type:
-
-![Add Widget](/images/docs/add-widget.svg)
-
-### Step 3: Configure Widget
-
-Each widget has specific configuration options:
-
-**Stat Card:**
-- Select dataset
-- Choose metric field
-- Pick aggregation (count, sum, mean, max, min)
-
-**Chart Widget:**
-- Select an existing chart or create new
-- Choose chart type and configure axes
-
-**Table Widget:**
-- Select dataset
-- Choose columns to display
-
-### Step 4: Arrange Layout
-
-Drag widgets to reposition them. Resize by dragging the corners.
-
-![Dashboard Layout](/images/docs/dashboard-layout.svg)
-
-### Step 5: Save Dashboard
-
-Click **Save** to preserve your dashboard layout.
-    `
-  },
-  'drill-down': {
-    id: 'drill-down',
-    title: 'Chart Drill-Down',
-    category: 'Analysis',
-    icon: ZoomIn,
-    description: 'Explore your data deeper with interactive drill-down capabilities.',
-    content: `
-# Chart Drill-Down
-
-Drill-down allows you to explore data hierarchically by clicking on chart elements.
-
-![Drill-Down Feature](/images/docs/drill-down.svg)
-
-## How Drill-Down Works
-
-When viewing a chart, you can click on categories to filter and see detailed breakdowns.
-
-### Example Flow:
-
-1. **Start**: View sales by Category (Electronics, Furniture, Clothing)
-2. **Drill**: Click on "Electronics" to see products in that category
-3. **Drill deeper**: Click on "Laptops" to see individual sales
-
-## Using Drill-Down
-
-### Step 1: Open a Chart
-
-Click on any chart card in the Charts page to open the detailed view.
-
-### Step 2: View Drill Options
-
-Below the chart, you'll see **"Click to Drill Down"** with available filter fields.
-
-![Drill Options](/images/docs/drill-options.svg)
-
-### Step 3: Click a Filter
-
-Click any value button to filter the data. The chart updates to show only matching records.
-
-### Step 4: Navigate with Breadcrumbs
-
-A breadcrumb trail appears showing your filter path:
-
-\`Reset > category: Electronics > region: North\`
-
-Click **Reset** to return to the original view.
-
-## Drill-Down Tips
-
-- The row count shows how many records match your filters
-- Additional drill options appear based on remaining categorical fields
-- Export filtered data to PDF using the **Export PDF** button
-    `
-  },
-  'pdf-export': {
-    id: 'pdf-export',
-    title: 'Exporting PDF Reports',
-    category: 'Export',
-    icon: FileDown,
-    description: 'Generate professional PDF reports from your charts and dashboards.',
-    content: `
-# PDF Report Export
-
-Generate professional PDF reports containing your charts and data tables.
-
-![PDF Export](/images/docs/pdf-export.svg)
-
-## Export Options
-
-### Export All Charts
-
-From the **Charts** page, click **Export All to PDF** to generate a report with all your charts.
-
-### Export Single Chart
-
-When viewing a chart in the detail dialog, click **Export PDF** to export just that chart.
-
-### Export Dashboard
-
-From any dashboard, use the export option to generate a full dashboard report.
-
-## What's Included
-
-PDF reports contain:
-
-- **Report Title** with timestamp
-- **Chart visualizations** rendered as bar charts
-- **Data tables** with category and value columns
-- **Professional styling** with DataViz Studio branding
-
-## Customization
-
-When exporting, you can choose to:
-
-- Include or exclude data tables
-- Set a custom report title
-- Select specific charts to include
-
-## Tips for Best Results
-
-- Ensure charts have meaningful names
-- Use clear axis labels
-- Choose chart types that translate well to static images (bar, pie, line work best)
-    `
-  },
-  'upload-data': {
-    id: 'upload-data',
-    title: 'Uploading Data',
-    category: 'Data Sources',
-    icon: Upload,
-    description: 'Import CSV, Excel, and JSON files to create datasets.',
-    content: `
-# Uploading Data
-
-Import your data files to create datasets for visualization.
-
-![Upload Page](/images/docs/upload-page.svg)
-
-## Supported Formats
-
-- **CSV** - Comma-separated values
-- **Excel** - .xlsx spreadsheets
-- **JSON** - JavaScript Object Notation
-
-## Upload Process
-
-### Step 1: Navigate to Upload
-
-Go to **Data > Upload Data** from the sidebar.
-
-### Step 2: Select File
-
-Click the upload area or drag and drop your file.
-
-### Step 3: Preview Data
-
-After upload, preview your data to verify it was parsed correctly.
-
-### Step 4: Name Your Dataset
-
-Give your dataset a meaningful name for easy identification.
-
-### Step 5: Confirm Import
-
-Click **Import** to create the dataset.
-
-## Data Requirements
-
-For best results:
-
-- Include column headers in the first row
-- Use consistent data types in each column
-- Avoid special characters in column names
-- Keep file size under 10MB for optimal performance
-
-## After Upload
-
-Your dataset will be available in:
-- **Datasets** page for browsing and management
-- **Chart Studio** for creating visualizations
-- **Dashboard Builder** for adding to dashboards
-- **AI Insights** for intelligent analysis
-    `
+  {
+    id: 'widgets',
+    title: 'Widget Types',
+    icon: Layers,
+    color: 'from-teal-500 to-green-600',
+    description: 'Explore all widget types',
+    articles: [
+      { title: 'Stat Cards', path: '#stat-cards' },
+      { title: 'Gauges & Progress', path: '#gauges' },
+      { title: 'Tables & Lists', path: '#tables' },
+      { title: 'Maps & Heatmaps', path: '#maps' },
+    ]
   }
-};
-
-// Category grouping
-const CATEGORIES = [
-  { name: 'Basics', icon: Home, color: 'text-blue-500' },
-  { name: 'Data Sources', icon: Database, color: 'text-green-500' },
-  { name: 'Visualization', icon: BarChart3, color: 'text-violet-500' },
-  { name: 'Analysis', icon: Brain, color: 'text-amber-500' },
-  { name: 'Export', icon: FileDown, color: 'text-rose-500' },
 ];
 
-export function HelpCenterPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-
-  const articles = Object.values(HELP_ARTICLES);
-
-  const filteredArticles = useMemo(() => {
-    let result = articles;
-    
-    if (selectedCategory) {
-      result = result.filter(a => a.category === selectedCategory);
-    }
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(a => 
-        a.title.toLowerCase().includes(query) ||
-        a.description.toLowerCase().includes(query) ||
-        a.content.toLowerCase().includes(query)
-      );
-    }
-    
-    return result;
-  }, [articles, searchQuery, selectedCategory]);
-
-  const groupedArticles = useMemo(() => {
-    const groups = {};
-    filteredArticles.forEach(article => {
-      if (!groups[article.category]) {
-        groups[article.category] = [];
-      }
-      groups[article.category].push(article);
-    });
-    return groups;
-  }, [filteredArticles]);
-
-  // Article Detail View
-  if (selectedArticle) {
-    const article = HELP_ARTICLES[selectedArticle];
-    if (!article) return null;
-
-    return (
-      <DashboardLayout>
-        <div className="max-w-4xl mx-auto" data-testid="help-article-view">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedArticle(null)}
-            className="mb-6"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Help Center
-          </Button>
-
-          {/* Article Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                <article.icon className="w-6 h-6 text-violet-600" />
-              </div>
-              <div>
-                <Badge variant="secondary">{article.category}</Badge>
-                <h1 className="text-3xl font-bold text-foreground mt-1">{article.title}</h1>
-              </div>
-            </div>
-            <p className="text-lg text-muted-foreground">{article.description}</p>
-          </div>
-
-          {/* Article Content */}
-          <Card>
-            <CardContent className="p-8 prose prose-slate dark:prose-invert max-w-none">
-              <div 
-                dangerouslySetInnerHTML={{ __html: parseContent(article.content) }}
-                className="article-content"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Related Articles */}
-          <div className="mt-12">
-            <h3 className="text-lg font-semibold mb-4">Related Articles</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              {articles
-                .filter(a => a.category === article.category && a.id !== article.id)
-                .slice(0, 2)
-                .map(related => (
-                  <Card 
-                    key={related.id}
-                    className="cursor-pointer hover:border-violet-300 transition-colors"
-                    onClick={() => setSelectedArticle(related.id)}
-                  >
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <related.icon className="w-5 h-5 text-violet-600" />
-                      <div>
-                        <p className="font-medium text-foreground">{related.title}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-1">{related.description}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
+const FAQ_DATA = [
+  {
+    question: "How do I create a dashboard from a template?",
+    answer: "Go to Dashboards page, click the 'Templates' button in the header. You'll see 10 preset templates (Sales, Marketing, Customer, etc.) plus your custom templates. Click any template to instantly create a new dashboard with pre-configured widgets.",
+    category: "dashboards"
+  },
+  {
+    question: "How do I export a report to PDF?",
+    answer: "In the Report Builder, click the 'Export PDF' button in the top-right corner. The report will automatically switch to preview mode and generate a multi-page PDF with headers and footers. The PDF is downloaded to your device.",
+    category: "reports"
+  },
+  {
+    question: "What chart types are available?",
+    answer: "DataViz Studio supports 9 chart types: Bar, Line, Area, Pie, Donut, Scatter, Radar, Heatmap, and Funnel. Each chart type can be customized with colors, annotations, and interactive features.",
+    category: "charts"
+  },
+  {
+    question: "How do I save a dashboard as a template?",
+    answer: "Open your dashboard and click 'Save as Template' in the header. Enter a name and optional description, then click Save. Your template will appear in the 'My Templates' tab of the Templates dialog.",
+    category: "dashboards"
+  },
+  {
+    question: "How do I add annotations to a chart?",
+    answer: "Open the chart editor and navigate to the 'Annotations' tab. You can add text labels, reference lines, or highlight regions. Each annotation can be customized with position, color, and style.",
+    category: "charts"
+  },
+  {
+    question: "How do I transform my dataset?",
+    answer: "From the Datasets page, click the transform icon (wand) on any dataset. You can filter rows, rename columns, change data types, calculate new fields, fill missing values, and more. Preview changes before applying.",
+    category: "data"
+  },
+  {
+    question: "What widget types can I add to dashboards?",
+    answer: "DataViz Studio supports 12 widget types: Stat cards, Charts, Tables, Gauges, Progress bars, Maps, Funnels, Heatmaps, Scorecards, Lists, Timelines, and Sparklines. Each has unique configuration options.",
+    category: "widgets"
+  },
+  {
+    question: "How do I resize sections in Report Builder?",
+    answer: "In the Report Builder, each section has a width dropdown (25%, 50%, 75%, 100%) in its header. Select the desired width to resize. You can create side-by-side layouts like 50%/50% or 25%/75%.",
+    category: "reports"
+  },
+  {
+    question: "Can I use custom colors in my reports?",
+    answer: "Yes! Click the theme selector in the Report Builder header. Choose from 6 preset themes or click 'Custom Colors' to pick your own primary and accent colors using the color picker.",
+    category: "reports"
+  },
+  {
+    question: "How do I upload data?",
+    answer: "Go to Data page and click 'Upload Data'. You can upload CSV, Excel (.xlsx), or JSON files. After upload, the data is automatically parsed and you can start creating visualizations immediately.",
+    category: "data"
   }
+];
 
-  // Help Center Home
+const TROUBLESHOOTING_DATA = [
+  {
+    problem: "Dashboard widgets not loading",
+    solution: "Try refreshing the page. If the issue persists, check your internet connection. Widgets require an active connection to fetch data from the server.",
+    severity: "medium"
+  },
+  {
+    problem: "PDF export shows blank pages",
+    solution: "Make sure you're in Preview mode before exporting. Also ensure all charts have loaded completely. Try waiting a few seconds after switching to Preview before clicking Export.",
+    severity: "low"
+  },
+  {
+    problem: "Data upload fails",
+    solution: "Check that your file is in a supported format (CSV, XLSX, JSON). Ensure the file size is under 50MB. For CSV files, verify the delimiter is comma-separated.",
+    severity: "medium"
+  },
+  {
+    problem: "Chart annotations not displaying",
+    solution: "Annotations may be positioned outside the visible chart area. Try adjusting the position values. Also ensure the annotation type matches your chart type.",
+    severity: "low"
+  },
+  {
+    problem: "Template not saving",
+    solution: "Ensure you're logged in. Template saving requires authentication. Check that you've entered a template name before clicking Save.",
+    severity: "high"
+  },
+  {
+    problem: "Session expired / Logged out unexpectedly",
+    solution: "Sessions expire after inactivity. Simply log in again to continue. Your dashboards and reports are saved automatically.",
+    severity: "low"
+  }
+];
+
+const KEYBOARD_SHORTCUTS = [
+  { keys: ['Ctrl', 'S'], action: 'Save current work', category: 'General' },
+  { keys: ['Ctrl', 'Z'], action: 'Undo last action', category: 'General' },
+  { keys: ['Ctrl', 'Shift', 'Z'], action: 'Redo action', category: 'General' },
+  { keys: ['Ctrl', 'P'], action: 'Export to PDF', category: 'Reports' },
+  { keys: ['Ctrl', 'N'], action: 'Create new item', category: 'General' },
+  { keys: ['Esc'], action: 'Close dialog/modal', category: 'Navigation' },
+  { keys: ['?'], action: 'Open Help Center', category: 'Help' },
+  { keys: ['Ctrl', 'K'], action: 'Quick search', category: 'Navigation' },
+  { keys: ['Tab'], action: 'Navigate between elements', category: 'Navigation' },
+  { keys: ['Enter'], action: 'Confirm/Submit', category: 'General' }
+];
+
+const WHATS_NEW = [
+  {
+    version: "2.5.0",
+    date: "Feb 2026",
+    title: "Dashboard Template Library",
+    features: [
+      "10 preset dashboard templates",
+      "Save dashboards as custom templates",
+      "Category filtering for templates",
+      "Edit and delete custom templates",
+      "12 widget types supported"
+    ],
+    type: "major"
+  },
+  {
+    version: "2.4.0",
+    date: "Feb 2026",
+    title: "Chart Resizing & Refactoring",
+    features: [
+      "Width control for report sections (25%, 50%, 75%, 100%)",
+      "Improved Report Builder performance",
+      "Modular component architecture"
+    ],
+    type: "minor"
+  },
+  {
+    version: "2.3.0",
+    date: "Feb 2026",
+    title: "Text/Notes Blocks",
+    features: [
+      "Add custom text blocks anywhere in reports",
+      "Editable section titles",
+      "Flexible notes and observations"
+    ],
+    type: "minor"
+  },
+  {
+    version: "2.2.0",
+    date: "Feb 2026",
+    title: "Multi-Page PDF Export",
+    features: [
+      "Intelligent page breaks",
+      "Continuation headers on page 2+",
+      "Branded footers with page numbers"
+    ],
+    type: "major"
+  }
+];
+
+// =============================================================================
+// COMPONENTS
+// =============================================================================
+
+const CategoryCard = ({ category, onClick }) => {
+  const Icon = category.icon;
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
+    >
+      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-4`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{category.title}</h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{category.description}</p>
+      <div className="flex items-center text-violet-600 dark:text-violet-400 text-sm font-medium">
+        <span>{category.articles.length} articles</span>
+        <ChevronRight className="w-4 h-4 ml-1" />
+      </div>
+    </motion.div>
+  );
+};
+
+const FAQItem = ({ faq, isOpen, onToggle }) => (
+  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <button
+      onClick={onToggle}
+      className="w-full px-4 py-3 flex items-center justify-between bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+    >
+      <span className="font-medium text-gray-900 dark:text-white text-left">{faq.question}</span>
+      <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+    </button>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="overflow-hidden"
+        >
+          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 text-sm">
+            {faq.answer}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
+
+const TroubleshootingItem = ({ item }) => {
+  const severityColors = {
+    low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    high: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-amber-500" />
+          <span className="font-medium text-gray-900 dark:text-white">{item.problem}</span>
+        </div>
+        <span className={`text-xs px-2 py-1 rounded-full ${severityColors[item.severity]}`}>
+          {item.severity}
+        </span>
+      </div>
+      <div className="flex items-start gap-2 mt-3">
+        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-gray-600 dark:text-gray-300">{item.solution}</p>
+      </div>
+    </div>
+  );
+};
+
+const KeyboardShortcut = ({ shortcut }) => (
+  <div className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+    <span className="text-sm text-gray-700 dark:text-gray-300">{shortcut.action}</span>
+    <div className="flex items-center gap-1">
+      {shortcut.keys.map((key, index) => (
+        <React.Fragment key={index}>
+          <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300 shadow-sm">
+            {key}
+          </kbd>
+          {index < shortcut.keys.length - 1 && <span className="text-gray-400 text-xs">+</span>}
+        </React.Fragment>
+      ))}
+    </div>
+  </div>
+);
+
+const WhatsNewItem = ({ item }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-2">
+        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+          item.type === 'major' 
+            ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+        }`}>
+          v{item.version}
+        </span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">{item.date}</span>
+      </div>
+      {item.type === 'major' && <Star className="w-4 h-4 text-amber-500" />}
+    </div>
+    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{item.title}</h4>
+    <ul className="space-y-1">
+      {item.features.map((feature, index) => (
+        <li key={index} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+          <Zap className="w-3 h-3 text-violet-500" />
+          {feature}
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+// =============================================================================
+// MAIN HELP CENTER PAGE
+// =============================================================================
+
+const HelpCenterPage = () => {
+  const { token } = useAuthStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [openFAQ, setOpenFAQ] = useState(null);
+  const [showAssistant, setShowAssistant] = useState(false);
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Book },
+    { id: 'faq', label: 'FAQ', icon: HelpCircle },
+    { id: 'troubleshooting', label: 'Troubleshooting', icon: AlertCircle },
+    { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+    { id: 'whats-new', label: "What's New", icon: Sparkles },
+  ];
+
+  const filteredFAQs = FAQ_DATA.filter(faq =>
+    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const groupedShortcuts = KEYBOARD_SHORTCUTS.reduce((acc, shortcut) => {
+    if (!acc[shortcut.category]) acc[shortcut.category] = [];
+    acc[shortcut.category].push(shortcut);
+    return acc;
+  }, {});
+
   return (
     <DashboardLayout>
-      <div className="space-y-8" data-testid="help-center-page">
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mx-auto mb-4">
-            <BookOpen className="w-8 h-8 text-violet-600" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900" data-testid="help-center-page">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 text-white">
+          <div className="max-w-6xl mx-auto px-6 py-16">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold mb-4">How can we help you?</h1>
+              <p className="text-lg text-white/80 mb-8">
+                Search our knowledge base or browse categories below
+              </p>
+              
+              {/* Search */}
+              <div className="max-w-2xl mx-auto relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for help articles..."
+                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                  data-testid="help-search-input"
+                />
+              </div>
+
+              {/* Quick Stats */}
+              <div className="flex items-center justify-center gap-8 mt-8 text-sm">
+                <div className="flex items-center gap-2">
+                  <Book className="w-4 h-4" />
+                  <span>{HELP_CATEGORIES.reduce((acc, cat) => acc + cat.articles.length, 0)} articles</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4" />
+                  <span>{FAQ_DATA.length} FAQs</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  <span>AI Assistant</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Help Center</h1>
-          <p className="text-muted-foreground">
-            Learn how to use DataViz Studio with guides, tutorials, and documentation
-          </p>
         </div>
 
-        {/* Search */}
-        <div className="max-w-xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search articles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 text-lg"
-              data-testid="help-search-input"
-            />
+        {/* Tabs */}
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex items-center gap-1 overflow-x-auto py-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    data-testid={`tab-${tab.id}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Categories */}
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button
-            variant={selectedCategory === null ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedCategory(null)}
-          >
-            All
-          </Button>
-          {CATEGORIES.map(cat => (
-            <Button
-              key={cat.name}
-              variant={selectedCategory === cat.name ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(cat.name)}
-              className="gap-2"
-            >
-              <cat.icon className={`w-4 h-4 ${selectedCategory === cat.name ? '' : cat.color}`} />
-              {cat.name}
-            </Button>
-          ))}
-        </div>
-
-        {/* Articles Grid */}
-        {Object.keys(groupedArticles).length > 0 ? (
-          <div className="space-y-8">
-            {CATEGORIES.filter(cat => groupedArticles[cat.name]).map(category => (
-              <div key={category.name}>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <category.icon className={`w-5 h-5 ${category.color}`} />
-                  {category.name}
+        {/* Content */}
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  Browse by Category
                 </h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {groupedArticles[category.name].map((article, index) => (
-                    <motion.div
-                      key={article.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <Card 
-                        className="h-full cursor-pointer hover:border-violet-300 hover:shadow-lg transition-all group"
-                        onClick={() => setSelectedArticle(article.id)}
-                        data-testid={`article-card-${article.id}`}
-                      >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                              <article.icon className="w-5 h-5 text-violet-600" />
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                          <CardTitle className="text-lg mt-3">{article.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <CardDescription className="line-clamp-2">
-                            {article.description}
-                          </CardDescription>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
+                  {HELP_CATEGORIES.map((category) => (
+                    <CategoryCard
+                      key={category.id}
+                      category={category}
+                      onClick={() => setSelectedCategory(category)}
+                    />
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <Card className="max-w-md mx-auto">
-            <CardContent className="p-8 text-center">
-              <HelpCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold text-foreground mb-2">No articles found</h3>
-              <p className="text-sm text-muted-foreground">
-                Try adjusting your search or category filter
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Need More Help */}
-        <Card className="max-w-2xl mx-auto border-violet-200 dark:border-violet-800">
-          <CardContent className="p-6 text-center">
-            <Sparkles className="w-8 h-8 text-violet-600 mx-auto mb-3" />
-            <h3 className="font-semibold text-foreground mb-2">Need more help?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Try our AI-powered assistant to get instant answers about your data
-            </p>
-            <Button className="bg-violet-600 hover:bg-violet-700">
-              <Brain className="w-4 h-4 mr-2" />
-              Open AI Insights
-            </Button>
-          </CardContent>
-        </Card>
+              {/* Popular Articles */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  Popular Articles
+                </h2>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+                  {[
+                    { title: 'Getting Started with DataViz Studio', icon: Play, color: 'text-green-500' },
+                    { title: 'Creating Dashboards from Templates', icon: Layout, color: 'text-violet-500' },
+                    { title: 'Exporting Reports to PDF', icon: Download, color: 'text-blue-500' },
+                    { title: 'Understanding Widget Types', icon: Layers, color: 'text-amber-500' },
+                    { title: 'Data Transformation Guide', icon: Database, color: 'text-rose-500' },
+                  ].map((article, index) => (
+                    <a
+                      key={index}
+                      href="#"
+                      className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <article.icon className={`w-5 h-5 ${article.color}`} />
+                        <span className="text-gray-900 dark:text-white">{article.title}</span>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-gray-400" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  Quick Actions
+                </h2>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => setShowAssistant(true)}
+                    className="bg-gradient-to-br from-violet-500 to-purple-600 text-white rounded-xl p-6 text-left hover:shadow-lg transition-shadow"
+                  >
+                    <MessageCircle className="w-8 h-8 mb-3" />
+                    <h3 className="font-semibold mb-1">Chat with AI</h3>
+                    <p className="text-sm text-white/80">Get instant answers from our AI assistant</p>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('faq')}
+                    className="bg-white dark:bg-gray-800 rounded-xl p-6 text-left border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+                  >
+                    <HelpCircle className="w-8 h-8 mb-3 text-blue-500" />
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Browse FAQs</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Find answers to common questions</p>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('troubleshooting')}
+                    className="bg-white dark:bg-gray-800 rounded-xl p-6 text-left border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+                  >
+                    <AlertCircle className="w-8 h-8 mb-3 text-amber-500" />
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Troubleshooting</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Solve common issues</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FAQ Tab */}
+          {activeTab === 'faq' && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                Frequently Asked Questions
+              </h2>
+              {filteredFAQs.length > 0 ? (
+                filteredFAQs.map((faq, index) => (
+                  <FAQItem
+                    key={index}
+                    faq={faq}
+                    isOpen={openFAQ === index}
+                    onToggle={() => setOpenFAQ(openFAQ === index ? null : index)}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <HelpCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No FAQs found matching "{searchQuery}"</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Troubleshooting Tab */}
+          {activeTab === 'troubleshooting' && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                Troubleshooting Guide
+              </h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                {TROUBLESHOOTING_DATA.map((item, index) => (
+                  <TroubleshootingItem key={index} item={item} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Shortcuts Tab */}
+          {activeTab === 'shortcuts' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                Keyboard Shortcuts
+              </h2>
+              {Object.entries(groupedShortcuts).map(([category, shortcuts]) => (
+                <div key={category}>
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">{category}</h3>
+                  <div className="space-y-2">
+                    {shortcuts.map((shortcut, index) => (
+                      <KeyboardShortcut key={index} shortcut={shortcut} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* What's New Tab */}
+          {activeTab === 'whats-new' && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                What's New in DataViz Studio
+              </h2>
+              <div className="space-y-4">
+                {WHATS_NEW.map((item, index) => (
+                  <WhatsNewItem key={index} item={item} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Category Detail Modal */}
+        <AnimatePresence>
+          {selectedCategory && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={() => setSelectedCategory(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={`p-6 bg-gradient-to-br ${selectedCategory.color}`}>
+                  <div className="flex items-center justify-between text-white">
+                    <div className="flex items-center gap-3">
+                      <selectedCategory.icon className="w-8 h-8" />
+                      <h2 className="text-xl font-bold">{selectedCategory.title}</h2>
+                    </div>
+                    <button onClick={() => setSelectedCategory(null)} className="p-2 hover:bg-white/10 rounded-lg">
+                      <ChevronDown className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-white/80 mt-2">{selectedCategory.description}</p>
+                </div>
+                <div className="p-4 max-h-[400px] overflow-y-auto">
+                  <div className="space-y-2">
+                    {selectedCategory.articles.map((article, index) => (
+                      <a
+                        key={index}
+                        href={article.path}
+                        className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <span className="text-gray-900 dark:text-white">{article.title}</span>
+                        <ArrowRight className="w-4 h-4 text-gray-400" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Assistant */}
+        {!showAssistant && <HelpAssistantButton onClick={() => setShowAssistant(true)} />}
+        <HelpAssistant 
+          isOpen={showAssistant} 
+          onClose={() => setShowAssistant(false)} 
+          token={token}
+        />
       </div>
     </DashboardLayout>
   );
-}
+};
 
 export default HelpCenterPage;
