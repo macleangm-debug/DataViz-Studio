@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   FileText, Trash2, ArrowUp, ArrowDown, 
   Type, BarChart3, Table, PieChart, TrendingUp, LayoutGrid,
-  Maximize2, Minimize2
+  Maximize2, Minimize2, GripVertical
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StatCard, { STAT_ICONS } from './StatCard';
