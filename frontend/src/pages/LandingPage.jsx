@@ -248,23 +248,23 @@ export function LandingPage() {
         <motion.div 
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-32 left-[10%] w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center hidden lg:flex"
+          className="absolute top-32 left-[10%] w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center hidden lg:flex"
         >
-          <BarChart3 className="w-6 h-6 text-violet-400" />
+          <PieChart className="w-6 h-6 text-purple-400" />
         </motion.div>
         <motion.div 
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-48 right-[10%] w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center hidden lg:flex"
+          className="absolute top-48 right-[10%] w-14 h-14 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center hidden lg:flex"
         >
-          <PieChart className="w-6 h-6 text-blue-400" />
+          <BarChart3 className="w-6 h-6 text-fuchsia-400" />
         </motion.div>
         <motion.div 
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-40 left-[8%] w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center hidden lg:flex"
+          className="absolute bottom-40 left-[8%] w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center hidden lg:flex"
         >
-          <LineChart className="w-5 h-5 text-teal-400" />
+          <LineChart className="w-5 h-5 text-cyan-400" />
         </motion.div>
         <motion.div 
           animate={{ y: [0, 12, 0] }}
