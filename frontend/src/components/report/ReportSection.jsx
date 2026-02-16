@@ -92,11 +92,7 @@ const ReportSection = ({
     setDragStartWidth(section.width || 100);
     setPreviewWidth(section.width || 100);
     
-    // Add global listeners
-    document.addEventListener('mousemove', handleDragMove);
-    document.addEventListener('mouseup', handleDragEnd);
-    document.addEventListener('touchmove', handleDragMove);
-    document.addEventListener('touchend', handleDragEnd);
+    // Add global listeners - these will be set up in the useEffect below
   }, [isPreview, section.width]);
   
   // Handle drag movement
@@ -116,28 +112,45 @@ const ReportSection = ({
   }, [isDragging, dragStartX, dragStartWidth]);
   
   // Handle drag end
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useCallback((onResizeWidthFn, idx, currentWidth, pWidth, dragMoveFn) => {
     if (!isDragging) return;
     
     setIsDragging(false);
     
     // Snap to final width
-    if (previewWidth !== null && previewWidth !== section.width) {
-      onResizeWidth(index, previewWidth);
+    if (pWidth !== null && pWidth !== currentWidth) {
+      onResizeWidthFn(idx, pWidth);
     }
     
     setPreviewWidth(null);
-    
-    // Remove global listeners
-    document.removeEventListener('mousemove', handleDragMove);
-    document.removeEventListener('mouseup', handleDragEnd);
-    document.removeEventListener('touchmove', handleDragMove);
-    document.removeEventListener('touchend', handleDragEnd);
-  }, [isDragging, previewWidth, section.width, index, onResizeWidth, handleDragMove]);
+  }, [isDragging]);
   
   // Effect to handle drag state
   useEffect(() => {
-    if (isDragging) {
+    if (!isDragging) return;
+    
+    const moveHandler = (e) => handleDragMove(e);
+    const endHandler = () => {
+      handleDragEnd(onResizeWidth, index, section.width, previewWidth, handleDragMove);
+      // Remove listeners
+      document.removeEventListener('mousemove', moveHandler);
+      document.removeEventListener('mouseup', endHandler);
+      document.removeEventListener('touchmove', moveHandler);
+      document.removeEventListener('touchend', endHandler);
+    };
+    
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', endHandler);
+    document.addEventListener('touchmove', moveHandler);
+    document.addEventListener('touchend', endHandler);
+    
+    return () => {
+      document.removeEventListener('mousemove', moveHandler);
+      document.removeEventListener('mouseup', endHandler);
+      document.removeEventListener('touchmove', moveHandler);
+      document.removeEventListener('touchend', endHandler);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd, onResizeWidth, index, section.width, previewWidth]);
       document.addEventListener('mousemove', handleDragMove);
       document.addEventListener('mouseup', handleDragEnd);
       document.addEventListener('touchmove', handleDragMove);
