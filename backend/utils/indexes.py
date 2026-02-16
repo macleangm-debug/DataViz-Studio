@@ -209,11 +209,16 @@ async def create_indexes(db: AsyncIOMotorDatabase):
             ("status", 1),
             ("created_at", -1)
         ])
-        # TTL index to auto-delete completed tasks (7 days)
+        # TTL index - drop and recreate if exists
+        try:
+            await db.background_tasks.drop_index("tasks_ttl")
+        except:
+            pass
         await db.background_tasks.create_index(
             "completed_at",
             expireAfterSeconds=7 * 24 * 60 * 60,
-            partialFilterExpression={"status": "completed"}
+            partialFilterExpression={"status": "completed"},
+            name="tasks_ttl"
         )
         logger.info("Created indexes for 'background_tasks' collection")
         
