@@ -3236,41 +3236,20 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_db_client():
-    """Initialize database indexes and scheduler on startup"""
+    """Initialize database indexes, cache, and scheduler on startup"""
     logger.info("DataViz Studio API starting up...")
     
     try:
-        # Users
-        await db.users.create_index("email", unique=True)
-        await db.users.create_index("id", unique=True)
+        # Create all database indexes using the indexes utility
+        await create_indexes(db)
+        logger.info("All database indexes created successfully")
         
-        # Organizations
-        await db.organizations.create_index("id", unique=True)
-        
-        # Data Sources
-        await db.data_sources.create_index("id", unique=True)
-        await db.data_sources.create_index("org_id")
-        
-        # Datasets
-        await db.datasets.create_index("id", unique=True)
-        await db.datasets.create_index("org_id")
-        
-        # Dataset Data
-        await db.dataset_data.create_index("dataset_id")
-        
-        # Dashboards
-        await db.dashboards.create_index("id", unique=True)
-        await db.dashboards.create_index("org_id")
-        
-        # Charts
-        await db.charts.create_index("id", unique=True)
-        await db.charts.create_index("dataset_id")
-        
-        # Database Connections
-        await db.database_connections.create_index("id", unique=True)
-        await db.database_connections.create_index("org_id")
-        
-        logger.info("Database indexes created successfully")
+        # Initialize Redis cache connection
+        redis = await get_redis()
+        if redis:
+            logger.info("Redis cache initialized successfully")
+        else:
+            logger.warning("Redis cache not available - running without caching")
         
         # Start the scheduler for scheduled data refreshes
         scheduler.start()
