@@ -282,11 +282,11 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-col items-center mb-8"
             >
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center mb-4 shadow-xl shadow-violet-500/30">
-                <BarChart3 className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-400 via-fuchsia-500 to-purple-600 flex items-center justify-center mb-4 shadow-xl shadow-purple-500/30">
+                <DataVizLogo className="w-10 h-10 text-white" />
               </div>
               <span className="text-2xl font-bold text-white mb-2">DataViz Studio</span>
-              <Badge className="bg-violet-500/20 text-violet-400 border-violet-500/30">
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
                 Your Complete Data Visualization Platform
               </Badge>
             </motion.div>
