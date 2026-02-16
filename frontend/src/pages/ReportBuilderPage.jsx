@@ -451,7 +451,8 @@ const ReportBuilderPage = () => {
           {/* Help Text */}
           <div className="mt-4 text-center text-sm text-gray-500">
             <p>
-              <strong>Tips:</strong> Use the width dropdown (25%, 50%, 75%, 100%) to resize sections • 
+              <strong>Tips:</strong> Drag the edge handle to resize sections • 
+              Use the width dropdown for precise control (25%, 50%, 75%, 100%) • 
               Use arrow buttons to reorder • 
               Click Preview to see final result
             </p>
