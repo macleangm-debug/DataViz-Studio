@@ -3214,9 +3214,138 @@ async def health_check():
     """Health check endpoint"""
     try:
         await db.command("ping")
-        return {"status": "healthy", "database": "connected"}
+        cache_stats = await CacheManager.get_stats()
+        return {
+            "status": "healthy", 
+            "database": "connected",
+            "cache": cache_stats
+        }
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}
+
+
+# ==========================================
+# SCALABILITY ENDPOINTS
+# ==========================================
+
+@api_router.get("/cache/stats")
+async def get_cache_statistics():
+    """Get Redis cache statistics"""
+    stats = await CacheManager.get_stats()
+    return stats
+
+
+@api_router.post("/cache/invalidate")
+async def invalidate_cache(
+    cache_type: str = Query(..., description="Type: dashboard, dataset, user"),
+    resource_id: str = Query(..., description="Resource ID to invalidate")
+):
+    """Invalidate cache for a specific resource"""
+    if cache_type == "dashboard":
+        await CacheManager.invalidate_dashboard(resource_id)
+    elif cache_type == "dataset":
+        await CacheManager.invalidate_dataset(resource_id)
+    elif cache_type == "user":
+        await CacheManager.invalidate_user_cache(resource_id)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown cache type: {cache_type}")
+    
+    return {"status": "invalidated", "type": cache_type, "resource_id": resource_id}
+
+
+@api_router.get("/tasks/{task_id}")
+async def get_background_task_status(task_id: str):
+    """Get status of a background task"""
+    status = get_task_status(task_id)
+    return status
+
+
+@api_router.post("/tasks/{task_id}/cancel")
+async def cancel_background_task(task_id: str):
+    """Cancel a running background task"""
+    success = cancel_task(task_id)
+    if success:
+        return {"status": "cancelled", "task_id": task_id}
+    raise HTTPException(status_code=500, detail="Failed to cancel task")
+
+
+class LargeDatasetProcessRequest(BaseModel):
+    dataset_id: str
+    file_path: str
+    options: Optional[Dict[str, Any]] = None
+
+
+@api_router.post("/tasks/process-dataset")
+async def start_dataset_processing(request: LargeDatasetProcessRequest):
+    """Start background processing for a large dataset"""
+    task = process_large_dataset.delay(
+        request.dataset_id, 
+        request.file_path, 
+        request.options
+    )
+    return {
+        "task_id": task.id,
+        "status": "started",
+        "dataset_id": request.dataset_id
+    }
+
+
+class ReportGenerationRequest(BaseModel):
+    report_id: str
+    report_data: Dict[str, Any]
+    options: Optional[Dict[str, Any]] = None
+
+
+@api_router.post("/tasks/generate-report")
+async def start_report_generation(request: ReportGenerationRequest):
+    """Start background PDF report generation"""
+    task = generate_report_pdf.delay(
+        request.report_id,
+        request.report_data,
+        request.options
+    )
+    return {
+        "task_id": task.id,
+        "status": "started",
+        "report_id": request.report_id
+    }
+
+
+@api_router.get("/data/{collection}/paginated")
+async def get_paginated_data(
+    collection: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=1000),
+    sort_by: Optional[str] = None,
+    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    user_id: Optional[str] = None
+):
+    """Get paginated data from any collection"""
+    allowed_collections = ["dashboards", "data_sources", "charts", "templates", "reports"]
+    
+    if collection not in allowed_collections:
+        raise HTTPException(status_code=400, detail=f"Collection not allowed: {collection}")
+    
+    params = PaginationParams(
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+    
+    query = {}
+    if user_id:
+        query["user_id"] = user_id
+    
+    result = await paginate_mongodb(
+        db[collection],
+        query=query,
+        params=params,
+        projection={"_id": 0}
+    )
+    
+    return result
+
 
 # Import and include Help Assistant router
 from routes.help_assistant import router as help_assistant_router
