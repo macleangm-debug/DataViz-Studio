@@ -658,8 +658,8 @@ export function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-400 via-fuchsia-500 to-purple-600 flex items-center justify-center">
+                  <DataVizLogo className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-lg font-bold text-white">DataViz Studio</span>
               </div>
