@@ -204,6 +204,9 @@ function App() {
           {/* Landing Page - Public */}
           <Route path="/" element={<LandingPage />} />
           
+          {/* Pricing Page - Public */}
+          <Route path="/pricing" element={<PricingPage />} />
+          
           {/* Interactive Demo - Public */}
           <Route path="/demo" element={<InteractiveDemoPage />} />
           
