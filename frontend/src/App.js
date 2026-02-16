@@ -203,6 +203,9 @@ function App() {
           {/* Landing Page - Public */}
           <Route path="/" element={<LandingPage />} />
           
+          {/* Interactive Demo - Public */}
+          <Route path="/demo" element={<InteractiveDemoPage />} />
+          
           {/* Default redirect for authenticated users */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
