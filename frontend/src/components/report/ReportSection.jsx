@@ -283,9 +283,9 @@ const ReportSection = ({
   const sectionInfo = SECTION_TYPES.find(t => t.id === section.type) || {};
   const Icon = sectionInfo.icon || FileText;
   
-  // Calculate actual width style
+  // Calculate actual width style - use preview width when dragging
   const getWidthStyle = () => {
-    const width = section.width || 100;
+    const width = isDragging && previewWidth !== null ? previewWidth : (section.width || 100);
     if (width === 100) return '100%';
     if (width === 75) return 'calc(75% - 8px)';
     if (width === 50) return 'calc(50% - 8px)';
@@ -293,16 +293,54 @@ const ReportSection = ({
     return '100%';
   };
   
+  // Get display width for indicator
+  const displayWidth = isDragging && previewWidth !== null ? previewWidth : (section.width || 100);
+  
   return (
     <motion.div
-      layout
+      ref={sectionRef}
+      layout={!isDragging}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`bg-white rounded-xl border-2 ${isPreview ? 'border-gray-100' : 'border-gray-200 hover:border-blue-300'} overflow-hidden transition-colors`}
-      style={{ width: getWidthStyle() }}
+      className={`bg-white rounded-xl border-2 relative ${
+        isPreview 
+          ? 'border-gray-100' 
+          : isDragging 
+            ? 'border-blue-400 shadow-lg ring-2 ring-blue-200' 
+            : 'border-gray-200 hover:border-blue-300'
+      } overflow-visible transition-colors`}
+      style={{ 
+        width: getWidthStyle(),
+        zIndex: isDragging ? 50 : 1,
+        userSelect: isDragging ? 'none' : 'auto'
+      }}
       data-testid={`report-section-${index}`}
     >
+      {/* Drag Handle - Right Edge (only in edit mode) */}
+      {!isPreview && section.width !== 100 && (
+        <div
+          className={`absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize flex items-center justify-center z-10
+            transition-all duration-150 group
+            ${isDragging ? 'bg-blue-500/10' : 'hover:bg-blue-50'}`}
+          style={{ transform: 'translateX(50%)' }}
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+          data-testid={`drag-handle-${index}`}
+        >
+          <div className={`flex flex-col items-center gap-0.5 ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+            <div className={`w-1 h-8 rounded-full ${isDragging ? 'bg-blue-500' : 'bg-gray-400'}`} />
+          </div>
+        </div>
+      )}
+      
+      {/* Width Preview Indicator */}
+      {isDragging && (
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg z-50">
+          {previewWidth}%
+        </div>
+      )}
+      
       {/* Section Header */}
       <div 
         className="px-4 py-2 flex items-center justify-between"
@@ -322,6 +360,16 @@ const ReportSection = ({
           ) : (
             <span className="font-medium text-sm" style={{ color: theme.primary }}>
               {section.title || sectionInfo.name}
+            </span>
+          )}
+          
+          {/* Width badge in edit mode */}
+          {!isPreview && (
+            <span 
+              className="text-xs px-1.5 py-0.5 rounded bg-white/60 text-gray-500 font-medium"
+              data-testid={`width-badge-${index}`}
+            >
+              {displayWidth}%
             </span>
           )}
         </div>
