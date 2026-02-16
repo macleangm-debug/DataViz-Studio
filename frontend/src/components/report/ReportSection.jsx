@@ -73,8 +73,84 @@ const ReportSection = ({
   onMoveUp, 
   onMoveDown, 
   onResizeWidth,
-  totalSections 
+  totalSections,
+  containerWidth 
 }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragStartWidth, setDragStartWidth] = useState(0);
+  const [previewWidth, setPreviewWidth] = useState(null);
+  const sectionRef = useRef(null);
+  
+  // Handle drag start
+  const handleDragStart = useCallback((e) => {
+    if (isPreview) return;
+    
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStartX(e.clientX || e.touches?.[0]?.clientX || 0);
+    setDragStartWidth(section.width || 100);
+    setPreviewWidth(section.width || 100);
+    
+    // Add global listeners
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+    document.addEventListener('touchmove', handleDragMove);
+    document.addEventListener('touchend', handleDragEnd);
+  }, [isPreview, section.width]);
+  
+  // Handle drag movement
+  const handleDragMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+    const parentWidth = sectionRef.current?.parentElement?.offsetWidth || 800;
+    const deltaX = clientX - dragStartX;
+    const deltaPercent = (deltaX / parentWidth) * 100;
+    
+    let newWidth = Math.round(dragStartWidth + deltaPercent);
+    newWidth = Math.max(25, Math.min(100, newWidth));
+    
+    // Show preview width
+    setPreviewWidth(snapToWidth(newWidth));
+  }, [isDragging, dragStartX, dragStartWidth]);
+  
+  // Handle drag end
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    
+    setIsDragging(false);
+    
+    // Snap to final width
+    if (previewWidth !== null && previewWidth !== section.width) {
+      onResizeWidth(index, previewWidth);
+    }
+    
+    setPreviewWidth(null);
+    
+    // Remove global listeners
+    document.removeEventListener('mousemove', handleDragMove);
+    document.removeEventListener('mouseup', handleDragEnd);
+    document.removeEventListener('touchmove', handleDragMove);
+    document.removeEventListener('touchend', handleDragEnd);
+  }, [isDragging, previewWidth, section.width, index, onResizeWidth, handleDragMove]);
+  
+  // Effect to handle drag state
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+      document.addEventListener('touchmove', handleDragMove);
+      document.addEventListener('touchend', handleDragEnd);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleDragMove);
+      document.removeEventListener('mouseup', handleDragEnd);
+      document.removeEventListener('touchmove', handleDragMove);
+      document.removeEventListener('touchend', handleDragEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
   const renderContent = () => {
     switch (section.type) {
       case 'stat_cards':
