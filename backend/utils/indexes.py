@@ -183,16 +183,23 @@ async def create_indexes(db: AsyncIOMotorDatabase):
             ("resource_id", 1),
             ("created_at", -1)
         ])
-        # TTL index - drop and recreate if exists with different options
+        # TTL index - drop existing created_at index and recreate as TTL
+        try:
+            await db.audit_logs.drop_index("created_at_1")
+        except:
+            pass
         try:
             await db.audit_logs.drop_index("audit_logs_ttl")
         except:
             pass
-        await db.audit_logs.create_index(
-            "created_at",
-            expireAfterSeconds=90 * 24 * 60 * 60,
-            name="audit_logs_ttl"
-        )
+        try:
+            await db.audit_logs.create_index(
+                "created_at",
+                expireAfterSeconds=90 * 24 * 60 * 60,
+                name="audit_logs_ttl"
+            )
+        except Exception as e:
+            logger.warning(f"Could not create TTL index for audit_logs: {e}")
         logger.info("Created indexes for 'audit_logs' collection")
         
         # ==========================================
