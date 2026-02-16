@@ -16,6 +16,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import HelpCenterPage from './pages/HelpCenterPage';
 import ReportBuilderPage from './pages/ReportBuilderPage.jsx';
 import LandingPage from './pages/LandingPage';
+import InteractiveDemoPage from './pages/InteractiveDemoPage';
 import { DataTransformPage } from './pages/DataTransformPage';
 import '@/App.css';
 
