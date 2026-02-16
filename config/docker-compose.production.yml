@@ -1,0 +1,216 @@
+# DataViz Studio - Production Docker Compose Configuration
+# Use this for production deployments with full infrastructure
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Application Services
+  # =============================================================================
+  
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - APP_ENV=production
+      - MONGO_URL=mongodb://mongo-primary:27017,mongo-secondary-1:27017,mongo-secondary-2:27017/?replicaSet=dataviz-rs
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - mongo-primary
+      - redis
+    ports:
+      - "8001:8001"
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL}
+    ports:
+      - "3000:3000"
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    restart: always
+
+  # =============================================================================
+  # Celery Workers
+  # =============================================================================
+  
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A utils.tasks worker --loglevel=info --concurrency=4 --queues=celery,high_priority,low_priority
+    environment:
+      - APP_ENV=production
+      - MONGO_URL=mongodb://mongo-primary:27017,mongo-secondary-1:27017,mongo-secondary-2:27017/?replicaSet=dataviz-rs
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - mongo-primary
+      - redis
+    deploy:
+      replicas: 4
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A utils.tasks beat --loglevel=info
+    environment:
+      - APP_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+    restart: always
+
+  # =============================================================================
+  # Redis (Cache & Message Broker)
+  # =============================================================================
+  
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+
+  # =============================================================================
+  # MongoDB Replica Set
+  # =============================================================================
+  
+  mongo-primary:
+    image: mongo:7
+    command: mongod --replSet dataviz-rs --bind_ip_all
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_primary_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=dataviz_studio
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 16G
+        reservations:
+          cpus: '1'
+          memory: 4G
+    restart: always
+
+  mongo-secondary-1:
+    image: mongo:7
+    command: mongod --replSet dataviz-rs --bind_ip_all
+    volumes:
+      - mongo_secondary1_data:/data/db
+    depends_on:
+      - mongo-primary
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 16G
+    restart: always
+
+  mongo-secondary-2:
+    image: mongo:7
+    command: mongod --replSet dataviz-rs --bind_ip_all
+    volumes:
+      - mongo_secondary2_data:/data/db
+    depends_on:
+      - mongo-primary
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 16G
+    restart: always
+
+  # =============================================================================
+  # Nginx Load Balancer
+  # =============================================================================
+  
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: always
+
+# =============================================================================
+# Volumes
+# =============================================================================
+
+volumes:
+  redis_data:
+    driver: local
+  mongo_primary_data:
+    driver: local
+  mongo_secondary1_data:
+    driver: local
+  mongo_secondary2_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
