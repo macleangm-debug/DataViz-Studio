@@ -586,6 +586,36 @@ CELERY_WORKERS=8 ./deploy.sh production
 
 **Test Status:** PASS - Backend compiles and runs, auth API verified working
 
+## Session 15 (Feb 16, 2026) - Individual Widget Resizing Complete
+
+- [x] **Drag Handle Feature for Report Sections**
+  - Drag handles appear on the right edge of sections with width < 100%
+  - Visual feedback during drag (blue highlight, width preview tooltip)
+  - Snaps to nearest width option (25%, 50%, 75%, 100%)
+  - Touch support for mobile devices
+
+- [x] **Enhanced Width Controls**
+  - Width badge displays current percentage on each section header
+  - Width dropdown selector for precise control
+  - Dynamic updates - badge changes when width changes
+  - Drag handle visibility logic (only shows when section.width < 100%)
+
+- [x] **Updated Tips Text**
+  - Instructions mention both drag handles and dropdown controls
+  - Clear guidance for users
+
+**Test Results (100% pass):**
+- Report Builder loads correctly at /report-builder
+- Width badges visible on all 7 default sections
+- Width dropdown selectors functional
+- Drag handles appear correctly on 4 sections at 50% width
+- All resize options work (25%, 50%, 75%, 100%)
+- Tips text properly updated
+
+**Files Modified:**
+- `/app/frontend/src/components/report/ReportSection.jsx` - Added drag handle logic, width badges
+- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Updated tips text
+
 ## Next Recommended Task
 - **Backend Route Refactoring** - Modularize `server.py` into `/backend/routes/` directory
 - **Individual Widget Resizing** in Report Builder (drag handles)
