@@ -226,11 +226,15 @@ async def create_indexes(db: AsyncIOMotorDatabase):
         # CACHE METADATA COLLECTION
         # ==========================================
         await db.cache_metadata.create_index("key", unique=True)
-        await db.cache_metadata.create_index("expires_at")
-        # TTL index for cache expiration
+        # TTL index - drop and recreate if exists
+        try:
+            await db.cache_metadata.drop_index("cache_ttl")
+        except:
+            pass
         await db.cache_metadata.create_index(
             "expires_at",
-            expireAfterSeconds=0
+            expireAfterSeconds=0,
+            name="cache_ttl"
         )
         logger.info("Created indexes for 'cache_metadata' collection")
         
