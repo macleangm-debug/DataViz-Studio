@@ -258,6 +258,7 @@ const TESTIMONIALS = [
 export function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'annual'
 
   return (
     <div className="min-h-screen bg-[#0a1628]">
