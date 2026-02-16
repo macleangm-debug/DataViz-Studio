@@ -119,30 +119,118 @@ const USE_CASES = [
   }
 ];
 
+/**
+ * PRICING MODEL - 80% Profit Margin Calculation
+ * 
+ * Cost Structure (per user/month):
+ * - Cloud hosting (AWS/GCP): $1.50
+ * - Database (MongoDB Atlas): $0.75
+ * - Redis caching: $0.25
+ * - Celery workers: $0.50
+ * - Email service: $0.01/email
+ * - Storage: $0.023/GB
+ * - Support overhead: $1-3
+ * 
+ * For 80% profit margin: Price = Cost / 0.20
+ */
+
 const PRICING = [
   {
+    name: 'Free',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    description: 'Perfect for individuals exploring data visualization',
+    users: '1 user',
+    storage: '100 MB',
+    emails: '0 emails/mo',
+    features: [
+      '3 dashboards',
+      '5 datasets (max 1,000 rows each)',
+      'Basic charts (bar, line, pie)',
+      'CSV export only',
+      'Community support',
+      '7-day data retention'
+    ],
+    limitations: ['No team collaboration', 'No email reports', 'DataViz branding on exports'],
+    cta: 'Get Started Free',
+    popular: false,
+    color: 'gray'
+  },
+  {
     name: 'Starter',
-    price: 'Free',
-    period: 'forever',
-    features: ['3 dashboards', '5 datasets', 'Basic charts', 'CSV export', 'Community support'],
-    cta: 'Start Free',
-    popular: false
+    monthlyPrice: 29,
+    annualPrice: 278, // ~20% off ($23.17/mo)
+    description: 'Great for small teams and growing businesses',
+    users: '3 users',
+    storage: '5 GB',
+    emails: '500 emails/mo',
+    features: [
+      '10 dashboards',
+      '25 datasets (max 50,000 rows each)',
+      'All 9 chart types',
+      'PDF & PNG export',
+      'Email scheduling (basic)',
+      'Email support (48h response)',
+      '30-day data retention',
+      'Remove DataViz branding'
+    ],
+    limitations: ['Limited API access'],
+    cta: 'Start 14-Day Trial',
+    popular: false,
+    color: 'blue'
   },
   {
     name: 'Pro',
-    price: '$49',
-    period: '/month',
-    features: ['Unlimited dashboards', '50 datasets', 'All chart types', 'PDF reports', 'Priority support', 'Custom branding'],
-    cta: 'Start Free Trial',
-    popular: true
+    monthlyPrice: 79,
+    annualPrice: 758, // ~20% off ($63.17/mo)
+    description: 'For teams that need advanced analytics & automation',
+    users: '10 users',
+    storage: '50 GB',
+    emails: '5,000 emails/mo',
+    features: [
+      'Unlimited dashboards',
+      '100 datasets (max 500,000 rows each)',
+      'All chart types + custom colors',
+      'Database connections (MongoDB, PostgreSQL, MySQL)',
+      'AI-powered insights',
+      'Report Builder with templates',
+      'Scheduled reports & alerts',
+      'Priority support (24h response)',
+      '1-year data retention',
+      'Custom branding',
+      'API access (10,000 calls/mo)'
+    ],
+    limitations: [],
+    cta: 'Start 14-Day Trial',
+    popular: true,
+    color: 'purple'
   },
   {
     name: 'Enterprise',
-    price: '$199',
-    period: '/month',
-    features: ['Everything in Pro', 'Unlimited datasets', 'Database connections', 'AI Insights', 'API access', 'SSO & dedicated support'],
+    monthlyPrice: 249,
+    annualPrice: 2388, // ~20% off ($199/mo)
+    description: 'For organizations with advanced security & scale needs',
+    users: 'Unlimited users',
+    storage: '500 GB',
+    emails: '50,000 emails/mo',
+    features: [
+      'Everything in Pro, plus:',
+      'Unlimited datasets (unlimited rows)',
+      'Unlimited database connections',
+      'SSO (SAML, OAuth)',
+      'Advanced security & audit logs',
+      'Dedicated account manager',
+      'SLA guarantee (99.9% uptime)',
+      'Custom integrations',
+      'On-premise deployment option',
+      'Unlimited API access',
+      'Priority phone support',
+      'Custom data retention'
+    ],
+    limitations: [],
     cta: 'Contact Sales',
-    popular: false
+    popular: false,
+    color: 'emerald'
   }
 ];
 
