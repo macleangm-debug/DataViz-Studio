@@ -1,5 +1,5 @@
 """DataViz Studio - Main FastAPI Application"""
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request, BackgroundTasks, Query
 from fastapi.responses import JSONResponse, Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -29,6 +29,23 @@ from apscheduler.triggers.cron import CronTrigger
 # PDF generation
 from fpdf import FPDF
 import math
+
+# Scalability utilities
+from utils.cache import (
+    CacheManager, cached, get_redis, close_redis,
+    cache_dashboard_data, get_cached_dashboard,
+    cache_chart_data, get_cached_chart,
+    CACHE_TTL
+)
+from utils.pagination import (
+    PaginationParams, PaginatedResponse, 
+    paginate_mongodb, paginate_list
+)
+from utils.indexes import create_indexes
+from utils.tasks import (
+    process_large_dataset, generate_report_pdf,
+    get_task_status, cancel_task
+)
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
