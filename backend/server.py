@@ -3304,4 +3304,8 @@ async def shutdown_db_client():
         scheduler.shutdown(wait=False)
         logger.info("APScheduler stopped")
     
+    # Close Redis connection
+    await close_redis()
+    logger.info("Redis connection closed")
+    
     client.close()
