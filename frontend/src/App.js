@@ -199,8 +199,10 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Landing Page - Public */}
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* Default redirect for authenticated users */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
