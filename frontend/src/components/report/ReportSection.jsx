@@ -151,19 +151,7 @@ const ReportSection = ({
       document.removeEventListener('touchend', endHandler);
     };
   }, [isDragging, handleDragMove, handleDragEnd, onResizeWidth, index, section.width, previewWidth]);
-      document.addEventListener('mousemove', handleDragMove);
-      document.addEventListener('mouseup', handleDragEnd);
-      document.addEventListener('touchmove', handleDragMove);
-      document.addEventListener('touchend', handleDragEnd);
-    }
-    
-    return () => {
-      document.removeEventListener('mousemove', handleDragMove);
-      document.removeEventListener('mouseup', handleDragEnd);
-      document.removeEventListener('touchmove', handleDragMove);
-      document.removeEventListener('touchend', handleDragEnd);
-    };
-  }, [isDragging, handleDragMove, handleDragEnd]);
+
   const renderContent = () => {
     switch (section.type) {
       case 'stat_cards':
