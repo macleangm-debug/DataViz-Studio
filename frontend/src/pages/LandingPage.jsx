@@ -671,54 +671,180 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30 mb-4">Pricing</Badge>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Start free, upgrade when you need more power
+            <p className="text-gray-400 max-w-2xl mx-auto mb-8">
+              Start free, scale as you grow. All plans include a 14-day trial.
             </p>
+            
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-white' : 'text-gray-500'}`}>
+                Monthly
+              </span>
+              <button
+                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
+                className={`relative w-14 h-7 rounded-full transition-colors ${
+                  billingCycle === 'annual' ? 'bg-green-500' : 'bg-gray-600'
+                }`}
+                data-testid="billing-toggle"
+              >
+                <span
+                  className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                    billingCycle === 'annual' ? 'translate-x-8' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className={`text-sm font-medium ${billingCycle === 'annual' ? 'text-white' : 'text-gray-500'}`}>
+                Annual
+              </span>
+              {billingCycle === 'annual' && (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  Save 20%
+                </Badge>
+              )}
+            </div>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {PRICING.map((plan, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className={`relative bg-[#0a1628] rounded-2xl p-8 border ${plan.popular ? 'border-purple-500' : 'border-white/10'}`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-purple-500 text-white border-0">Most Popular</Badge>
-                  </div>
-                )}
-                <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold text-white">{plan.price}</span>
-                  <span className="text-gray-500">{plan.period}</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, fIdx) => (
-                    <li key={fIdx} className="flex items-center gap-3 text-gray-300">
-                      <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button 
-                  className={`w-full ${plan.popular ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500' : 'bg-white/10 hover:bg-white/20'} text-white border-0`}
-                  onClick={() => navigate('/register')}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {PRICING.map((plan, idx) => {
+              const price = billingCycle === 'monthly' ? plan.monthlyPrice : Math.round(plan.annualPrice / 12);
+              const totalAnnual = plan.annualPrice;
+              const isPopular = plan.popular;
+              
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className={`relative bg-[#0a1628] rounded-2xl p-6 border flex flex-col ${
+                    isPopular 
+                      ? 'border-purple-500 ring-2 ring-purple-500/20' 
+                      : 'border-white/10 hover:border-white/20'
+                  } transition-all`}
+                  data-testid={`pricing-card-${plan.name.toLowerCase()}`}
                 >
-                  {plan.cta}
-                </Button>
-              </motion.div>
-            ))}
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white border-0 px-3">
+                        Most Popular
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {/* Plan Header */}
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-white mb-1">{plan.name}</h3>
+                    <p className="text-gray-500 text-sm">{plan.description}</p>
+                  </div>
+                  
+                  {/* Price */}
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold text-white">
+                        {price === 0 ? 'Free' : `$${price}`}
+                      </span>
+                      {price > 0 && (
+                        <span className="text-gray-500 text-sm">/mo</span>
+                      )}
+                    </div>
+                    {billingCycle === 'annual' && price > 0 && (
+                      <p className="text-green-400 text-xs mt-1">
+                        ${totalAnnual}/year (billed annually)
+                      </p>
+                    )}
+                    {price === 0 && (
+                      <p className="text-gray-500 text-xs mt-1">Forever free</p>
+                    )}
+                  </div>
+                  
+                  {/* Key Limits */}
+                  <div className="grid grid-cols-3 gap-2 mb-6 p-3 bg-white/5 rounded-lg">
+                    <div className="text-center">
+                      <Users className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+                      <p className="text-white text-xs font-medium">{plan.users}</p>
+                    </div>
+                    <div className="text-center border-x border-white/10">
+                      <Database className="w-4 h-4 text-purple-400 mx-auto mb-1" />
+                      <p className="text-white text-xs font-medium">{plan.storage}</p>
+                    </div>
+                    <div className="text-center">
+                      <FileText className="w-4 h-4 text-green-400 mx-auto mb-1" />
+                      <p className="text-white text-xs font-medium">{plan.emails.split(' ')[0]}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Features */}
+                  <ul className="space-y-2.5 mb-6 flex-grow">
+                    {plan.features.map((feature, fIdx) => (
+                      <li key={fIdx} className="flex items-start gap-2 text-gray-300">
+                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{feature}</span>
+                      </li>
+                    ))}
+                    {plan.limitations.map((limitation, lIdx) => (
+                      <li key={`lim-${lIdx}`} className="flex items-start gap-2 text-gray-500">
+                        <X className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{limitation}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  {/* CTA Button */}
+                  <Button 
+                    className={`w-full ${
+                      isPopular 
+                        ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-400 hover:to-fuchsia-400' 
+                        : plan.name === 'Enterprise'
+                        ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500'
+                        : 'bg-white/10 hover:bg-white/20'
+                    } text-white border-0`}
+                    onClick={() => plan.name === 'Enterprise' ? window.location.href = 'mailto:sales@dataviz.studio' : navigate('/register')}
+                    data-testid={`pricing-cta-${plan.name.toLowerCase()}`}
+                  >
+                    {plan.cta}
+                    {plan.name !== 'Enterprise' && <ArrowRight className="w-4 h-4 ml-2" />}
+                  </Button>
+                </motion.div>
+              );
+            })}
           </div>
+          
+          {/* Trust Indicators */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-12 text-center"
+          >
+            <div className="flex flex-wrap items-center justify-center gap-6 text-gray-500 text-sm">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-green-400" />
+                <span>SSL Secured</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-blue-400" />
+                <span>SOC 2 Compliant</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-purple-400" />
+                <span>GDPR Ready</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-yellow-400" />
+                <span>99.9% Uptime SLA</span>
+              </div>
+            </div>
+            <p className="mt-4 text-gray-600 text-xs">
+              All plans include 14-day free trial • No credit card required • Cancel anytime
+            </p>
+          </motion.div>
         </div>
       </section>
 
