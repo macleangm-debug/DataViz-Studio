@@ -173,12 +173,6 @@ async def create_indexes(db: AsyncIOMotorDatabase):
         await db.audit_logs.create_index("action")
         await db.audit_logs.create_index("resource_type")
         await db.audit_logs.create_index("resource_id")
-        await db.audit_logs.create_index("created_at")
-        # TTL index to auto-delete old logs (90 days)
-        await db.audit_logs.create_index(
-            "created_at",
-            expireAfterSeconds=90 * 24 * 60 * 60
-        )
         # Compound index for audit queries
         await db.audit_logs.create_index([
             ("user_id", 1),
@@ -189,6 +183,16 @@ async def create_indexes(db: AsyncIOMotorDatabase):
             ("resource_id", 1),
             ("created_at", -1)
         ])
+        # TTL index - drop and recreate if exists with different options
+        try:
+            await db.audit_logs.drop_index("audit_logs_ttl")
+        except:
+            pass
+        await db.audit_logs.create_index(
+            "created_at",
+            expireAfterSeconds=90 * 24 * 60 * 60,
+            name="audit_logs_ttl"
+        )
         logger.info("Created indexes for 'audit_logs' collection")
         
         # ==========================================
