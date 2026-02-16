@@ -299,7 +299,7 @@ export function LandingPage() {
             >
               Turn Data Into
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400">
                 Beautiful Insights
               </span>
             </motion.h1>
