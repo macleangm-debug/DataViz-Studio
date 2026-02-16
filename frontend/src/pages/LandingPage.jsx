@@ -322,7 +322,7 @@ export function LandingPage() {
             >
               <Button 
                 size="lg"
-                className="bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-400 hover:to-violet-500 text-white border-0 px-8 py-6 text-lg shadow-xl shadow-violet-500/30"
+                className="bg-gradient-to-r from-purple-500 via-fuchsia-500 to-purple-600 hover:from-purple-400 hover:via-fuchsia-400 hover:to-purple-500 text-white border-0 px-8 py-6 text-lg shadow-xl shadow-purple-500/30"
                 onClick={() => navigate('/register')}
               >
                 Start Free Trial
