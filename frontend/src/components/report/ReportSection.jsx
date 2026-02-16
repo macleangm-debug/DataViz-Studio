@@ -28,6 +28,41 @@ export const WIDTH_OPTIONS = [
   { value: 100, label: '100%' },
 ];
 
+// Snap threshold for width values (pixels tolerance)
+const SNAP_THRESHOLD = 30;
+
+// Helper to snap width to nearest option
+const snapToWidth = (percentWidth) => {
+  const options = [25, 50, 75, 100];
+  let closest = options[0];
+  let minDiff = Math.abs(percentWidth - options[0]);
+  
+  for (const opt of options) {
+    const diff = Math.abs(percentWidth - opt);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = opt;
+    }
+  }
+  
+  return closest;
+};
+
+// Drag Handle Component
+const DragHandle = ({ onDrag, isActive }) => {
+  return (
+    <div
+      className={`absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize flex items-center justify-center
+        transition-all duration-150 group hover:w-4 
+        ${isActive ? 'bg-blue-500/20 w-4' : 'bg-transparent hover:bg-blue-100/50'}`}
+      style={{ transform: 'translateX(50%)' }}
+      data-testid="drag-handle"
+    >
+      <div className={`h-12 w-1 rounded-full transition-colors ${isActive ? 'bg-blue-500' : 'bg-gray-300 group-hover:bg-blue-400'}`} />
+    </div>
+  );
+};
+
 const ReportSection = ({ 
   section, 
   index, 
