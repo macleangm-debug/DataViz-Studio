@@ -244,34 +244,53 @@ export function LandingPage() {
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        {/* Floating decorative icons */}
-        <motion.div 
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-32 left-[10%] w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center hidden lg:flex"
+        {/* Floating Elements - Glassmorphism Style */}
+        <motion.div
+          animate={{ y: [0, -20, 0] }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="absolute top-20 left-20 w-16 h-16 rounded-2xl bg-purple-500/20 backdrop-blur-sm border border-purple-500/30 flex items-center justify-center hidden lg:flex"
         >
-          <PieChart className="w-6 h-6 text-purple-400" />
+          <PieChart className="w-8 h-8 text-purple-400" />
         </motion.div>
-        <motion.div 
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-48 right-[10%] w-14 h-14 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center hidden lg:flex"
+
+        <motion.div
+          animate={{ y: [0, 20, 0] }}
+          transition={{ duration: 5, repeat: Infinity }}
+          className="absolute top-40 right-32 w-14 h-14 rounded-xl bg-fuchsia-500/20 backdrop-blur-sm border border-fuchsia-500/30 flex items-center justify-center hidden lg:flex"
         >
-          <BarChart3 className="w-6 h-6 text-fuchsia-400" />
+          <BarChart3 className="w-7 h-7 text-fuchsia-400" />
         </motion.div>
-        <motion.div 
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-40 left-[8%] w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center hidden lg:flex"
+
+        <motion.div
+          animate={{ y: [0, -15, 0] }}
+          transition={{ duration: 3.5, repeat: Infinity }}
+          className="absolute bottom-32 left-40 w-12 h-12 rounded-lg bg-cyan-500/20 backdrop-blur-sm border border-cyan-500/30 flex items-center justify-center hidden lg:flex"
         >
-          <LineChart className="w-5 h-5 text-cyan-400" />
+          <LineChart className="w-6 h-6 text-cyan-400" />
         </motion.div>
-        <motion.div 
-          animate={{ y: [0, 12, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-60 right-[12%] w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center hidden lg:flex"
+
+        <motion.div
+          animate={{ y: [0, 18, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity }}
+          className="absolute bottom-48 right-24 w-14 h-14 rounded-xl bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 flex items-center justify-center hidden lg:flex"
         >
-          <Database className="w-5 h-5 text-amber-400" />
+          <Database className="w-7 h-7 text-amber-400" />
+        </motion.div>
+
+        <motion.div
+          animate={{ y: [0, -12, 0] }}
+          transition={{ duration: 3, repeat: Infinity }}
+          className="absolute top-64 left-32 w-12 h-12 rounded-lg bg-emerald-500/20 backdrop-blur-sm border border-emerald-500/30 flex items-center justify-center hidden lg:flex"
+        >
+          <TrendingUp className="w-6 h-6 text-emerald-400" />
+        </motion.div>
+
+        <motion.div
+          animate={{ y: [0, 14, 0] }}
+          transition={{ duration: 5.5, repeat: Infinity }}
+          className="absolute top-28 right-48 w-12 h-12 rounded-lg bg-rose-500/20 backdrop-blur-sm border border-rose-500/30 flex items-center justify-center hidden lg:flex"
+        >
+          <Layers className="w-6 h-6 text-rose-400" />
         </motion.div>
 
         <div className="max-w-7xl mx-auto">
