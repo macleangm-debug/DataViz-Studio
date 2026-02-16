@@ -3201,8 +3201,12 @@ async def health_check():
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}
 
-# Include the router in the main app
+# Import and include Help Assistant router
+from routes.help_assistant import router as help_assistant_router
+
+# Include the routers in the main app
 app.include_router(api_router)
+app.include_router(help_assistant_router, prefix="/api")
 
 # CORS middleware
 app.add_middleware(
