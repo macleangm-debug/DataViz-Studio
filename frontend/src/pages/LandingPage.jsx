@@ -192,7 +192,7 @@ export function LandingPage() {
                 <a href="#pricing" className="px-4 py-1.5 text-sm text-gray-300 hover:text-white transition-colors rounded-full">Pricing</a>
                 <button 
                   onClick={() => navigate('/help')}
-                  className="px-4 py-1.5 text-sm text-violet-400 bg-violet-500/10 rounded-full flex items-center gap-1.5 hover:bg-violet-500/20 transition-colors"
+                  className="px-4 py-1.5 text-sm text-purple-400 bg-purple-500/10 rounded-full flex items-center gap-1.5 hover:bg-purple-500/20 transition-colors"
                 >
                   <Sparkles className="w-3 h-3" />
                   Help Center
@@ -209,7 +209,7 @@ export function LandingPage() {
                 Log in
               </Button>
               <Button 
-                className="bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-400 hover:to-violet-500 text-white border-0"
+                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white border-0"
                 onClick={() => navigate('/register')}
               >
                 <Sparkles className="w-4 h-4 mr-2" />
@@ -236,7 +236,7 @@ export function LandingPage() {
             <a href="#pricing" className="block px-4 py-2 text-gray-300 hover:text-white">Pricing</a>
             <div className="pt-3 border-t border-white/10 space-y-2">
               <Button variant="ghost" className="w-full text-gray-300" onClick={() => navigate('/login')}>Log in</Button>
-              <Button className="w-full bg-violet-500" onClick={() => navigate('/register')}>Start Free</Button>
+              <Button className="w-full bg-purple-500" onClick={() => navigate('/register')}>Start Free</Button>
             </div>
           </div>
         )}
@@ -380,7 +380,7 @@ export function LandingPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <Badge className="bg-violet-500/20 text-violet-400 border-violet-500/30 mb-4">How It Works</Badge>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 mb-4">How It Works</Badge>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               From Data to Dashboard in Minutes
             </h2>
@@ -403,17 +403,17 @@ export function LandingPage() {
                 transition={{ delay: idx * 0.1 }}
                 className="relative"
               >
-                <div className="bg-[#0a1628] rounded-2xl p-8 border border-white/10 hover:border-violet-500/30 transition-colors h-full">
-                  <div className="text-6xl font-bold text-violet-500/20 absolute top-4 right-6">{item.step}</div>
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-6">
-                    <item.icon className="w-7 h-7 text-violet-400" />
+                <div className="bg-[#0a1628] rounded-2xl p-8 border border-white/10 hover:border-purple-500/30 transition-colors h-full">
+                  <div className="text-6xl font-bold text-purple-500/20 absolute top-4 right-6">{item.step}</div>
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 flex items-center justify-center mb-6">
+                    <item.icon className="w-7 h-7 text-purple-400" />
                   </div>
                   <h3 className="text-xl font-semibold text-white mb-3">{item.title}</h3>
                   <p className="text-gray-400">{item.description}</p>
                 </div>
                 {idx < 2 && (
                   <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2">
-                    <ArrowRight className="w-8 h-8 text-violet-500/30" />
+                    <ArrowRight className="w-8 h-8 text-purple-500/30" />
                   </div>
                 )}
               </motion.div>
@@ -490,10 +490,10 @@ export function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.05 }}
-                className="bg-[#0a1628] rounded-xl p-6 border border-white/5 hover:border-violet-500/20 transition-all"
+                className="bg-[#0a1628] rounded-xl p-6 border border-white/5 hover:border-purple-500/20 transition-all"
               >
-                <div className="w-12 h-12 rounded-lg bg-violet-500/10 flex items-center justify-center mb-4">
-                  <useCase.icon className="w-6 h-6 text-violet-400" />
+                <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+                  <useCase.icon className="w-6 h-6 text-purple-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">{useCase.title}</h3>
                 <p className="text-gray-400 text-sm mb-4">{useCase.description}</p>
@@ -542,7 +542,7 @@ export function LandingPage() {
                 </div>
                 <p className="text-gray-300 mb-6 italic">"{testimonial.quote}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 font-semibold text-sm">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-semibold text-sm">
                     {testimonial.avatar}
                   </div>
                   <div>
@@ -582,11 +582,11 @@ export function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className={`relative bg-[#0a1628] rounded-2xl p-8 border ${plan.popular ? 'border-violet-500' : 'border-white/10'}`}
+                className={`relative bg-[#0a1628] rounded-2xl p-8 border ${plan.popular ? 'border-purple-500' : 'border-white/10'}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-violet-500 text-white border-0">Most Popular</Badge>
+                    <Badge className="bg-purple-500 text-white border-0">Most Popular</Badge>
                   </div>
                 )}
                 <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
@@ -603,7 +603,7 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <Button 
-                  className={`w-full ${plan.popular ? 'bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-400 hover:to-violet-500' : 'bg-white/10 hover:bg-white/20'} text-white border-0`}
+                  className={`w-full ${plan.popular ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500' : 'bg-white/10 hover:bg-white/20'} text-white border-0`}
                   onClick={() => navigate('/register')}
                 >
                   {plan.cta}
@@ -621,7 +621,7 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-3xl p-12 text-center border border-violet-500/20"
+            className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-3xl p-12 text-center border border-purple-500/20"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Ready to Visualize Your Data?
@@ -632,7 +632,7 @@ export function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg"
-                className="bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-400 hover:to-violet-500 text-white border-0 px-8"
+                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white border-0 px-8"
                 onClick={() => navigate('/register')}
               >
                 Start Free Today
