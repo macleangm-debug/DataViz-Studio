@@ -1808,7 +1808,7 @@ async def get_dashboard_widgets(dashboard_id: str):
 @api_router.get("/widgets/{widget_id}/data")
 async def get_widget_data(widget_id: str):
     """Get data for a widget"""
-    widget = await db.widgets.find_one({"id": widget_id})
+    widget = await db.widgets.find_one({"id": widget_id}, {"_id": 0})
     if not widget:
         raise HTTPException(status_code=404, detail="Widget not found")
     
