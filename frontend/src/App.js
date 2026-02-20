@@ -23,6 +23,8 @@ import PricingPage from './pages/PricingPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import { DataTransformPage } from './pages/DataTransformPage';
 import { StatisticsPage } from './pages/StatisticsPage';
+import { OrganizationsPage } from './pages/OrganizationsPage';
+import { PublicDashboardPage } from './pages/PublicDashboardPage';
 import '@/App.css';
 
 // Protected Route wrapper
