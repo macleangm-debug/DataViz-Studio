@@ -928,6 +928,8 @@ const ChartStudio = ({
                         variant="outline"
                         size="sm"
                         onClick={() => setShowAnnotationDialog(true)}
+                        disabled={previewData.length === 0}
+                        title={previewData.length === 0 ? "Configure dataset and X-axis first" : "Add annotation"}
                         data-testid="add-annotation-btn"
                       >
                         <Plus className="w-4 h-4 mr-1" />
