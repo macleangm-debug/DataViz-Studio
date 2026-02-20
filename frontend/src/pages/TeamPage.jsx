@@ -194,8 +194,50 @@ export function TeamPage() {
   if (!currentOrg) {
     return (
       <DashboardLayout>
-        <div className="text-center py-12">
-          <p className="text-gray-400">Please select an organization first</p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4" data-testid="team-empty-state">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
+            <Building2 className="w-10 h-10 text-primary" />
+          </div>
+          <h2 className="font-barlow text-2xl font-bold text-white mb-3">
+            Create Your Organization
+          </h2>
+          <p className="text-gray-400 max-w-md mb-8 leading-relaxed">
+            Organizations help you collaborate with your team. Create your first organization to invite members, manage roles, and work together on dashboards and reports.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button 
+              onClick={() => navigate('/organizations/new')}
+              className="gap-2"
+              data-testid="create-org-btn"
+            >
+              <Plus className="w-4 h-4" />
+              Create Organization
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/dashboard')}
+              className="gap-2"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl">
+            <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-left">
+              <Users className="w-6 h-6 text-primary mb-2" />
+              <h3 className="font-medium text-white text-sm mb-1">Invite Team</h3>
+              <p className="text-xs text-gray-400">Add members with customizable roles</p>
+            </div>
+            <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-left">
+              <Shield className="w-6 h-6 text-green-500 mb-2" />
+              <h3 className="font-medium text-white text-sm mb-1">Role-Based Access</h3>
+              <p className="text-xs text-gray-400">Admin, Manager, Analyst, Viewer</p>
+            </div>
+            <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-left">
+              <Settings className="w-6 h-6 text-amber-500 mb-2" />
+              <h3 className="font-medium text-white text-sm mb-1">Shared Resources</h3>
+              <p className="text-xs text-gray-400">Dashboards, datasets, templates</p>
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );

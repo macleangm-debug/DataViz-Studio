@@ -330,6 +330,59 @@ export function SecurityPage() {
     }));
   };
 
+  // Show empty state if no organization
+  if (!currentOrg?.id) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4" data-testid="security-empty-state">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center mb-6">
+            <Shield className="w-10 h-10 text-emerald-500" />
+          </div>
+          <h2 className="font-barlow text-2xl font-bold text-white mb-3">
+            Security Settings
+          </h2>
+          <p className="text-gray-400 max-w-md mb-8 leading-relaxed">
+            Security settings are managed at the organization level. Create an organization to access API key management, audit logs, and security configurations.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button 
+              onClick={() => window.location.href = '/organizations/new'}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+              data-testid="create-org-security-btn"
+            >
+              <Lock className="w-4 h-4" />
+              Create Organization
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.href = '/dashboard'}
+              className="gap-2"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl">
+            <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-left">
+              <Key className="w-6 h-6 text-emerald-500 mb-2" />
+              <h3 className="font-medium text-white text-sm mb-1">API Keys</h3>
+              <p className="text-xs text-gray-400">Generate and manage API access tokens</p>
+            </div>
+            <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-left">
+              <Clock className="w-6 h-6 text-blue-500 mb-2" />
+              <h3 className="font-medium text-white text-sm mb-1">Audit Logs</h3>
+              <p className="text-xs text-gray-400">Track all API activity and access</p>
+            </div>
+            <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-left">
+              <Activity className="w-6 h-6 text-amber-500 mb-2" />
+              <h3 className="font-medium text-white text-sm mb-1">Rate Limits</h3>
+              <p className="text-xs text-gray-400">Monitor API usage and quotas</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (loading) {
     return (
       <DashboardLayout>
