@@ -133,15 +133,11 @@ export function DashboardLayout({ children }) {
   const { user, logout } = useAuthStore();
   const { currentOrg, organizations, setCurrentOrg } = useOrgStore();
   
-  const [activeGroup, setActiveGroup] = useState('home');
+  // Initialize active group based on current route
+  const initialGroup = findActiveGroup(location.pathname);
+  const [activeGroup, setActiveGroup] = useState(initialGroup);
   const [panelOpen, setPanelOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Update active group based on route
-  useEffect(() => {
-    const group = findActiveGroup(location.pathname);
-    setActiveGroup(group);
-  }, [location.pathname]);
 
   // Get current group data
   const currentGroup = NAVIGATION.find(g => g.id === activeGroup);
