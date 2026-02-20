@@ -13,11 +13,14 @@ import { DatabaseConnectionsPage } from './pages/DatabaseConnectionsPage';
 import { ChartsPage } from './pages/ChartsPage';
 import { AIInsightsPage } from './pages/AIInsightsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { TeamPage } from './pages/TeamPage';
+import { SecurityPage } from './pages/SecurityPage';
 import HelpCenterPage from './pages/HelpCenterPage';
 import ReportBuilderPage from './pages/ReportBuilderPage.jsx';
 import LandingPage from './pages/LandingPage';
 import InteractiveDemoPage from './pages/InteractiveDemoPage';
 import PricingPage from './pages/PricingPage';
+import ApiKeysPage from './pages/ApiKeysPage';
 import { DataTransformPage } from './pages/DataTransformPage';
 import '@/App.css';
 
