@@ -155,7 +155,10 @@ const FEATURE_CATEGORIES = [
   {
     name: 'Collaboration & Sharing',
     features: [
+      { name: 'Organizations', free: '1', starter: '3', pro: '10', enterprise: 'Unlimited' },
       { name: 'Team members', free: '1', starter: '3', pro: '10', enterprise: 'Unlimited' },
+      { name: 'Public dashboard links', free: false, starter: true, pro: true, enterprise: true },
+      { name: 'Password-protected sharing', free: false, starter: false, pro: true, enterprise: true },
       { name: 'Shared dashboards', free: false, starter: true, pro: true, enterprise: true },
       { name: 'Role-based access', free: false, starter: false, pro: true, enterprise: true },
       { name: 'Audit logs', free: false, starter: false, pro: false, enterprise: true },
