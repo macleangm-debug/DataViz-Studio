@@ -9,7 +9,7 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Security config
-SECRET_KEY = os.environ.get("JWT_SECRET", "datapulse-secret-key-change-in-production")
+SECRET_KEY = os.environ.get("JWT_SECRET", "dataviz-studio-secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
