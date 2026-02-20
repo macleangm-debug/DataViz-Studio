@@ -149,11 +149,19 @@ export function DashboardLayout({ children }) {
   };
 
   const handleRailClick = (group) => {
-    setActiveGroup(group.id);
-    if (group.path) {
-      navigate(group.path);
-    } else if (group.items?.length > 0) {
-      setPanelOpen(true);
+    if (activeGroup === group.id) {
+      // Clicking same group - toggle panel
+      if (group.items?.length > 0) {
+        setPanelOpen(!panelOpen);
+      }
+    } else {
+      // Clicking different group
+      setActiveGroup(group.id);
+      if (group.path) {
+        navigate(group.path);
+      } else if (group.items?.length > 0) {
+        setPanelOpen(true);
+      }
     }
   };
 
