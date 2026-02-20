@@ -207,6 +207,18 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* Organizations */}
+          <Route path="/organizations" element={
+            <ProtectedRoute>
+              <OrganizationsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/organizations/new" element={
+            <ProtectedRoute>
+              <OrganizationsPage />
+            </ProtectedRoute>
+          } />
+
           {/* Landing Page - Public */}
           <Route path="/" element={<LandingPage />} />
           
@@ -215,6 +227,9 @@ function App() {
           
           {/* Interactive Demo - Public */}
           <Route path="/demo" element={<InteractiveDemoPage />} />
+          
+          {/* Public Dashboard - No Auth Required */}
+          <Route path="/public/dashboard/:publicId" element={<PublicDashboardPage />} />
           
           {/* Default redirect for authenticated users */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
