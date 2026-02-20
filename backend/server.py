@@ -3357,12 +3357,14 @@ from routes.dataviz_data_sources import router as dataviz_data_sources_router
 from routes.dataviz_templates import router as dataviz_templates_router
 from routes.dataviz_sharing import router as dataviz_sharing_router
 from routes.dataviz_reports import router as dataviz_reports_router
+from routes.org_routes import router as org_router
 
 # Include the routers in the main app
 app.include_router(api_router)
 app.include_router(help_assistant_router, prefix="/api")
 app.include_router(dataviz_sharing_router)  # Public dashboard sharing
 app.include_router(dataviz_reports_router)  # Report delivery
+app.include_router(org_router, prefix="/api")  # Organization CRUD
 
 # Note: The following routers contain routes that are already defined in api_router above.
 # They are included here for reference but are commented out to avoid conflicts.
