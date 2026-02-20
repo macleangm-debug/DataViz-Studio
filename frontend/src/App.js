@@ -22,6 +22,7 @@ import InteractiveDemoPage from './pages/InteractiveDemoPage';
 import PricingPage from './pages/PricingPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import { DataTransformPage } from './pages/DataTransformPage';
+import { StatisticsPage } from './pages/StatisticsPage';
 import '@/App.css';
 
 // Protected Route wrapper
