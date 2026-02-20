@@ -939,7 +939,10 @@ const ChartStudio = ({
                     
                     {annotations.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-2">
-                        No annotations yet. Add reference lines, labels, or highlight regions.
+                        {previewData.length === 0 
+                          ? "Select a dataset and X-axis field to enable annotations"
+                          : "No annotations yet. Add reference lines, labels, or highlight regions."
+                        }
                       </p>
                     ) : (
                       <div className="space-y-2 max-h-[150px] overflow-y-auto">
