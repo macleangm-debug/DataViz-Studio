@@ -767,9 +767,9 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 
 **Test Status:** 95% backend (21/22), 100% frontend - All features working
 
-## Session 19 (Feb 20, 2026) - Chart Annotation Bug Fix
+## Session 19 (Feb 20, 2026) - Chart Annotation Bug Fix + Widget Data Bug Fix
 
-### P0 Bug Fixed: Empty X Category Dropdown in Annotation Dialog
+### Bug Fix 1: Empty X Category Dropdown in Annotation Dialog (P0)
 - [x] **Root Cause:** The annotation dialog could be opened before chart preview data was loaded
 - [x] **Symptoms:** Text Label and Highlight Region annotation types showed empty dropdowns
 
@@ -778,18 +778,24 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 2. **Tooltip added:** "Configure dataset and X-axis first" when button is disabled
 3. **Helpful message in Annotations section:** "Select a dataset and X-axis field to enable annotations"
 4. **Warning message in dialog:** Yellow alert box for Text Label and Highlight Region types when data is unavailable
-5. **Test IDs added:** `annotation-x-category-select`, `annotation-start-x-select`, `annotation-end-x-select`
 
 **Files Modified:**
 - `/app/frontend/src/pages/ChartsPage.jsx` - Lines 927-944 (button disabled logic), 1077-1105 (Text Label dropdown with warning), 1110-1159 (Highlight Region dropdowns with warning)
 
-**Test Status:** 100% (10/10 tests passed) - Bug fix verified by testing agent (iteration_17.json)
+### Bug Fix 2: Widget Data Not Loading - Empty Dropdowns in Add Widget (P0)
+- [x] **Root Cause:** MongoDB ObjectId serialization error in `/api/widgets/{widget_id}/data` endpoint
+- [x] **Error:** `ValueError: [TypeError("'ObjectId' object is not iterable")]`
+- [x] **Symptoms:** 
+  - Dashboard widgets showed empty placeholders instead of charts
+  - Add Widget dialog dropdowns (Data Source, Field, Aggregation) were empty
 
-**Verification:**
-- Add Annotation button is disabled when chart not configured
-- Text Label X Category dropdown shows: North (2), South (2), East (2), West (2), Central (2)
-- Highlight Region Start X and End X dropdowns populated with data points
-- Reference Line annotation works correctly with Y Value input
+**Fix Applied:**
+- Added `{"_id": 0}` projection to exclude MongoDB ObjectId from widget query
+
+**Files Modified:**
+- `/app/backend/server.py` - Line 1811: Changed `find_one({"id": widget_id})` to `find_one({"id": widget_id}, {"_id": 0})`
+
+**Test Status:** 100% - Both bugs verified fixed via screenshots
 
 ## Next Recommended Tasks
 - **Email Integration Activation** - Add RESEND_API_KEY to enable report delivery
