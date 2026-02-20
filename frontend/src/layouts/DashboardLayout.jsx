@@ -119,9 +119,15 @@ const NAVIGATION = [
 // Find active group based on current path
 function findActiveGroup(pathname) {
   for (const group of NAVIGATION) {
+    // Check direct path match
     if (group.path === pathname) return group.id;
+    
+    // Check if any item in group matches
     for (const item of group.items || []) {
-      if (pathname.startsWith(item.path)) return group.id;
+      // Exact match or path with trailing content (e.g., /dashboards/123)
+      if (pathname === item.path || pathname.startsWith(item.path + '/')) {
+        return group.id;
+      }
     }
   }
   return 'home';
