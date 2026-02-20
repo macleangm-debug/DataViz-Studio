@@ -1079,21 +1079,30 @@ const ChartStudio = ({
                   <>
                     <div className="space-y-2">
                       <Label>X Category</Label>
-                      <Select
-                        value={newAnnotation.xValue}
-                        onValueChange={(v) => setNewAnnotation({ ...newAnnotation, xValue: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select data point" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {previewData.map((d) => (
-                            <SelectItem key={d.name} value={d.name}>
-                              {d.name} ({d.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {previewData.length === 0 ? (
+                        <div className="p-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20">
+                          <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" />
+                            Configure the chart data first (select dataset and X-axis field)
+                          </p>
+                        </div>
+                      ) : (
+                        <Select
+                          value={newAnnotation.xValue}
+                          onValueChange={(v) => setNewAnnotation({ ...newAnnotation, xValue: v })}
+                        >
+                          <SelectTrigger data-testid="annotation-x-category-select">
+                            <SelectValue placeholder="Select data point" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {previewData.map((d) => (
+                              <SelectItem key={d.name} value={d.name}>
+                                {d.name} ({d.value})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
                   </>
                 )}
