@@ -410,7 +410,7 @@ export function DashboardLayout({ children }) {
 
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto bg-background">
-            <div className="h-full">
+            <div className="p-6 lg:p-8">
               {children}
             </div>
           </main>
