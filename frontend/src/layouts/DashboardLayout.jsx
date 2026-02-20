@@ -354,8 +354,7 @@ export function DashboardLayout({ children }) {
                 )}
               </div>
             </motion.aside>
-          )}
-        </AnimatePresence>
+        )}
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
