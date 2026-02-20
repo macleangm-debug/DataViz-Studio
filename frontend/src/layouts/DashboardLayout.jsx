@@ -133,11 +133,17 @@ export function DashboardLayout({ children }) {
   const { user, logout } = useAuthStore();
   const { currentOrg, organizations, setCurrentOrg } = useOrgStore();
   
-  // Initialize active group based on current route
-  const initialGroup = findActiveGroup(location.pathname);
-  const [activeGroup, setActiveGroup] = useState(initialGroup);
+  const [activeGroup, setActiveGroup] = useState(() => findActiveGroup(location.pathname));
   const [panelOpen, setPanelOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Sync active group when route changes (but only if navigated via browser/link, not rail click)
+  useEffect(() => {
+    const newGroup = findActiveGroup(location.pathname);
+    if (newGroup !== activeGroup) {
+      setActiveGroup(newGroup);
+    }
+  }, [location.pathname]);
 
   // Get current group data
   const currentGroup = NAVIGATION.find(g => g.id === activeGroup);
