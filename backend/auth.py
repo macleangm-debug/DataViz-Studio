@@ -74,7 +74,8 @@ async def get_current_user(
     token = credentials.credentials
     payload = decode_token(token)
     
-    user_id = payload.get("sub")
+    # Support both 'sub' (standard JWT) and 'user_id' (DataViz Studio)
+    user_id = payload.get("sub") or payload.get("user_id")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
