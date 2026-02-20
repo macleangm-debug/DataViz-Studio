@@ -186,7 +186,7 @@ function App() {
               <SecurityPage />
             </ProtectedRoute>
           } />
-          <Route path="/api-keys" element={
+          <Route path="/keys" element={
             <ProtectedRoute>
               <ApiKeysPage />
             </ProtectedRoute>
