@@ -272,16 +272,17 @@ export function DashboardLayout({ children }) {
         </aside>
 
         {/* Expandable Panel */}
-        <AnimatePresence mode="wait">
-          {showPanel && panelOpen && (
-            <motion.aside
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 260, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="hidden lg:block bg-card border-r border-border overflow-hidden"
-            >
-              <div className="w-[260px] h-full flex flex-col">
+        {showPanel && (
+          <motion.aside
+            initial={false}
+            animate={{ 
+              width: panelOpen ? 260 : 0, 
+              opacity: panelOpen ? 1 : 0 
+            }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="hidden lg:block bg-card border-r border-border overflow-hidden"
+          >
+            <div className="w-[260px] h-full flex flex-col">
                 {/* Panel Header */}
                 <div className="p-4 border-b border-border">
                   <h2 className="font-semibold text-foreground">{currentGroup?.label}</h2>
