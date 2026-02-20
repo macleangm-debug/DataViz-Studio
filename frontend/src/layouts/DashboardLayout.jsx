@@ -109,7 +109,7 @@ const NAVIGATION = [
     items: [
       { label: 'Team', path: '/team', icon: Users },
       { label: 'Security', path: '/security', icon: Shield },
-      { label: 'API Keys', path: '/api-keys', icon: Key },
+      { label: 'API Keys', path: '/keys', icon: Key },
       { label: 'Settings', path: '/settings', icon: Settings },
       { label: 'Help Center', path: '/help', icon: HelpCircle },
     ]
