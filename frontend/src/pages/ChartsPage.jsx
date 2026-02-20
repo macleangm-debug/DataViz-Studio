@@ -1110,40 +1110,49 @@ const ChartStudio = ({
                 {/* Region Options */}
                 {newAnnotation.type === 'region' && (
                   <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-2">
-                        <Label>Start X</Label>
-                        <Select
-                          value={newAnnotation.startX}
-                          onValueChange={(v) => setNewAnnotation({ ...newAnnotation, startX: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Start" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {previewData.map((d) => (
-                              <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    {previewData.length === 0 ? (
+                      <div className="p-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20">
+                        <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" />
+                          Configure the chart data first (select dataset and X-axis field)
+                        </p>
                       </div>
-                      <div className="space-y-2">
-                        <Label>End X</Label>
-                        <Select
-                          value={newAnnotation.endX}
-                          onValueChange={(v) => setNewAnnotation({ ...newAnnotation, endX: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="End" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {previewData.map((d) => (
-                              <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                          <Label>Start X</Label>
+                          <Select
+                            value={newAnnotation.startX}
+                            onValueChange={(v) => setNewAnnotation({ ...newAnnotation, startX: v })}
+                          >
+                            <SelectTrigger data-testid="annotation-start-x-select">
+                              <SelectValue placeholder="Start" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {previewData.map((d) => (
+                                <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>End X</Label>
+                          <Select
+                            value={newAnnotation.endX}
+                            onValueChange={(v) => setNewAnnotation({ ...newAnnotation, endX: v })}
+                          >
+                            <SelectTrigger data-testid="annotation-end-x-select">
+                              <SelectValue placeholder="End" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {previewData.map((d) => (
+                                <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
                 
