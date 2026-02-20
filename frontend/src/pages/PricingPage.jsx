@@ -366,6 +366,12 @@ export function PricingPage() {
                 {/* Key Metrics */}
                 <div className="space-y-3 mb-6 p-4 bg-white/5 rounded-xl">
                   <div className="flex items-center gap-3">
+                    <Building2 className="w-4 h-4 text-amber-400" />
+                    <span className="text-gray-300 text-sm">
+                      {typeof tier.organizations === 'number' ? `${tier.organizations} organizations` : tier.organizations}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <Users className="w-4 h-4 text-blue-400" />
                     <span className="text-gray-300 text-sm">
                       {typeof tier.users === 'number' ? `${tier.users} users` : tier.users}
