@@ -284,16 +284,17 @@ export function DashboardLayout({ children }) {
         </aside>
 
         {/* Expandable Panel */}
-        {showPanel && (
-          <motion.aside
-            initial={false}
-            animate={{ 
-              width: panelOpen ? 260 : 0, 
-              opacity: panelOpen ? 1 : 0 
-            }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="hidden lg:block bg-card border-r border-border overflow-hidden"
-          >
+        <motion.aside
+          initial={false}
+          animate={{ 
+            width: showPanel && panelOpen ? 260 : 0, 
+            opacity: showPanel && panelOpen ? 1 : 0 
+          }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="hidden lg:block bg-card border-r border-border overflow-hidden"
+          style={{ minWidth: 0 }}
+        >
+          {showPanel && (
             <div className="w-[260px] h-full flex flex-col">
                 {/* Panel Header */}
                 <div className="p-4 border-b border-border">
