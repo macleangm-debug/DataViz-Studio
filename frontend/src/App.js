@@ -178,17 +178,17 @@ function App() {
           } />
           <Route path="/team" element={
             <ProtectedRoute>
-              <SettingsPage />
+              <TeamPage />
             </ProtectedRoute>
           } />
           <Route path="/security" element={
             <ProtectedRoute>
-              <SettingsPage />
+              <SecurityPage />
             </ProtectedRoute>
           } />
           <Route path="/api-keys" element={
             <ProtectedRoute>
-              <SettingsPage />
+              <ApiKeysPage />
             </ProtectedRoute>
           } />
           
