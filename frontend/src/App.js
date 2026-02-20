@@ -145,7 +145,7 @@ function App() {
           } />
           <Route path="/statistics" element={
             <ProtectedRoute>
-              <AIInsightsPage />
+              <StatisticsPage />
             </ProtectedRoute>
           } />
           
