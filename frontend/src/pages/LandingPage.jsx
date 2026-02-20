@@ -140,6 +140,7 @@ const PRICING = [
     monthlyPrice: 0,
     annualPrice: 0,
     description: 'Perfect for individuals exploring data visualization',
+    organizations: '1 organization',
     users: '1 user',
     storage: '100 MB',
     emails: '0 emails/mo',
@@ -161,6 +162,7 @@ const PRICING = [
     monthlyPrice: 29,
     annualPrice: 278, // ~20% off ($23.17/mo)
     description: 'Great for small teams and growing businesses',
+    organizations: '3 organizations',
     users: '3 users',
     storage: '5 GB',
     emails: '500 emails/mo',
@@ -169,6 +171,7 @@ const PRICING = [
       '25 datasets (max 50,000 rows each)',
       'All 9 chart types',
       'PDF & PNG export',
+      'Public dashboard links',
       'Email scheduling (basic)',
       'Email support (48h response)',
       '30-day data retention',
@@ -184,6 +187,7 @@ const PRICING = [
     monthlyPrice: 79,
     annualPrice: 758, // ~20% off ($63.17/mo)
     description: 'For teams that need advanced analytics & automation',
+    organizations: '10 organizations',
     users: '10 users',
     storage: '50 GB',
     emails: '5,000 emails/mo',
@@ -194,6 +198,7 @@ const PRICING = [
       'Database connections (MongoDB, PostgreSQL, MySQL)',
       'AI-powered insights',
       'Report Builder with templates',
+      'Password-protected sharing',
       'Scheduled reports & alerts',
       'Priority support (24h response)',
       '1-year data retention',
@@ -210,6 +215,7 @@ const PRICING = [
     monthlyPrice: 249,
     annualPrice: 2388, // ~20% off ($199/mo)
     description: 'For organizations with advanced security & scale needs',
+    organizations: 'Unlimited organizations',
     users: 'Unlimited users',
     storage: '500 GB',
     emails: '50,000 emails/mo',
