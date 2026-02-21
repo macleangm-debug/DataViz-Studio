@@ -64,6 +64,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { useOrgStore, useAuthStore } from '../store';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { ChartPreviews, ChartTypeButton } from '../components/ChartTypePreview';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
