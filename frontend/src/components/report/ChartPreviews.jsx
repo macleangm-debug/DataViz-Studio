@@ -115,15 +115,19 @@ export const PieChartPreview = ({ theme, data }) => {
 };
 
 // Line Chart Component (SVG preview)
-export const LineChartPreview = ({ theme }) => {
-  const points = [10, 40, 30, 60, 45, 70, 55];
+export const LineChartPreview = ({ theme, data }) => {
+  const defaultPoints = [10, 40, 30, 60, 45, 70, 55];
+  const chartData = data && data.length > 0 
+    ? data.map(d => d.value || 0) 
+    : defaultPoints;
+  
   const width = 200;
   const height = 100;
   const padding = 10;
   
-  const maxVal = Math.max(...points);
-  const pointsStr = points.map((p, i) => {
-    const x = padding + (i / (points.length - 1)) * (width - 2 * padding);
+  const maxVal = Math.max(...chartData) || 1;
+  const pointsStr = chartData.map((p, i) => {
+    const x = padding + (i / (chartData.length - 1 || 1)) * (width - 2 * padding);
     const y = height - padding - (p / maxVal) * (height - 2 * padding);
     return `${x},${y}`;
   }).join(' ');
@@ -139,8 +143,8 @@ export const LineChartPreview = ({ theme }) => {
           strokeLinejoin="round"
           points={pointsStr}
         />
-        {points.map((p, i) => {
-          const x = padding + (i / (points.length - 1)) * (width - 2 * padding);
+        {chartData.map((p, i) => {
+          const x = padding + (i / (chartData.length - 1 || 1)) * (width - 2 * padding);
           const y = height - padding - (p / maxVal) * (height - 2 * padding);
           return (
             <circle key={i} cx={x} cy={y} r="4" fill={theme.accent} />
