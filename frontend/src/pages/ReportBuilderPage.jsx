@@ -788,6 +788,17 @@ const ReportBuilderPage = () => {
               <p className="text-gray-500 text-sm">Design professional infographic-style reports</p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Templates Button */}
+              <button
+                onClick={() => setShowTemplateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-md"
+                data-testid="templates-btn"
+              >
+                <LayoutTemplate size={18} />
+                <span className="font-medium">Templates</span>
+                <Sparkles size={14} className="opacity-75" />
+              </button>
+              
               <ThemeSelector
                 selectedTheme={reportConfig.theme}
                 onSelect={(t) => setReportConfig({ ...reportConfig, theme: t })}
