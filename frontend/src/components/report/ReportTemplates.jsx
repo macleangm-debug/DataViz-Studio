@@ -530,6 +530,7 @@ export const REPORT_TEMPLATES = [
 // Template categories for filtering
 export const TEMPLATE_CATEGORIES = [
   'All',
+  'Research',
   'Finance',
   'Executive',
   'Sales',
