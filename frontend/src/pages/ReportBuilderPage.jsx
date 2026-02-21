@@ -266,6 +266,40 @@ const ReportBuilderPage = () => {
     toast.success('Data binding removed');
   };
   
+  // Apply a report template
+  const applyTemplate = (template) => {
+    // Update report configuration
+    setReportConfig(prev => ({
+      ...prev,
+      title: template.config.title,
+      subtitle: template.config.subtitle,
+      confidentialityLevel: template.config.confidentialityLevel || 'Internal',
+      showCoverPage: template.coverPage || false,
+      theme: template.theme,
+    }));
+    
+    // Set custom colors based on theme
+    const selectedTheme = THEMES.find(t => t.id === template.theme);
+    if (selectedTheme) {
+      setCustomColors({ primary: selectedTheme.primary, accent: selectedTheme.accent });
+    }
+    
+    // Apply template sections with unique IDs
+    const newSections = template.sections.map((section, index) => ({
+      ...section,
+      id: `template_${template.id}_${index}_${Date.now()}`,
+    }));
+    
+    setSections(newSections);
+    setShowTemplateModal(false);
+    toast.success(`Applied "${template.name}" template!`);
+  };
+  
+  // Get filtered templates based on category
+  const filteredTemplates = templateCategory === 'All' 
+    ? REPORT_TEMPLATES 
+    : REPORT_TEMPLATES.filter(t => t.category === templateCategory);
+  
   // Handle logo upload
   const handleLogoUpload = useCallback((event) => {
     const file = event.target.files?.[0];
