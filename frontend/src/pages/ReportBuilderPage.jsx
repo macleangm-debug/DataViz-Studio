@@ -45,6 +45,12 @@ const ReportBuilderPage = () => {
     companyName: '',
     theme: 'blue_coral',
     reportDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    // Cover Page settings
+    showCoverPage: false,
+    coverPageLogo: null, // base64 image data
+    coverPageLogoName: '',
+    authorName: '',
+    confidentialityLevel: 'Internal',
   });
   
   // Sections state
