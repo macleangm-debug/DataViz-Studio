@@ -788,21 +788,15 @@ const ChartStudio = ({
               {/* Chart Type */}
               <div className="space-y-2">
                 <Label>Chart Type</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 max-h-[320px] overflow-y-auto pr-1">
                   {CHART_TYPES.map((type) => (
-                    <button
+                    <ChartTypeButton
                       key={type.value}
+                      type={type.value}
+                      label={type.label}
+                      isSelected={chartType === type.value}
                       onClick={() => setChartType(type.value)}
-                      className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-all ${
-                        chartType === type.value
-                          ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-600'
-                          : 'border-border hover:border-violet-300 text-muted-foreground hover:text-foreground'
-                      }`}
-                      data-testid={`chart-type-${type.value}`}
-                    >
-                      <type.icon className="w-5 h-5" />
-                      <span className="text-[10px] font-medium">{type.label}</span>
-                    </button>
+                    />
                   ))}
                 </div>
               </div>
