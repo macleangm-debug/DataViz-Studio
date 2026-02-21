@@ -581,6 +581,127 @@ const ReportBuilderPage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Full Screen Preview Modal */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="max-w-6xl h-[90vh] overflow-hidden p-0 bg-gray-100">
+          <DialogHeader className="p-4 bg-white border-b sticky top-0 z-10">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold text-gray-900">
+                Report Preview - {reportConfig.title}
+              </DialogTitle>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    handleExportPDF();
+                  }}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                  data-testid="modal-export-btn"
+                >
+                  <Download size={16} />
+                  Export PDF
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+              {/* Preview Header */}
+              <div 
+                className="p-8 text-white relative overflow-hidden"
+                style={{ 
+                  background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}ee 40%, ${theme.accent}cc 100%)` 
+                }}
+              >
+                <div className="absolute inset-0 overflow-hidden">
+                  <div 
+                    className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-20"
+                    style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }}
+                  />
+                  <div 
+                    className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full opacity-10"
+                    style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }}
+                  />
+                </div>
+                
+                <div className="relative z-10">
+                  {reportConfig.companyName && (
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
+                        <span className="font-bold text-lg">{reportConfig.companyName.charAt(0)}</span>
+                      </div>
+                      <span className="text-white/80 text-sm font-medium">{reportConfig.companyName}</span>
+                    </div>
+                  )}
+                  <h2 className="text-4xl font-bold mb-3 tracking-tight">{reportConfig.title}</h2>
+                  <p className="text-xl opacity-90 font-light">{reportConfig.subtitle}</p>
+                  <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/20">
+                    <span className="text-sm text-white/80">{reportConfig.reportDate}</span>
+                    <span className="text-sm text-white/80">•</span>
+                    <span className="text-sm text-white/80">{sections.length} Sections</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Preview Body */}
+              <div className="p-6">
+                <div className="flex flex-wrap gap-4">
+                  {sections.map((section, index) => (
+                    <ReportSection
+                      key={section.id}
+                      section={section}
+                      index={index}
+                      theme={theme}
+                      isPreview={true}
+                      onUpdate={() => {}}
+                      onDelete={() => {}}
+                      onMoveUp={() => {}}
+                      onMoveDown={() => {}}
+                      onResizeWidth={() => {}}
+                      totalSections={sections.length}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Preview Footer */}
+              <div 
+                className="px-8 py-6 flex items-center justify-between relative overflow-hidden"
+                style={{ 
+                  background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}dd 50%, ${theme.accent}99 100%)` 
+                }}
+              >
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="7" height="9" rx="1" />
+                      <rect x="14" y="3" width="7" height="5" rx="1" />
+                      <rect x="14" y="12" width="7" height="9" rx="1" />
+                      <rect x="3" y="16" width="7" height="5" rx="1" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="font-bold text-xl text-white tracking-tight">DataViz</span>
+                    <span className="font-bold text-xl text-white/80 tracking-tight ml-1">Studio</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end relative z-10">
+                  <span className="text-white/70 text-xs uppercase tracking-wider">Generated</span>
+                  <span className="text-white font-medium">{reportConfig.reportDate}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Print Notice */}
+            <div className="mt-6 text-center text-sm text-gray-500">
+              <p>This is how your report will appear when exported to PDF.</p>
+              <p className="mt-1 text-xs text-gray-400">Click "Export PDF" to download the final document.</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
