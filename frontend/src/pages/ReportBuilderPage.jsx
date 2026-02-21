@@ -1,12 +1,19 @@
 import React, { useState, useRef } from 'react';
 import { 
-  FileText, Download, Settings, Eye, Plus, PieChart, RefreshCw
+  FileText, Download, Settings, Eye, Plus, PieChart, RefreshCw, X, Maximize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 
 // Import refactored components
 import { 
