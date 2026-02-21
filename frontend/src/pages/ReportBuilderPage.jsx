@@ -326,12 +326,20 @@ const ReportBuilderPage = () => {
               <button
                 onClick={() => setIsPreview(!isPreview)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  isPreview ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'
+                  isPreview ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50 text-gray-700'
                 }`}
                 data-testid="preview-btn"
               >
                 <Eye size={18} />
                 <span className="font-medium">{isPreview ? 'Edit Mode' : 'Preview'}</span>
+              </button>
+              <button
+                onClick={() => setShowPreviewModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                data-testid="fullscreen-preview-btn"
+              >
+                <Maximize2 size={18} />
+                <span className="font-medium">Full Preview</span>
               </button>
               <button
                 onClick={handleExportPDF}
