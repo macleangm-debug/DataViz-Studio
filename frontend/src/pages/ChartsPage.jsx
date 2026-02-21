@@ -85,6 +85,12 @@ const CHART_TYPES = [
   { value: 'funnel', label: 'Funnel Chart', icon: Target, category: 'Advanced' },
   { value: 'gauge', label: 'Gauge Chart', icon: Activity, category: 'Advanced' },
   { value: 'heatmap', label: 'Heatmap', icon: Layers, category: 'Advanced' },
+  // New Chart Types
+  { value: 'treemap', label: 'Treemap', icon: Layers, category: 'Hierarchy' },
+  { value: 'waterfall', label: 'Waterfall', icon: BarChart3, category: 'Financial' },
+  { value: 'boxplot', label: 'Box Plot', icon: Activity, category: 'Statistical' },
+  { value: 'sankey', label: 'Sankey', icon: TrendingUp, category: 'Flow' },
+  { value: 'candlestick', label: 'Candlestick', icon: BarChart3, category: 'Financial' },
 ];
 
 // Color themes for charts
