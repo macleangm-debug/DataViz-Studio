@@ -159,7 +159,7 @@ const ReportBuilderPage = () => {
       const wasInEditMode = !isPreview;
       if (wasInEditMode) {
         setIsPreview(true);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
       
       // Create PDF with A4 dimensions
@@ -171,22 +171,41 @@ const ReportBuilderPage = () => {
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
+      const margin = 8;
       const usableWidth = pdfWidth - (margin * 2);
       const usableHeight = pdfHeight - (margin * 2);
-      const footerHeight = 15;
+      const footerHeight = 12;
       const contentHeight = usableHeight - footerHeight;
       
-      // Capture the full report as canvas
+      // Capture the full report as canvas with higher quality settings
       const canvas = await html2canvas(reportElement, {
-        scale: 2,
+        scale: 3, // Higher scale for better quality
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 1200,
+        windowWidth: 900, // Fixed width for consistent rendering
+        imageTimeout: 0,
+        removeContainer: true,
+        allowTaint: true,
+        // Ensure SVG and fonts render properly
+        onclone: (clonedDoc) => {
+          // Force styles to be applied in cloned document
+          const clonedElement = clonedDoc.querySelector('[data-testid="report-preview-content"]');
+          if (clonedElement) {
+            clonedElement.style.width = '900px';
+            // Add print-specific styles
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+              .rounded-xl, .rounded-2xl, .rounded-lg { border-radius: 12px !important; }
+              svg { shape-rendering: geometricPrecision; }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        }
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       
       // Calculate how the image maps to PDF pages
       const imgWidth = usableWidth;
@@ -195,7 +214,7 @@ const ReportBuilderPage = () => {
       // Check if we need multiple pages
       if (imgHeight <= contentHeight) {
         // Single page - simple case
-        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
         addFooter(pdf, pdfWidth, pdfHeight, margin, 1, 1);
       } else {
         // Multi-page handling
@@ -222,40 +241,46 @@ const ReportBuilderPage = () => {
             0, 0, canvas.width, sourceHeight
           );
           
-          const pageImgData = pageCanvas.toDataURL('image/png');
+          const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
           
           let yOffset = margin;
           if (page > 0) {
+            // Add continuation header
+            pdf.setFillColor(theme.primary);
+            pdf.rect(margin, margin, usableWidth, 8, 'F');
             pdf.setFontSize(9);
-            pdf.setTextColor(128, 128, 128);
-            pdf.text(`${reportConfig.title} (continued)`, margin, margin + 3);
-            pdf.setDrawColor(200, 200, 200);
-            pdf.line(margin, margin + 5, pdfWidth - margin, margin + 5);
-            yOffset = margin + 8;
+            pdf.setTextColor(255, 255, 255);
+            pdf.text(`${reportConfig.title} (continued)`, margin + 3, margin + 5.5);
+            yOffset = margin + 10;
           }
           
-          pdf.addImage(pageImgData, 'PNG', margin, yOffset, imgWidth, destHeight);
+          pdf.addImage(pageImgData, 'JPEG', margin, yOffset, imgWidth, destHeight);
           addFooter(pdf, pdfWidth, pdfHeight, margin, page + 1, totalPages);
         }
       }
       
       function addFooter(pdfDoc, width, height, m, currentPage, totalPages) {
-        const footerY = height - m - 5;
+        const footerY = height - m - 3;
         
-        pdfDoc.setDrawColor(59, 130, 246);
-        pdfDoc.setLineWidth(0.5);
-        pdfDoc.line(m, footerY - 3, width - m, footerY - 3);
+        // Footer background bar
+        pdfDoc.setFillColor(theme.primary);
+        pdfDoc.rect(m, footerY - 6, usableWidth, 9, 'F');
         
-        pdfDoc.setFontSize(10);
-        pdfDoc.setTextColor(59, 130, 246);
+        // DataViz Studio logo/text
+        pdfDoc.setFontSize(9);
+        pdfDoc.setTextColor(255, 255, 255);
         const footerText = 'DataViz Studio';
-        const textWidth = pdfDoc.getTextWidth(footerText);
-        pdfDoc.text(footerText, (width - textWidth) / 2, footerY);
+        pdfDoc.text(footerText, m + 3, footerY);
         
+        // Page number
         pdfDoc.setFontSize(8);
-        pdfDoc.setTextColor(128, 128, 128);
         const pageText = `Page ${currentPage} of ${totalPages}`;
-        pdfDoc.text(pageText, width - m - pdfDoc.getTextWidth(pageText), footerY);
+        pdfDoc.text(pageText, width - m - pdfDoc.getTextWidth(pageText) - 3, footerY);
+        
+        // Date
+        pdfDoc.setFontSize(7);
+        const dateText = reportConfig.reportDate;
+        pdfDoc.text(dateText, (width - pdfDoc.getTextWidth(dateText)) / 2, footerY);
       }
       
       const fileName = `${reportConfig.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
