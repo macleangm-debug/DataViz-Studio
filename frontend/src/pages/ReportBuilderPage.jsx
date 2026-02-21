@@ -436,14 +436,41 @@ const ReportBuilderPage = () => {
             
             {/* Report Footer */}
             <div 
-              className="px-6 py-4 flex items-center justify-center gap-3 text-white"
-              style={{ backgroundColor: theme.primary }}
+              className="px-8 py-6 flex items-center justify-between relative overflow-hidden"
+              style={{ 
+                background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}dd 50%, ${theme.accent}99 100%)` 
+              }}
             >
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                  <PieChart size={18} className="text-white" />
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+                  </pattern>
+                  <rect width="100" height="100" fill="url(#grid)" />
+                </svg>
+              </div>
+              
+              {/* DataViz Logo */}
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="9" rx="1" />
+                    <rect x="14" y="3" width="7" height="5" rx="1" />
+                    <rect x="14" y="12" width="7" height="9" rx="1" />
+                    <rect x="3" y="16" width="7" height="5" rx="1" />
+                  </svg>
                 </div>
-                <span className="font-bold text-lg">DataViz Studio</span>
+                <div>
+                  <span className="font-bold text-xl text-white tracking-tight">DataViz</span>
+                  <span className="font-bold text-xl text-white/80 tracking-tight ml-1">Studio</span>
+                </div>
+              </div>
+              
+              {/* Report Date */}
+              <div className="flex flex-col items-end relative z-10">
+                <span className="text-white/70 text-xs uppercase tracking-wider">Generated</span>
+                <span className="text-white font-medium">{reportConfig.reportDate}</span>
               </div>
             </div>
           </div>
