@@ -95,6 +95,8 @@ const ReportBuilderPage = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showDataBindingModal, setShowDataBindingModal] = useState(false);
   const [selectedSectionForBinding, setSelectedSectionForBinding] = useState(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState('All');
   const logoInputRef = useRef(null);
   
   // Data binding state
