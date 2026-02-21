@@ -37,7 +37,10 @@ import {
   THEMES, 
   ReportSection, 
   SECTION_TYPES,
-  AddSectionPanel 
+  AddSectionPanel,
+  REPORT_TEMPLATES,
+  TEMPLATE_CATEGORIES,
+  getTemplateIcon
 } from '../components/report';
 
 // ========================================
