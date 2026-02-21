@@ -576,6 +576,7 @@ const ReportBuilderPage = () => {
                 <span className="text-white font-medium">{reportConfig.reportDate}</span>
               </div>
             </div>
+            </div>{/* End inner container for PDF capture */}
           </div>
           
           {/* Help Text */}
