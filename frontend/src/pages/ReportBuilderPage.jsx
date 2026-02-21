@@ -1,7 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   FileText, Download, Settings, Eye, Plus, PieChart, RefreshCw, X, Maximize2,
-  Upload, Image, FileSpreadsheet, FileImage, ChevronDown, BookOpen
+  Upload, Image, FileSpreadsheet, FileImage, ChevronDown, BookOpen, Database, Link2, Unlink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -23,6 +23,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '../components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 
 // Import refactored components
 import { 
