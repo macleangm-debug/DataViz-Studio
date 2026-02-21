@@ -442,6 +442,175 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         }],
       };
 
+    case 'treemap':
+      return {
+        ...baseOptions,
+        series: [{
+          type: 'treemap',
+          data: data.map((d, i) => ({
+            name: d.name,
+            value: d.value,
+            itemStyle: { 
+              color: colors[i % colors.length],
+              borderColor: '#1a1a2e',
+              borderWidth: 2,
+              borderRadius: 4,
+            },
+          })),
+          label: { show: true, color: '#fff', fontSize: 12 },
+          breadcrumb: { show: false },
+          roam: false,
+          nodeClick: false,
+          levels: [{
+            itemStyle: { borderColor: '#1a1a2e', borderWidth: 2, gapWidth: 2 },
+          }],
+        }],
+      };
+
+    case 'waterfall':
+      // Calculate cumulative values for waterfall
+      let cumulative = 0;
+      const waterfallData = data.map((d, i) => {
+        const start = cumulative;
+        cumulative += d.value;
+        return {
+          name: d.name,
+          value: [start, cumulative],
+          itemStyle: { color: d.value >= 0 ? colors[0] : colors[4] || '#ef4444' },
+        };
+      });
+      return {
+        ...baseOptions,
+        xAxis: {
+          type: 'category',
+          data: data.map(d => d.name),
+          axisLabel: { color: '#888', rotate: data.length > 6 ? 45 : 0 },
+          axisLine: { lineStyle: { color: '#333' } },
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: '#888' },
+          splitLine: { lineStyle: { color: '#222' } },
+        },
+        series: [{
+          type: 'bar',
+          stack: 'waterfall',
+          data: waterfallData.map(d => ({ 
+            value: d.value[0], 
+            itemStyle: { color: 'transparent' } 
+          })),
+        }, {
+          type: 'bar',
+          stack: 'waterfall',
+          data: waterfallData.map((d, i) => ({ 
+            value: d.value[1] - d.value[0],
+            itemStyle: { 
+              color: (d.value[1] - d.value[0]) >= 0 ? colors[0] : '#ef4444',
+              borderRadius: [4, 4, 0, 0],
+            },
+          })),
+          label: {
+            show: true,
+            position: 'top',
+            color: '#888',
+            formatter: (params) => params.value.toLocaleString(),
+          },
+        }],
+      };
+
+    case 'boxplot':
+      // Generate boxplot statistics from data
+      const values = data.map(d => d.value).sort((a, b) => a - b);
+      const q1 = values[Math.floor(values.length * 0.25)];
+      const median = values[Math.floor(values.length * 0.5)];
+      const q3 = values[Math.floor(values.length * 0.75)];
+      const min = values[0];
+      const max = values[values.length - 1];
+      return {
+        ...baseOptions,
+        xAxis: {
+          type: 'category',
+          data: ['Distribution'],
+          axisLabel: { color: '#888' },
+          axisLine: { lineStyle: { color: '#333' } },
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: '#888' },
+          splitLine: { lineStyle: { color: '#222' } },
+        },
+        series: [{
+          type: 'boxplot',
+          data: [[min, q1, median, q3, max]],
+          itemStyle: { color: colors[0], borderColor: colors[0] },
+        }, {
+          type: 'scatter',
+          data: data.map((d, i) => [0, d.value]),
+          symbolSize: 6,
+          itemStyle: { color: colors[1], opacity: 0.6 },
+        }],
+      };
+
+    case 'sankey':
+      // Create sankey links from data
+      const nodes = data.map(d => ({ name: d.name }));
+      const links = data.slice(0, -1).map((d, i) => ({
+        source: d.name,
+        target: data[i + 1].name,
+        value: Math.min(d.value, data[i + 1].value),
+      }));
+      return {
+        ...baseOptions,
+        series: [{
+          type: 'sankey',
+          layout: 'none',
+          emphasis: { focus: 'adjacency' },
+          data: nodes,
+          links: links,
+          lineStyle: { color: 'gradient', curveness: 0.5 },
+          itemStyle: { borderWidth: 1, borderColor: '#1a1a2e' },
+          label: { color: '#888' },
+        }],
+      };
+
+    case 'candlestick':
+      // Generate candlestick data (open, close, low, high)
+      const candleData = data.map(d => {
+        const base = d.value;
+        const variance = base * 0.1;
+        return [
+          base - variance * Math.random(), // open
+          base + variance * Math.random(), // close
+          base - variance * (1 + Math.random()), // low
+          base + variance * (1 + Math.random()), // high
+        ];
+      });
+      return {
+        ...baseOptions,
+        xAxis: {
+          type: 'category',
+          data: data.map(d => d.name),
+          axisLabel: { color: '#888' },
+          axisLine: { lineStyle: { color: '#333' } },
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: '#888' },
+          splitLine: { lineStyle: { color: '#222' } },
+          scale: true,
+        },
+        series: [{
+          type: 'candlestick',
+          data: candleData,
+          itemStyle: {
+            color: '#10b981', // bullish
+            color0: '#ef4444', // bearish
+            borderColor: '#10b981',
+            borderColor0: '#ef4444',
+          },
+        }],
+      };
+
     default:
       return baseOptions;
   }
