@@ -1,12 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { 
-  FileText, Download, Settings, Eye, Plus, PieChart, RefreshCw, X, Maximize2
+  FileText, Download, Settings, Eye, Plus, PieChart, RefreshCw, X, Maximize2,
+  Upload, Image, FileSpreadsheet, FileImage, ChevronDown, BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 import { Button } from '../components/ui/button';
 import {
   Dialog,
@@ -14,6 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '../components/ui/dropdown-menu';
 
 // Import refactored components
 import { 
