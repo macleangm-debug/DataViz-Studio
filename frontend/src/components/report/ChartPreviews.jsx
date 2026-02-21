@@ -155,44 +155,96 @@ export const LineChartPreview = ({ theme, data }) => {
   );
 };
 
-// Data Table Preview - optimized for PDF export
-export const DataTablePreview = ({ theme }) => {
-  const tableData = [
+// Data Table Preview with Sparklines - optimized for PDF export
+export const DataTablePreview = ({ theme, data, showSparklines = false, sparklineData }) => {
+  const defaultTableData = [
     { category: 'North Region', value: '245,000', share: '32%' },
     { category: 'South Region', value: '189,000', share: '24%' },
     { category: 'East Region', value: '156,000', share: '21%' },
     { category: 'West Region', value: '178,000', share: '23%' },
   ];
   
+  // Sample sparkline data for each row
+  const defaultSparklineData = [
+    [10, 15, 12, 18, 22, 20, 25],
+    [20, 18, 22, 19, 15, 17, 14],
+    [8, 12, 10, 14, 16, 15, 18],
+    [15, 14, 16, 18, 17, 20, 22],
+  ];
+  
+  const tableData = data && data.length > 0 ? data : defaultTableData;
+  const sparklines = sparklineData || defaultSparklineData;
+  
+  // Determine columns based on data
+  const columns = tableData.length > 0 
+    ? Object.keys(tableData[0]).filter(k => k !== 'sparkline' && k !== '_id')
+    : ['category', 'value', 'share'];
+  
   return (
     <div style={{ overflow: 'hidden', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+      {/* Header */}
       <div 
         style={{ 
           display: 'grid', 
-          gridTemplateColumns: '1fr 1fr 1fr', 
+          gridTemplateColumns: showSparklines ? `repeat(${columns.length}, 1fr) 80px` : `repeat(${columns.length}, 1fr)`, 
           fontSize: '12px', 
           fontWeight: '600', 
           color: 'white',
           backgroundColor: theme.primary
         }}
       >
-        <div style={{ padding: '8px', borderRight: '1px solid rgba(255,255,255,0.2)' }}>Category</div>
-        <div style={{ padding: '8px', borderRight: '1px solid rgba(255,255,255,0.2)', textAlign: 'right' }}>Value</div>
-        <div style={{ padding: '8px', textAlign: 'right' }}>Share</div>
+        {columns.map((col, i) => (
+          <div 
+            key={col} 
+            style={{ 
+              padding: '8px', 
+              borderRight: i < columns.length - 1 || showSparklines ? '1px solid rgba(255,255,255,0.2)' : 'none',
+              textTransform: 'capitalize'
+            }}
+          >
+            {col.replace(/_/g, ' ')}
+          </div>
+        ))}
+        {showSparklines && (
+          <div style={{ padding: '8px', textAlign: 'center' }}>Trend</div>
+        )}
       </div>
-      {tableData.map((row, i) => (
+      
+      {/* Body */}
+      {tableData.slice(0, 6).map((row, rowIndex) => (
         <div 
-          key={i} 
+          key={rowIndex} 
           style={{ 
             display: 'grid', 
-            gridTemplateColumns: '1fr 1fr 1fr', 
+            gridTemplateColumns: showSparklines ? `repeat(${columns.length}, 1fr) 80px` : `repeat(${columns.length}, 1fr)`, 
             fontSize: '12px',
-            backgroundColor: i % 2 === 0 ? '#ffffff' : '#f9fafb'
+            backgroundColor: rowIndex % 2 === 0 ? '#ffffff' : '#f9fafb'
           }}
         >
-          <div style={{ padding: '8px', borderRight: '1px solid #f3f4f6', color: '#374151' }}>{row.category}</div>
-          <div style={{ padding: '8px', borderRight: '1px solid #f3f4f6', textAlign: 'right', color: '#4b5563' }}>{row.value}</div>
-          <div style={{ padding: '8px', textAlign: 'right', fontWeight: '600', color: theme.accent }}>{row.share}</div>
+          {columns.map((col, colIndex) => (
+            <div 
+              key={col} 
+              style={{ 
+                padding: '8px', 
+                borderRight: colIndex < columns.length - 1 || showSparklines ? '1px solid #f3f4f6' : 'none',
+                color: colIndex === columns.length - 1 ? theme.accent : '#374151',
+                fontWeight: colIndex === columns.length - 1 ? '600' : '400',
+                textAlign: colIndex > 0 ? 'right' : 'left'
+              }}
+            >
+              {row[col] !== undefined ? String(row[col]) : '-'}
+            </div>
+          ))}
+          {showSparklines && (
+            <div style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkline 
+                data={sparklines[rowIndex] || sparklines[0] || []} 
+                color="trend"
+                width={60}
+                height={20}
+              />
+            </div>
+          )}
         </div>
       ))}
     </div>
