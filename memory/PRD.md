@@ -865,9 +865,63 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 - `/app/frontend/src/components/report/StatCard.jsx` - Inline styles for PDF
 - `/app/frontend/src/components/report/ChartPreviews.jsx` - Inline styles for PDF
 
+## Session 22 (Feb 21, 2026) - PDF Export Bug Fixes + Phase 1 Report Builder Features
+
+### Issue: PDF Export Cutoff and Misalignment
+- [x] **Problem:** Exported PDF had content cut off (4th stat card not visible), DataViz logo not rendering, overlapping data, no page numbers
+- [x] **User Provided:** Screenshot showing cutoff 72% stat card and missing logo
+
+### Fixes Applied:
+1. **Stat Cards Layout Fix**
+   - Changed from `grid-cols-4` to `grid-cols-2 lg:grid-cols-4`
+   - PDF export forces 2-column layout via onclone CSS override
+   - Prevents 4th card from being cut off on PDF width
+
+2. **DataViz Logo Fix**
+   - PDF footer now uses text-based "DataViz Studio" instead of inline SVG
+   - More reliable rendering in PDF via jsPDF text methods
+
+3. **Page Numbers Enhancement**
+   - Prominent "Page X of Y" format in PDF footer
+   - Uses theme primary color for footer background
+   - Date centered, page number right-aligned
+
+4. **Export Quality Improvements**
+   - Reduced window width to 850px for better fit
+   - Using PNG format for better quality
+   - White background fill for page slices
+
+### Phase 1 Features Implemented:
+1. **Cover Page with Logo Upload**
+   - Toggle to enable/disable cover page
+   - Company logo upload (base64, max 2MB)
+   - Author / Prepared By field
+   - Confidentiality level dropdown (Public, Internal, Confidential, Strictly Confidential)
+   - Full-height cover page with gradient background and decorations
+
+2. **Multiple Export Formats**
+   - **PDF** - Multi-page document with page numbers
+   - **Excel** - Spreadsheet with report info and data per section (uses xlsx library)
+   - **PNG** - High-quality image export
+
+3. **Export Dropdown Menu**
+   - Clean dropdown UI with icons for each format
+   - Descriptive text for each export type
+   - Uses shadcn DropdownMenu component
+
+**Files Modified:**
+- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Cover page, export functions, dropdown menu
+- `/app/frontend/src/components/report/ReportSection.jsx` - 2-column grid for stat cards
+- `/app/frontend/src/components/report/StatCard.jsx` - Reduced padding, improved overflow
+
+**Dependencies Added:**
+- `xlsx` - Excel file generation library
+
+**Test Status:** 100% (11/11 frontend tests passed) - iteration_20.json
+
 ## Next Recommended Tasks
 - **Email Integration Activation** - Add RESEND_API_KEY to enable report delivery
+- **Phase 2 Report Builder Features** - Live Data Binding, Sparklines in Tables
+- **Phase 3 Report Builder Features** - Scheduled Email Reports UI, AI Executive Summary
 - **Organization Onboarding Flow** - Auto-create first org on signup
-- **Dashboard Templates by Organization** - Org-scoped templates
-- **Real-time Dashboard Collaboration** - WebSocket updates
 
