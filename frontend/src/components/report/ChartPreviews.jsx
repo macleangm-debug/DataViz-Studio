@@ -9,22 +9,25 @@ export const SAMPLE_BAR_DATA = [
   { name: 'Q5', value: 55 },
 ];
 
-// Bar Chart Component (SVG preview)
+// Bar Chart Component (SVG preview) - optimized for PDF export
 export const BarChartPreview = ({ theme, data = SAMPLE_BAR_DATA }) => {
   const maxValue = Math.max(...data.map(d => d.value));
   
   return (
-    <div className="h-40 flex items-end justify-center gap-3 p-4">
+    <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '12px', padding: '16px' }}>
       {data.map((item, i) => (
-        <div key={i} className="flex flex-col items-center gap-1">
+        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
           <div 
-            className="w-10 rounded-t transition-all duration-300"
             style={{ 
+              width: '40px',
               height: `${(item.value / maxValue) * 100}px`,
-              backgroundColor: i % 2 === 0 ? theme.primary : theme.accent 
+              backgroundColor: i % 2 === 0 ? theme.primary : theme.accent,
+              borderTopLeftRadius: '6px',
+              borderTopRightRadius: '6px',
+              transition: 'all 0.3s ease'
             }}
           />
-          <span className="text-xs text-gray-500">{item.name}</span>
+          <span style={{ fontSize: '12px', color: '#6b7280' }}>{item.name}</span>
         </div>
       ))}
     </div>
@@ -34,8 +37,8 @@ export const BarChartPreview = ({ theme, data = SAMPLE_BAR_DATA }) => {
 // Pie Chart Component (SVG preview)
 export const PieChartPreview = ({ theme }) => {
   return (
-    <div className="h-40 flex items-center justify-center">
-      <svg viewBox="0 0 100 100" className="w-32 h-32">
+    <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg viewBox="0 0 100 100" style={{ width: '128px', height: '128px' }}>
         {/* Primary slice - 60% */}
         <circle
           cx="50" cy="50" r="40"
@@ -85,8 +88,8 @@ export const LineChartPreview = ({ theme }) => {
   }).join(' ');
   
   return (
-    <div className="h-40 flex items-center justify-center">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32">
+    <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '128px' }}>
         <polyline
           fill="none"
           stroke={theme.primary}
@@ -107,7 +110,7 @@ export const LineChartPreview = ({ theme }) => {
   );
 };
 
-// Data Table Preview
+// Data Table Preview - optimized for PDF export
 export const DataTablePreview = ({ theme }) => {
   const tableData = [
     { category: 'North Region', value: '245,000', share: '32%' },
@@ -117,23 +120,34 @@ export const DataTablePreview = ({ theme }) => {
   ];
   
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200">
+    <div style={{ overflow: 'hidden', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
       <div 
-        className="grid grid-cols-3 text-xs font-semibold text-white"
-        style={{ backgroundColor: theme.primary }}
+        style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr 1fr', 
+          fontSize: '12px', 
+          fontWeight: '600', 
+          color: 'white',
+          backgroundColor: theme.primary
+        }}
       >
-        <div className="p-2 border-r border-white/20">Category</div>
-        <div className="p-2 border-r border-white/20 text-right">Value</div>
-        <div className="p-2 text-right">Share</div>
+        <div style={{ padding: '8px', borderRight: '1px solid rgba(255,255,255,0.2)' }}>Category</div>
+        <div style={{ padding: '8px', borderRight: '1px solid rgba(255,255,255,0.2)', textAlign: 'right' }}>Value</div>
+        <div style={{ padding: '8px', textAlign: 'right' }}>Share</div>
       </div>
       {tableData.map((row, i) => (
         <div 
           key={i} 
-          className={`grid grid-cols-3 text-xs ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr 1fr', 
+            fontSize: '12px',
+            backgroundColor: i % 2 === 0 ? '#ffffff' : '#f9fafb'
+          }}
         >
-          <div className="p-2 border-r border-gray-100 text-gray-700">{row.category}</div>
-          <div className="p-2 border-r border-gray-100 text-right text-gray-600">{row.value}</div>
-          <div className="p-2 text-right font-semibold" style={{ color: theme.accent }}>{row.share}</div>
+          <div style={{ padding: '8px', borderRight: '1px solid #f3f4f6', color: '#374151' }}>{row.category}</div>
+          <div style={{ padding: '8px', borderRight: '1px solid #f3f4f6', textAlign: 'right', color: '#4b5563' }}>{row.value}</div>
+          <div style={{ padding: '8px', textAlign: 'right', fontWeight: '600', color: theme.accent }}>{row.share}</div>
         </div>
       ))}
     </div>
