@@ -603,15 +603,56 @@ const ReportBuilderPage = () => {
                 <Maximize2 size={18} />
                 <span className="font-medium">Full Preview</span>
               </button>
-              <button
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 shadow-md"
-                data-testid="export-btn"
-              >
-                {isExporting ? <RefreshCw size={18} className="animate-spin" /> : <Download size={18} />}
-                <span className="font-medium">{isExporting ? 'Exporting...' : 'Export PDF'}</span>
-              </button>
+              
+              {/* Export Dropdown Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={isExporting}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 shadow-md"
+                    data-testid="export-btn"
+                  >
+                    {isExporting ? <RefreshCw size={18} className="animate-spin" /> : <Download size={18} />}
+                    <span className="font-medium">{isExporting ? 'Exporting...' : 'Export'}</span>
+                    <ChevronDown size={16} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem 
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-2 cursor-pointer"
+                    data-testid="export-pdf-btn"
+                  >
+                    <FileText size={16} className="text-red-500" />
+                    <div>
+                      <span className="font-medium">Export as PDF</span>
+                      <p className="text-xs text-gray-500">Multi-page document</p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleExportExcel}
+                    className="flex items-center gap-2 cursor-pointer"
+                    data-testid="export-excel-btn"
+                  >
+                    <FileSpreadsheet size={16} className="text-green-500" />
+                    <div>
+                      <span className="font-medium">Export as Excel</span>
+                      <p className="text-xs text-gray-500">Spreadsheet with data</p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleExportPNG}
+                    className="flex items-center gap-2 cursor-pointer"
+                    data-testid="export-png-btn"
+                  >
+                    <FileImage size={16} className="text-purple-500" />
+                    <div>
+                      <span className="font-medium">Export as PNG</span>
+                      <p className="text-xs text-gray-500">High-quality image</p>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
