@@ -705,6 +705,104 @@ const ReportBuilderPage = () => {
                       />
                     </div>
                   </div>
+                  
+                  {/* Cover Page Section */}
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={18} className="text-blue-600" />
+                        <h4 className="font-semibold text-gray-800">Cover Page</h4>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <span className="text-sm text-gray-600">Enable</span>
+                        <div 
+                          className={`relative w-11 h-6 rounded-full transition-colors ${reportConfig.showCoverPage ? 'bg-blue-600' : 'bg-gray-200'}`}
+                          onClick={() => setReportConfig(prev => ({ ...prev, showCoverPage: !prev.showCoverPage }))}
+                        >
+                          <div 
+                            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${reportConfig.showCoverPage ? 'translate-x-5' : 'translate-x-0'}`}
+                          />
+                        </div>
+                      </label>
+                    </div>
+                    
+                    {reportConfig.showCoverPage && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                      >
+                        {/* Logo Upload */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Company Logo</label>
+                          <input
+                            ref={logoInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="hidden"
+                            data-testid="logo-upload-input"
+                          />
+                          {reportConfig.coverPageLogo ? (
+                            <div className="flex items-center gap-2 p-2.5 border border-gray-200 rounded-lg bg-gray-50">
+                              <img 
+                                src={reportConfig.coverPageLogo} 
+                                alt="Logo" 
+                                className="w-10 h-10 object-contain rounded"
+                              />
+                              <span className="text-sm text-gray-600 truncate flex-1">{reportConfig.coverPageLogoName}</span>
+                              <button
+                                onClick={handleRemoveLogo}
+                                className="p-1 hover:bg-red-100 rounded text-red-500"
+                                data-testid="remove-logo-btn"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => logoInputRef.current?.click()}
+                              className="w-full flex items-center justify-center gap-2 p-2.5 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
+                              data-testid="upload-logo-btn"
+                            >
+                              <Upload size={16} className="text-gray-400" />
+                              <span className="text-sm text-gray-500">Upload Logo</span>
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Author Name */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Author / Prepared By</label>
+                          <input
+                            type="text"
+                            value={reportConfig.authorName}
+                            onChange={(e) => setReportConfig({ ...reportConfig, authorName: e.target.value })}
+                            className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Author name"
+                            data-testid="author-name-input"
+                          />
+                        </div>
+                        
+                        {/* Confidentiality */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Confidentiality Level</label>
+                          <select
+                            value={reportConfig.confidentialityLevel}
+                            onChange={(e) => setReportConfig({ ...reportConfig, confidentialityLevel: e.target.value })}
+                            className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            data-testid="confidentiality-select"
+                          >
+                            <option value="Public">Public</option>
+                            <option value="Internal">Internal</option>
+                            <option value="Confidential">Confidential</option>
+                            <option value="Strictly Confidential">Strictly Confidential</option>
+                          </select>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             )}
