@@ -9,25 +9,62 @@ export const SAMPLE_BAR_DATA = [
   { name: 'Q5', value: 55 },
 ];
 
+// Sparkline Component - mini inline chart for tables
+export const Sparkline = ({ data = [], color = '#3B82F6', width = 60, height = 20 }) => {
+  if (!data || data.length === 0) return null;
+  
+  const numericData = data.map(d => typeof d === 'number' ? d : parseFloat(d) || 0);
+  const max = Math.max(...numericData);
+  const min = Math.min(...numericData);
+  const range = max - min || 1;
+  
+  const points = numericData.map((val, i) => {
+    const x = (i / (numericData.length - 1)) * width;
+    const y = height - ((val - min) / range) * (height - 4) - 2;
+    return `${x},${y}`;
+  }).join(' ');
+  
+  // Determine trend color
+  const trendUp = numericData[numericData.length - 1] > numericData[0];
+  const trendColor = trendUp ? '#10B981' : '#EF4444';
+  
+  return (
+    <svg width={width} height={height} style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+      <polyline
+        fill="none"
+        stroke={color === 'trend' ? trendColor : color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+};
+
 // Bar Chart Component (SVG preview) - optimized for PDF export
 export const BarChartPreview = ({ theme, data = SAMPLE_BAR_DATA }) => {
-  const maxValue = Math.max(...data.map(d => d.value));
+  const chartData = data && data.length > 0 ? data : SAMPLE_BAR_DATA;
+  const maxValue = Math.max(...chartData.map(d => d.value || 0));
   
   return (
     <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '12px', padding: '16px' }}>
-      {data.map((item, i) => (
+      {chartData.slice(0, 8).map((item, i) => (
         <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
           <div 
             style={{ 
               width: '40px',
-              height: `${(item.value / maxValue) * 100}px`,
+              height: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}px`,
               backgroundColor: i % 2 === 0 ? theme.primary : theme.accent,
               borderTopLeftRadius: '6px',
               borderTopRightRadius: '6px',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              minHeight: '4px'
             }}
           />
-          <span style={{ fontSize: '12px', color: '#6b7280' }}>{item.name}</span>
+          <span style={{ fontSize: '11px', color: '#6b7280', maxWidth: '50px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.name}
+          </span>
         </div>
       ))}
     </div>
