@@ -797,6 +797,40 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 
 **Test Status:** 100% - Both bugs verified fixed via screenshots
 
+## Session 20 (Feb 21, 2026) - Major UI/UX Improvements
+
+### 1. Fixed Dropdown Text Visibility Across App
+- [x] **Root Cause:** Hardcoded `text-white` in SelectTrigger and Button components
+- [x] **Fix:** Changed to `text-foreground` for theme-aware text colors
+- [x] **Files Modified:**
+  - `/app/frontend/src/components/ui/select.jsx` - SelectTrigger component
+  - `/app/frontend/src/components/ui/button.jsx` - Button variants (outline, ghost)
+
+### 2. Chart Type Mini Previews (Instead of Icons)
+- [x] **Implementation:** Created new `ChartTypePreview.jsx` component with mini SVG chart visualizations
+- [x] **Charts with Previews:** Bar, Line, Pie, Area, Scatter, Radar, Funnel, Gauge, Heatmap, Treemap, Waterfall, Box Plot, Sankey, Candlestick
+- [x] **Files Created:**
+  - `/app/frontend/src/components/ChartTypePreview.jsx` - SVG mini chart previews
+
+### 3. Added 5 New Chart Types
+- [x] **Treemap** - Hierarchical data visualization with colored rectangles
+- [x] **Waterfall** - Financial data with cumulative bars
+- [x] **Box Plot** - Statistical distributions with quartiles
+- [x] **Sankey** - Flow diagram showing data relationships
+- [x] **Candlestick** - Financial OHLC charts (green/red for bullish/bearish)
+- [x] **Files Modified:**
+  - `/app/frontend/src/pages/ChartsPage.jsx` - CHART_TYPES extended, ECharts configs added
+
+### 4. Report Builder Redesign (Bold/Corporate + Creative/Modern)
+- [x] **Header:** Modern gradient background with decorative circles and dot patterns
+- [x] **Footer:** DataViz Studio branded logo with grid pattern background
+- [x] **Stat Cards:** Gradient backgrounds with varied patterns and shadow effects
+- [x] **Files Modified:**
+  - `/app/frontend/src/pages/ReportBuilderPage.jsx` - Header and footer redesign
+  - `/app/frontend/src/components/report/StatCard.jsx` - Gradient backgrounds
+
+**Test Status:** 100% (10/10 tests passed) - iteration_18.json
+
 ## Next Recommended Tasks
 - **Email Integration Activation** - Add RESEND_API_KEY to enable report delivery
 - **Organization Onboarding Flow** - Auto-create first org on signup
