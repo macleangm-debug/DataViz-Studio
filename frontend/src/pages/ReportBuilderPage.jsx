@@ -1587,6 +1587,144 @@ const ReportBuilderPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Template Selection Modal */}
+      <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <LayoutTemplate size={24} className="text-purple-600" />
+              Report Templates
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Category Filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Filter size={16} className="text-gray-400" />
+              {TEMPLATE_CATEGORIES.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setTemplateCategory(category)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    templateCategory === category
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  data-testid={`template-category-${category.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            
+            {/* Templates Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[55vh] overflow-y-auto pr-2">
+              {filteredTemplates.map((template) => {
+                const templateTheme = THEMES.find(t => t.id === template.theme) || THEMES[0];
+                return (
+                  <motion.div
+                    key={template.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="group relative border rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer bg-white"
+                    onClick={() => applyTemplate(template)}
+                    data-testid={`template-${template.id}`}
+                  >
+                    {/* Template Preview Header */}
+                    <div 
+                      className="h-24 p-4 relative overflow-hidden"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${templateTheme.primary} 0%, ${templateTheme.accent} 100%)` 
+                      }}
+                    >
+                      {/* Decorative elements */}
+                      <div className="absolute top-2 right-2 w-16 h-16 rounded-full opacity-20" style={{ backgroundColor: 'white' }} />
+                      <div className="absolute bottom-2 left-2 w-12 h-12 rounded-full opacity-10" style={{ backgroundColor: 'white' }} />
+                      
+                      {/* Template Icon */}
+                      <div className="absolute bottom-3 right-3 p-2 rounded-lg bg-white/20 backdrop-blur-sm text-white">
+                        {getTemplateIcon(template)}
+                      </div>
+                      
+                      {/* Preview Elements */}
+                      <div className="flex gap-1">
+                        <div className="w-8 h-3 rounded-sm bg-white/30" />
+                        <div className="w-6 h-3 rounded-sm bg-white/20" />
+                      </div>
+                      <div className="mt-2 flex gap-1">
+                        <div className="w-4 h-4 rounded bg-white/25" />
+                        <div className="w-4 h-4 rounded bg-white/25" />
+                        <div className="w-4 h-4 rounded bg-white/25" />
+                        <div className="w-4 h-4 rounded bg-white/25" />
+                      </div>
+                    </div>
+                    
+                    {/* Template Info */}
+                    <div className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-gray-900 text-sm group-hover:text-purple-600 transition-colors">
+                          {template.name}
+                        </h3>
+                        {template.coverPage && (
+                          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-medium">
+                            Cover
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                        {template.description}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-gray-400">
+                          {template.sections.length} sections
+                        </span>
+                        <span 
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ 
+                            backgroundColor: templateTheme.primary + '15',
+                            color: templateTheme.primary
+                          }}
+                        >
+                          {template.category}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/5 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="bg-white shadow-lg rounded-lg px-4 py-2 flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all">
+                        <Sparkles size={16} className="text-purple-600" />
+                        <span className="text-sm font-medium text-gray-700">Apply Template</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+            
+            {/* Empty State */}
+            {filteredTemplates.length === 0 && (
+              <div className="text-center py-12">
+                <LayoutTemplate size={48} className="mx-auto text-gray-300 mb-3" />
+                <p className="text-gray-500">No templates found in this category</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center pt-4 border-t mt-4">
+            <p className="text-sm text-gray-500">
+              Click a template to apply it to your report
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplateModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
