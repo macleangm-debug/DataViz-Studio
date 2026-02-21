@@ -831,6 +831,40 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 
 **Test Status:** 100% (10/10 tests passed) - iteration_18.json
 
+## Session 21 (Feb 21, 2026) - PDF Export Quality Improvements
+
+### Issue: PDF Export Misaligned and Low Quality
+- [x] **Problem:** PDF export didn't match preview - sharp corners, overlapping text, poor alignment
+- [x] **User Request:** Export should look exactly like preview + Add preview before export feature
+
+### Fixes Applied:
+1. **Added Full Preview Modal**
+   - New "Full Preview" button next to Export PDF
+   - Modal shows exact report appearance before export
+   - Export PDF button in modal for quick export
+
+2. **Improved PDF Export Quality**
+   - Increased capture scale from 2x to 3x for better resolution
+   - Added JPEG format at 0.95 quality for smaller file sizes
+   - Fixed window width to 900px for consistent rendering
+   - Added print-specific CSS in cloned document
+
+3. **Fixed Rounded Corners**
+   - Changed all CSS `rounded-*` classes to inline `borderRadius` styles
+   - StatCard: 16px rounded corners with inline styles
+   - ChartPreviews: Bar chart bars have 6px top radius
+   - Data tables: 8px border radius
+
+4. **Improved Component Styling for PDF**
+   - StatCard.jsx: All styles converted to inline for PDF compatibility
+   - ChartPreviews.jsx: All styles converted to inline
+   - ReportBuilderPage.jsx: Added `report-preview-content` wrapper for PDF capture
+
+**Files Modified:**
+- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Preview modal, improved PDF export
+- `/app/frontend/src/components/report/StatCard.jsx` - Inline styles for PDF
+- `/app/frontend/src/components/report/ChartPreviews.jsx` - Inline styles for PDF
+
 ## Next Recommended Tasks
 - **Email Integration Activation** - Add RESEND_API_KEY to enable report delivery
 - **Organization Onboarding Flow** - Auto-create first org on signup
