@@ -543,8 +543,8 @@ const ReportBuilderPage = () => {
             </div>
             
             {/* Report Body */}
-            <div className="p-6">
-              <div className="flex flex-wrap gap-4">
+            <div className="p-6" style={{ overflow: 'visible' }}>
+              <div className="flex flex-wrap gap-4" style={{ overflow: 'visible' }}>
                 <AnimatePresence>
                   {sections.map((section, index) => (
                     <ReportSection
