@@ -32,12 +32,14 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
     <div 
       style={{
         borderRadius: '16px',
-        padding: '20px',
+        padding: '16px',
         color: 'white',
         position: 'relative',
         overflow: 'hidden',
         background: gradients[index % 4],
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+        minWidth: 0,
+        boxSizing: 'border-box',
       }}
       data-testid={`stat-card-${index}`}
     >
@@ -102,7 +104,7 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
             value={stat.value}
             onChange={(e) => onUpdate(index, { ...stat, value: e.target.value })}
             style={{
-              fontSize: '30px',
+              fontSize: '28px',
               fontWeight: '700',
               background: 'transparent',
               border: 'none',
@@ -115,7 +117,7 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
             data-testid={`stat-value-${index}`}
           />
         ) : (
-          <div style={{ fontSize: '30px', fontWeight: '700', letterSpacing: '-0.025em' }}>{stat.value || '44%'}</div>
+          <div style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.025em' }}>{stat.value || '44%'}</div>
         )}
         
         {/* Label */}
@@ -125,7 +127,7 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
             value={stat.label}
             onChange={(e) => onUpdate(index, { ...stat, label: e.target.value })}
             style={{
-              fontSize: '14px',
+              fontSize: '13px',
               opacity: 0.9,
               background: 'transparent',
               border: 'none',
@@ -133,13 +135,22 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
               width: '100%',
               color: 'white',
               marginTop: '4px',
-              lineHeight: '1.5'
+              lineHeight: '1.4',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
             }}
             placeholder="Description text"
             data-testid={`stat-label-${index}`}
           />
         ) : (
-          <div style={{ fontSize: '14px', opacity: 0.9, marginTop: '4px', lineHeight: '1.5' }}>{stat.label || 'Description text'}</div>
+          <div style={{ 
+            fontSize: '13px', 
+            opacity: 0.9, 
+            marginTop: '4px', 
+            lineHeight: '1.4',
+            wordWrap: 'break-word',
+            overflowWrap: 'break-word',
+          }}>{stat.label || 'Description text'}</div>
         )}
       </div>
     </div>
