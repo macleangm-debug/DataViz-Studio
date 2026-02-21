@@ -1385,6 +1385,157 @@ const ReportBuilderPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Data Binding Modal */}
+      <Dialog open={showDataBindingModal} onOpenChange={setShowDataBindingModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Database size={20} className="text-green-600" />
+              Bind Live Data
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Dataset Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Select Dataset
+              </label>
+              {loadingDatasets ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <RefreshCw size={14} className="animate-spin" />
+                  Loading datasets...
+                </div>
+              ) : datasets.length === 0 ? (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                  No datasets available. Upload a dataset first in the Data section.
+                </div>
+              ) : (
+                <Select
+                  value={bindingConfig.datasetId}
+                  onValueChange={(value) => {
+                    setBindingConfig(prev => ({ ...prev, datasetId: value }));
+                    fetchDatasetData(value);
+                  }}
+                >
+                  <SelectTrigger data-testid="dataset-select">
+                    <SelectValue placeholder="Choose a dataset..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {datasets.map(ds => (
+                      <SelectItem key={ds.id} value={ds.id}>
+                        {ds.name} ({ds.row_count || 0} rows)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            {/* Field Mapping */}
+            {datasetColumns.length > 0 && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Label Field (X-Axis / Category)
+                    </label>
+                    <Select
+                      value={bindingConfig.labelField}
+                      onValueChange={(value) => setBindingConfig(prev => ({ ...prev, labelField: value }))}
+                    >
+                      <SelectTrigger data-testid="label-field-select">
+                        <SelectValue placeholder="Select field..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {datasetColumns.map(col => (
+                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Value Field (Y-Axis / Value)
+                    </label>
+                    <Select
+                      value={bindingConfig.valueField}
+                      onValueChange={(value) => setBindingConfig(prev => ({ ...prev, valueField: value }))}
+                    >
+                      <SelectTrigger data-testid="value-field-select">
+                        <SelectValue placeholder="Select field..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {datasetColumns.map(col => (
+                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Aggregation Method
+                  </label>
+                  <Select
+                    value={bindingConfig.aggregation}
+                    onValueChange={(value) => setBindingConfig(prev => ({ ...prev, aggregation: value }))}
+                  >
+                    <SelectTrigger data-testid="aggregation-select">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sum">Sum</SelectItem>
+                      <SelectItem value="avg">Average</SelectItem>
+                      <SelectItem value="count">Count</SelectItem>
+                      <SelectItem value="max">Maximum</SelectItem>
+                      <SelectItem value="min">Minimum</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Data Preview */}
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Data Preview ({datasetData.length} rows)</p>
+                  <div className="text-xs text-gray-600 max-h-24 overflow-y-auto">
+                    {datasetData.slice(0, 3).map((row, i) => (
+                      <div key={i} className="flex gap-2 py-1 border-b border-gray-200 last:border-0">
+                        <span className="font-medium">{row[bindingConfig.labelField] || '-'}</span>
+                        <span className="text-gray-400">→</span>
+                        <span>{row[bindingConfig.valueField] || '-'}</span>
+                      </div>
+                    ))}
+                    {datasetData.length > 3 && (
+                      <p className="text-gray-400 mt-1">...and {datasetData.length - 3} more rows</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setShowDataBindingModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={applyDataBinding}
+              disabled={!bindingConfig.datasetId || !bindingConfig.labelField || !bindingConfig.valueField}
+              className="bg-green-600 hover:bg-green-700"
+              data-testid="apply-binding-btn"
+            >
+              <Link2 size={16} className="mr-2" />
+              Apply Binding
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
