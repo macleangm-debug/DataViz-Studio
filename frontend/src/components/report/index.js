@@ -4,3 +4,4 @@ export { BarChartPreview, PieChartPreview, LineChartPreview, DataTablePreview, S
 export { default as ThemeSelector, THEMES } from './ThemeSelector';
 export { default as ReportSection, SECTION_TYPES, WIDTH_OPTIONS } from './ReportSection';
 export { default as AddSectionPanel } from './AddSectionPanel';
+export { default as REPORT_TEMPLATES, TEMPLATE_CATEGORIES, getTemplateIcon } from './ReportTemplates';
