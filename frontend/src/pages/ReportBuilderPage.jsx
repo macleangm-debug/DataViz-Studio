@@ -1341,6 +1341,8 @@ const ReportBuilderPage = () => {
                       onMoveUp={() => {}}
                       onMoveDown={() => {}}
                       onResizeWidth={() => {}}
+                      onDataBind={() => {}}
+                      onRemoveBinding={() => {}}
                       totalSections={sections.length}
                     />
                   ))}
