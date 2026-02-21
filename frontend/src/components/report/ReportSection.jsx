@@ -155,8 +155,9 @@ const ReportSection = ({
   const renderContent = () => {
     switch (section.type) {
       case 'stat_cards':
+        // Use responsive grid - 2 columns for PDF export, 4 for wide screens
         return (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stat-cards-grid" style={{ minWidth: 0 }}>
             {(section.stats || [
               { value: '44%', label: 'Mercury is the closest planet to the Sun', iconType: 'percent' },
               { value: '32%', label: 'Despite being red, Mars is a cold place', iconType: 'trending' },

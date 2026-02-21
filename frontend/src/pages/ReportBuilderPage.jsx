@@ -144,6 +144,16 @@ const ReportBuilderPage = () => {
   // Reference for the report canvas
   const reportCanvasRef = useRef(null);
   
+  // Helper function to convert hex to RGB
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 59, g: 130, b: 246 }; // Default blue
+  };
+
   // Export PDF using client-side generation with proper multi-page support
   const handleExportPDF = async () => {
     setIsExporting(true);
@@ -159,7 +169,7 @@ const ReportBuilderPage = () => {
       const wasInEditMode = !isPreview;
       if (wasInEditMode) {
         setIsPreview(true);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
       
       // Create PDF with A4 dimensions
@@ -171,54 +181,80 @@ const ReportBuilderPage = () => {
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 8;
+      const margin = 10;
       const usableWidth = pdfWidth - (margin * 2);
       const usableHeight = pdfHeight - (margin * 2);
-      const footerHeight = 12;
+      const footerHeight = 15;
       const contentHeight = usableHeight - footerHeight;
       
-      // Capture the full report as canvas with higher quality settings
+      // Get theme colors as RGB
+      const primaryRgb = hexToRgb(theme.primary);
+      
+      // Capture the full report as canvas with optimized settings for PDF
       const canvas = await html2canvas(reportElement, {
-        scale: 3, // Higher scale for better quality
+        scale: 2.5, // Good balance between quality and performance
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 900, // Fixed width for consistent rendering
+        windowWidth: 850, // Slightly narrower to ensure all content fits
         imageTimeout: 0,
         removeContainer: true,
         allowTaint: true,
-        // Ensure SVG and fonts render properly
+        // Ensure proper rendering in cloned document
         onclone: (clonedDoc) => {
-          // Force styles to be applied in cloned document
           const clonedElement = clonedDoc.querySelector('[data-testid="report-preview-content"]');
           if (clonedElement) {
-            clonedElement.style.width = '900px';
+            clonedElement.style.width = '850px';
+            clonedElement.style.maxWidth = '850px';
+            clonedElement.style.overflow = 'visible';
+            
+            // Force stat cards to 2-column layout for PDF
+            const statGrids = clonedElement.querySelectorAll('.stat-cards-grid');
+            statGrids.forEach(grid => {
+              grid.style.display = 'grid';
+              grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+              grid.style.gap = '16px';
+            });
+            
             // Add print-specific styles
             const style = clonedDoc.createElement('style');
             style.textContent = `
-              * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+              * { 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+                box-sizing: border-box !important;
+              }
               .rounded-xl, .rounded-2xl, .rounded-lg { border-radius: 12px !important; }
               svg { shape-rendering: geometricPrecision; }
+              .stat-cards-grid { 
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 16px !important;
+              }
+              [data-testid^="stat-card-"] {
+                min-width: 0 !important;
+                overflow: hidden !important;
+              }
             `;
             clonedDoc.head.appendChild(style);
           }
         }
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL('image/png', 1.0); // Use PNG for better quality
       
       // Calculate how the image maps to PDF pages
       const imgWidth = usableWidth;
       const imgHeight = (canvas.height * usableWidth) / canvas.width;
       
       // Check if we need multiple pages
+      const totalPages = Math.max(1, Math.ceil(imgHeight / contentHeight));
+      
       if (imgHeight <= contentHeight) {
         // Single page - simple case
-        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-        addFooter(pdf, pdfWidth, pdfHeight, margin, 1, 1);
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+        addFooter(pdf, pdfWidth, pdfHeight, margin, 1, totalPages, primaryRgb);
       } else {
         // Multi-page handling
-        const totalPages = Math.ceil(imgHeight / contentHeight);
         const pixelsPerPage = (contentHeight / imgHeight) * canvas.height;
         
         for (let page = 0; page < totalPages; page++) {
@@ -235,52 +271,59 @@ const ReportBuilderPage = () => {
           pageCanvas.height = sourceHeight;
           const ctx = pageCanvas.getContext('2d');
           
+          // Fill with white background first
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          
           ctx.drawImage(
             canvas,
             0, sourceY, canvas.width, sourceHeight,
             0, 0, canvas.width, sourceHeight
           );
           
-          const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+          const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
           
           let yOffset = margin;
           if (page > 0) {
-            // Add continuation header
-            pdf.setFillColor(theme.primary);
-            pdf.rect(margin, margin, usableWidth, 8, 'F');
-            pdf.setFontSize(9);
+            // Add continuation header with proper styling
+            pdf.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+            pdf.rect(margin, margin, usableWidth, 10, 'F');
+            pdf.setFontSize(10);
             pdf.setTextColor(255, 255, 255);
-            pdf.text(`${reportConfig.title} (continued)`, margin + 3, margin + 5.5);
-            yOffset = margin + 10;
+            pdf.text(`${reportConfig.title} (continued)`, margin + 4, margin + 7);
+            yOffset = margin + 12;
           }
           
-          pdf.addImage(pageImgData, 'JPEG', margin, yOffset, imgWidth, destHeight);
-          addFooter(pdf, pdfWidth, pdfHeight, margin, page + 1, totalPages);
+          pdf.addImage(pageImgData, 'PNG', margin, yOffset, imgWidth, destHeight);
+          addFooter(pdf, pdfWidth, pdfHeight, margin, page + 1, totalPages, primaryRgb);
         }
       }
       
-      function addFooter(pdfDoc, width, height, m, currentPage, totalPages) {
-        const footerY = height - m - 3;
+      function addFooter(pdfDoc, width, height, m, currentPage, totalPgs, rgb) {
+        const footerY = height - m;
         
         // Footer background bar
-        pdfDoc.setFillColor(theme.primary);
-        pdfDoc.rect(m, footerY - 6, usableWidth, 9, 'F');
+        pdfDoc.setFillColor(rgb.r, rgb.g, rgb.b);
+        pdfDoc.rect(m, footerY - 10, usableWidth, 10, 'F');
         
-        // DataViz Studio logo/text
-        pdfDoc.setFontSize(9);
+        // DataViz Studio logo (text-based for reliability)
+        pdfDoc.setFontSize(10);
+        pdfDoc.setFont('helvetica', 'bold');
         pdfDoc.setTextColor(255, 255, 255);
-        const footerText = 'DataViz Studio';
-        pdfDoc.text(footerText, m + 3, footerY);
+        pdfDoc.text('DataViz Studio', m + 4, footerY - 3.5);
         
-        // Page number
+        // Page number - prominent styling
+        pdfDoc.setFontSize(9);
+        pdfDoc.setFont('helvetica', 'normal');
+        const pageText = `Page ${currentPage} of ${totalPgs}`;
+        const pageTextWidth = pdfDoc.getTextWidth(pageText);
+        pdfDoc.text(pageText, width - m - pageTextWidth - 4, footerY - 3.5);
+        
+        // Date in center
         pdfDoc.setFontSize(8);
-        const pageText = `Page ${currentPage} of ${totalPages}`;
-        pdfDoc.text(pageText, width - m - pdfDoc.getTextWidth(pageText) - 3, footerY);
-        
-        // Date
-        pdfDoc.setFontSize(7);
         const dateText = reportConfig.reportDate;
-        pdfDoc.text(dateText, (width - pdfDoc.getTextWidth(dateText)) / 2, footerY);
+        const dateTextWidth = pdfDoc.getTextWidth(dateText);
+        pdfDoc.text(dateText, (width - dateTextWidth) / 2, footerY - 3.5);
       }
       
       const fileName = `${reportConfig.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -290,7 +333,7 @@ const ReportBuilderPage = () => {
         setIsPreview(false);
       }
       
-      toast.success(`Report exported successfully! (${Math.ceil(imgHeight / contentHeight)} page${Math.ceil(imgHeight / contentHeight) > 1 ? 's' : ''})`);
+      toast.success(`Report exported successfully! (${totalPages} page${totalPages > 1 ? 's' : ''})`);
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Failed to export PDF. Please try again.');
