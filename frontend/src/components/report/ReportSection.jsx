@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   FileText, Trash2, ArrowUp, ArrowDown, 
   Type, BarChart3, Table, PieChart, TrendingUp, LayoutGrid,
-  Maximize2, Minimize2, GripVertical
+  Maximize2, Minimize2, GripVertical, Database, Link2, Unlink
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StatCard, { STAT_ICONS } from './StatCard';
