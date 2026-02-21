@@ -375,24 +375,78 @@ const ReportBuilderPage = () => {
           >
             {/* Report Header */}
             <div 
-              className="p-6 text-white relative overflow-hidden"
-              style={{ backgroundColor: theme.primary }}
+              className="p-8 text-white relative overflow-hidden"
+              style={{ 
+                background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}ee 40%, ${theme.accent}cc 100%)` 
+              }}
             >
-              <div 
-                className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10"
-                style={{ backgroundColor: 'white', transform: 'translate(30%, -50%)' }}
-              />
-              <div 
-                className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-10"
-                style={{ backgroundColor: 'white', transform: 'translate(-30%, 50%)' }}
-              />
+              {/* Decorative Elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div 
+                  className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-20"
+                  style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }}
+                />
+                <div 
+                  className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full opacity-10"
+                  style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }}
+                />
+                {/* Grid Pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                      <pattern id="headerGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+                        <circle cx="4" cy="4" r="0.5" fill="white"/>
+                      </pattern>
+                    </defs>
+                    <rect width="100" height="100" fill="url(#headerGrid)" />
+                  </svg>
+                </div>
+              </div>
               
-              <div className="relative z-10 text-center">
-                <h2 className="text-3xl font-bold mb-2">{reportConfig.title || 'Report Title'}</h2>
-                <p className="text-lg opacity-90">{reportConfig.subtitle || 'Report Subtitle'}</p>
+              <div className="relative z-10">
+                {/* Company Logo/Name (if provided) */}
                 {reportConfig.companyName && (
-                  <p className="text-sm opacity-75 mt-2">{reportConfig.companyName}</p>
+                  <div className="mb-4 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
+                      <span className="font-bold text-lg">{reportConfig.companyName.charAt(0)}</span>
+                    </div>
+                    <span className="text-white/80 text-sm font-medium tracking-wide">{reportConfig.companyName}</span>
+                  </div>
                 )}
+                
+                {/* Main Title */}
+                <h2 className="text-4xl font-bold mb-3 tracking-tight">
+                  {reportConfig.title || 'Report Title'}
+                </h2>
+                <p className="text-xl opacity-90 font-light">
+                  {reportConfig.subtitle || 'Report Subtitle'}
+                </p>
+                
+                {/* Report Meta */}
+                <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/20">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-white/20 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-white/80">{reportConfig.reportDate}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-white/20 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-white/80">{sections.length} Sections</span>
+                  </div>
+                </div>
               </div>
             </div>
             
