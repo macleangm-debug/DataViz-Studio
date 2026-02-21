@@ -73,6 +73,8 @@ const ReportSection = ({
   onMoveUp, 
   onMoveDown, 
   onResizeWidth,
+  onDataBind,
+  onRemoveBinding,
   totalSections,
   containerWidth 
 }) => {
