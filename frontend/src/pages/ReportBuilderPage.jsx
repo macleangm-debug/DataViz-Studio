@@ -65,6 +65,7 @@ const ReportBuilderPage = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [showSettings, setShowSettings] = useState(true);
   const [customColors, setCustomColors] = useState({ primary: '#3B82F6', accent: '#EF4444' });
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   
   // Helper to generate lighter shade
   const getLighterHex = (hex, opacity) => {
