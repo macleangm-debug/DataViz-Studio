@@ -30,13 +30,20 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
   
   return (
     <div 
-      className="rounded-2xl p-5 text-white relative overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
-      style={{ background: gradients[index % 4] }}
+      style={{
+        borderRadius: '16px',
+        padding: '20px',
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden',
+        background: gradients[index % 4],
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+      }}
       data-testid={`stat-card-${index}`}
     >
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.1 }}>
+        <svg style={{ width: '100%', height: '100%' }} viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <pattern id={`statPattern-${index}`} width="20" height="20" patternUnits="userSpaceOnUse">
               <circle cx="10" cy="10" r="1" fill="white"/>
@@ -48,19 +55,44 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
       
       {/* Decorative Circle */}
       <div 
-        className="absolute -top-8 -right-8 w-24 h-24 rounded-full"
-        style={{ background: 'rgba(255,255,255,0.1)' }}
+        style={{ 
+          position: 'absolute', 
+          top: '-32px', 
+          right: '-32px', 
+          width: '96px', 
+          height: '96px', 
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.1)' 
+        }}
       />
       <div 
-        className="absolute -bottom-12 -left-6 w-20 h-20 rounded-full"
-        style={{ background: 'rgba(255,255,255,0.05)' }}
+        style={{ 
+          position: 'absolute', 
+          bottom: '-48px', 
+          left: '-24px', 
+          width: '80px', 
+          height: '80px', 
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.05)' 
+        }}
       />
       
       {/* Content */}
-      <div className="relative z-10">
+      <div style={{ position: 'relative', zIndex: 10 }}>
         {/* Icon */}
-        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 shadow-inner">
-          <IconComponent size={20} className="text-white" />
+        <div style={{ 
+          width: '40px', 
+          height: '40px', 
+          borderRadius: '12px', 
+          background: 'rgba(255,255,255,0.2)', 
+          backdropFilter: 'blur(4px)',
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          marginBottom: '12px',
+          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+        }}>
+          <IconComponent size={20} style={{ color: 'white' }} />
         </div>
         
         {/* Value */}
@@ -69,12 +101,21 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
             type="text"
             value={stat.value}
             onChange={(e) => onUpdate(index, { ...stat, value: e.target.value })}
-            className="text-3xl font-bold bg-transparent border-none outline-none w-full text-white placeholder-white/50 tracking-tight"
+            style={{
+              fontSize: '30px',
+              fontWeight: '700',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              width: '100%',
+              color: 'white',
+              letterSpacing: '-0.025em'
+            }}
             placeholder="44%"
             data-testid={`stat-value-${index}`}
           />
         ) : (
-          <div className="text-3xl font-bold tracking-tight">{stat.value || '44%'}</div>
+          <div style={{ fontSize: '30px', fontWeight: '700', letterSpacing: '-0.025em' }}>{stat.value || '44%'}</div>
         )}
         
         {/* Label */}
@@ -83,12 +124,22 @@ const StatCard = ({ stat, theme, isPreview, onUpdate, index }) => {
             type="text"
             value={stat.label}
             onChange={(e) => onUpdate(index, { ...stat, label: e.target.value })}
-            className="text-sm opacity-90 bg-transparent border-none outline-none w-full text-white placeholder-white/50 mt-1 leading-relaxed"
+            style={{
+              fontSize: '14px',
+              opacity: 0.9,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              width: '100%',
+              color: 'white',
+              marginTop: '4px',
+              lineHeight: '1.5'
+            }}
             placeholder="Description text"
             data-testid={`stat-label-${index}`}
           />
         ) : (
-          <div className="text-sm opacity-90 mt-1 leading-relaxed">{stat.label || 'Description text'}</div>
+          <div style={{ fontSize: '14px', opacity: 0.9, marginTop: '4px', lineHeight: '1.5' }}>{stat.label || 'Description text'}</div>
         )}
       </div>
     </div>
