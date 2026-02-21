@@ -865,59 +865,52 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 - `/app/frontend/src/components/report/StatCard.jsx` - Inline styles for PDF
 - `/app/frontend/src/components/report/ChartPreviews.jsx` - Inline styles for PDF
 
-## Session 22 (Feb 21, 2026) - PDF Export Bug Fixes + Phase 1 Report Builder Features
+## Session 22 (Feb 21, 2026) - PDF Export Bug Fixes + Phase 1 & 2 Report Builder Features
 
 ### Issue: PDF Export Cutoff and Misalignment
 - [x] **Problem:** Exported PDF had content cut off (4th stat card not visible), DataViz logo not rendering, overlapping data, no page numbers
 - [x] **User Provided:** Screenshot showing cutoff 72% stat card and missing logo
 
-### Fixes Applied:
-1. **Stat Cards Layout Fix**
-   - Changed from `grid-cols-4` to `grid-cols-2 lg:grid-cols-4`
-   - PDF export forces 2-column layout via onclone CSS override
-   - Prevents 4th card from being cut off on PDF width
-
-2. **DataViz Logo Fix**
-   - PDF footer now uses text-based "DataViz Studio" instead of inline SVG
-   - More reliable rendering in PDF via jsPDF text methods
-
-3. **Page Numbers Enhancement**
-   - Prominent "Page X of Y" format in PDF footer
-   - Uses theme primary color for footer background
-   - Date centered, page number right-aligned
-
-4. **Export Quality Improvements**
-   - Reduced window width to 850px for better fit
-   - Using PNG format for better quality
-   - White background fill for page slices
+### PDF Export Fixes Applied:
+1. **Stat Cards Layout Fix** - Changed to 2-column layout in PDF export
+2. **DataViz Logo Fix** - Using text-based logo in PDF footer
+3. **Page Numbers Enhancement** - Prominent "Page X of Y" format
+4. **Export Quality Improvements** - PNG format, proper margins
 
 ### Phase 1 Features Implemented:
 1. **Cover Page with Logo Upload**
-   - Toggle to enable/disable cover page
-   - Company logo upload (base64, max 2MB)
-   - Author / Prepared By field
-   - Confidentiality level dropdown (Public, Internal, Confidential, Strictly Confidential)
-   - Full-height cover page with gradient background and decorations
+   - Toggle enable/disable in settings panel
+   - Custom logo upload (2MB limit)
+   - Author name & Confidentiality level
 
 2. **Multiple Export Formats**
-   - **PDF** - Multi-page document with page numbers
-   - **Excel** - Spreadsheet with report info and data per section (uses xlsx library)
-   - **PNG** - High-quality image export
+   - PDF (multi-page with page numbers)
+   - Excel (xlsx with data per section)
+   - PNG (high-quality image)
 
-3. **Export Dropdown Menu**
-   - Clean dropdown UI with icons for each format
-   - Descriptive text for each export type
-   - Uses shadcn DropdownMenu component
+### Phase 2 Features Implemented:
+1. **Live Data Binding**
+   - Database icon button on chart/table sections
+   - "Bind Live Data" modal with dataset selection
+   - Field mapping (Label Field, Value Field)
+   - Aggregation methods (Sum, Avg, Count, Max, Min)
+   - Data preview in modal
+   - Remove binding option (Unlink icon)
+
+2. **Sparklines in Tables**
+   - "Show Sparklines" checkbox on data table sections
+   - "Trend" column with mini SVG line charts
+   - Trend-based coloring (green=up, red=down)
+   - Automatic sparkline data generation
 
 **Files Modified:**
-- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Cover page, export functions, dropdown menu
-- `/app/frontend/src/components/report/ReportSection.jsx` - 2-column grid for stat cards
-- `/app/frontend/src/components/report/StatCard.jsx` - Reduced padding, improved overflow
+- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Data binding modal, state, handlers
+- `/app/frontend/src/components/report/ReportSection.jsx` - Data binding buttons
+- `/app/frontend/src/components/report/ChartPreviews.jsx` - Sparkline component, enhanced previews
 
-**Dependencies Added:**
-- `xlsx` - Excel file generation library
-
-**Test Status:** 100% (11/11 frontend tests passed) - iteration_20.json
+**Test Status:** 
+- Phase 1: 100% (11/11 tests) - iteration_20.json
+- Phase 2: 100% (16/16 tests) - iteration_21.json
 
 ## Next Recommended Tasks
 - **Email Integration Activation** - Add RESEND_API_KEY to enable report delivery
