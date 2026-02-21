@@ -823,6 +823,99 @@ const ReportBuilderPage = () => {
           >
             {/* Inner container for PDF capture */}
             <div data-testid="report-preview-content" style={{ backgroundColor: '#ffffff' }}>
+            
+            {/* Cover Page (Optional) */}
+            {reportConfig.showCoverPage && (
+              <div 
+                className="relative overflow-hidden"
+                style={{ 
+                  minHeight: '600px',
+                  background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}ee 40%, ${theme.accent}cc 100%)` 
+                }}
+                data-testid="cover-page"
+              >
+                {/* Background Decorations */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div 
+                    className="absolute top-20 right-10 w-96 h-96 rounded-full opacity-20"
+                    style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }}
+                  />
+                  <div 
+                    className="absolute bottom-10 left-10 w-80 h-80 rounded-full opacity-10"
+                    style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }}
+                  />
+                  <div className="absolute inset-0 opacity-5">
+                    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <defs>
+                        <pattern id="coverGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+                          <circle cx="5" cy="5" r="0.5" fill="white"/>
+                        </pattern>
+                      </defs>
+                      <rect width="100" height="100" fill="url(#coverGrid)" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Cover Page Content */}
+                <div className="relative z-10 flex flex-col items-center justify-center h-full min-h-[600px] p-12 text-center text-white">
+                  {/* Logo */}
+                  {reportConfig.coverPageLogo ? (
+                    <div className="mb-8">
+                      <img 
+                        src={reportConfig.coverPageLogo} 
+                        alt="Company Logo" 
+                        className="h-24 object-contain mx-auto"
+                        style={{ maxWidth: '200px' }}
+                      />
+                    </div>
+                  ) : reportConfig.companyName && (
+                    <div className="mb-8">
+                      <div 
+                        className="inline-flex items-center justify-center w-20 h-20 rounded-2xl text-4xl font-bold"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                      >
+                        {reportConfig.companyName.charAt(0)}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Company Name */}
+                  {reportConfig.companyName && (
+                    <p className="text-xl font-medium tracking-wide mb-6 opacity-90">
+                      {reportConfig.companyName}
+                    </p>
+                  )}
+                  
+                  {/* Main Title */}
+                  <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight leading-tight">
+                    {reportConfig.title || 'Report Title'}
+                  </h1>
+                  
+                  {/* Subtitle */}
+                  <p className="text-2xl font-light opacity-90 mb-12 max-w-2xl">
+                    {reportConfig.subtitle || 'Report Subtitle'}
+                  </p>
+                  
+                  {/* Divider */}
+                  <div className="w-24 h-1 rounded-full mb-12" style={{ backgroundColor: 'rgba(255,255,255,0.4)' }} />
+                  
+                  {/* Meta Info */}
+                  <div className="space-y-3 text-white/80">
+                    <p className="text-lg">{reportConfig.reportDate}</p>
+                    {reportConfig.authorName && (
+                      <p className="text-base">Prepared by: <span className="font-medium">{reportConfig.authorName}</span></p>
+                    )}
+                    <div 
+                      className="inline-block mt-4 px-4 py-1.5 rounded-full text-sm font-medium"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+                    >
+                      {reportConfig.confidentialityLevel}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Report Header */}
             <div 
               className="p-8 text-white relative overflow-hidden"
