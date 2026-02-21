@@ -89,7 +89,176 @@ const ReportBuilderPage = () => {
   const [customColors, setCustomColors] = useState({ primary: '#3B82F6', accent: '#EF4444' });
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showDataBindingModal, setShowDataBindingModal] = useState(false);
+  const [selectedSectionForBinding, setSelectedSectionForBinding] = useState(null);
   const logoInputRef = useRef(null);
+  
+  // Data binding state
+  const [datasets, setDatasets] = useState([]);
+  const [loadingDatasets, setLoadingDatasets] = useState(false);
+  const [selectedDataset, setSelectedDataset] = useState(null);
+  const [datasetColumns, setDatasetColumns] = useState([]);
+  const [datasetData, setDatasetData] = useState([]);
+  const [bindingConfig, setBindingConfig] = useState({
+    datasetId: '',
+    labelField: '',
+    valueField: '',
+    aggregation: 'sum'
+  });
+  
+  const API_URL = process.env.REACT_APP_BACKEND_URL;
+  
+  // Fetch datasets on mount
+  useEffect(() => {
+    const fetchDatasets = async () => {
+      setLoadingDatasets(true);
+      try {
+        const response = await fetch(`${API_URL}/api/datasets`);
+        if (response.ok) {
+          const data = await response.json();
+          setDatasets(data.datasets || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch datasets:', error);
+      } finally {
+        setLoadingDatasets(false);
+      }
+    };
+    fetchDatasets();
+  }, [API_URL]);
+  
+  // Fetch dataset data when selected
+  const fetchDatasetData = useCallback(async (datasetId) => {
+    if (!datasetId) return;
+    try {
+      const response = await fetch(`${API_URL}/api/datasets/${datasetId}/data?limit=100`);
+      if (response.ok) {
+        const data = await response.json();
+        setDatasetData(data.data || []);
+        if (data.data && data.data.length > 0) {
+          setDatasetColumns(Object.keys(data.data[0]).filter(k => !k.startsWith('_')));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch dataset data:', error);
+      toast.error('Failed to load dataset data');
+    }
+  }, [API_URL]);
+  
+  // Open data binding modal for a section
+  const openDataBinding = (sectionIndex) => {
+    const section = sections[sectionIndex];
+    setSelectedSectionForBinding(sectionIndex);
+    setBindingConfig({
+      datasetId: section.datasetId || '',
+      labelField: section.labelField || '',
+      valueField: section.valueField || '',
+      aggregation: section.aggregation || 'sum'
+    });
+    if (section.datasetId) {
+      fetchDatasetData(section.datasetId);
+    }
+    setShowDataBindingModal(true);
+  };
+  
+  // Apply data binding to section
+  const applyDataBinding = () => {
+    if (selectedSectionForBinding === null) return;
+    
+    const section = sections[selectedSectionForBinding];
+    
+    // Process data based on section type
+    let processedData = null;
+    
+    if (datasetData.length > 0 && bindingConfig.labelField && bindingConfig.valueField) {
+      // Aggregate data by label field
+      const aggregated = {};
+      datasetData.forEach(row => {
+        const label = row[bindingConfig.labelField];
+        const value = parseFloat(row[bindingConfig.valueField]) || 0;
+        if (label) {
+          if (!aggregated[label]) {
+            aggregated[label] = { sum: 0, count: 0, values: [] };
+          }
+          aggregated[label].sum += value;
+          aggregated[label].count += 1;
+          aggregated[label].values.push(value);
+        }
+      });
+      
+      // Convert to chart format
+      processedData = Object.entries(aggregated).map(([name, agg]) => {
+        let value;
+        switch (bindingConfig.aggregation) {
+          case 'avg':
+            value = agg.count > 0 ? agg.sum / agg.count : 0;
+            break;
+          case 'count':
+            value = agg.count;
+            break;
+          case 'max':
+            value = Math.max(...agg.values);
+            break;
+          case 'min':
+            value = Math.min(...agg.values);
+            break;
+          default: // sum
+            value = agg.sum;
+        }
+        return { name, value: Math.round(value * 100) / 100 };
+      });
+      
+      // Generate sparkline data for tables
+      const sparklineData = Object.values(aggregated).map(agg => agg.values.slice(0, 7));
+      
+      // Update section with bound data
+      const updatedSection = {
+        ...section,
+        datasetId: bindingConfig.datasetId,
+        labelField: bindingConfig.labelField,
+        valueField: bindingConfig.valueField,
+        aggregation: bindingConfig.aggregation,
+        chartData: processedData,
+        tableData: processedData.map(d => ({ 
+          [bindingConfig.labelField]: d.name, 
+          [bindingConfig.valueField]: d.value.toLocaleString(),
+          share: `${Math.round((d.value / processedData.reduce((s, x) => s + x.value, 0)) * 100)}%`
+        })),
+        sparklineData: sparklineData
+      };
+      
+      const newSections = [...sections];
+      newSections[selectedSectionForBinding] = updatedSection;
+      setSections(newSections);
+      
+      toast.success('Data binding applied successfully!');
+    } else {
+      toast.error('Please select label and value fields');
+      return;
+    }
+    
+    setShowDataBindingModal(false);
+    setSelectedSectionForBinding(null);
+  };
+  
+  // Remove data binding from section
+  const removeDataBinding = (sectionIndex) => {
+    const section = sections[sectionIndex];
+    const updatedSection = {
+      ...section,
+      datasetId: undefined,
+      labelField: undefined,
+      valueField: undefined,
+      aggregation: undefined,
+      chartData: undefined,
+      tableData: undefined,
+      sparklineData: undefined
+    };
+    const newSections = [...sections];
+    newSections[sectionIndex] = updatedSection;
+    setSections(newSections);
+    toast.success('Data binding removed');
+  };
   
   // Handle logo upload
   const handleLogoUpload = useCallback((event) => {
