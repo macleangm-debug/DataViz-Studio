@@ -72,39 +72,43 @@ export const BarChartPreview = ({ theme, data = SAMPLE_BAR_DATA }) => {
 };
 
 // Pie Chart Component (SVG preview)
-export const PieChartPreview = ({ theme }) => {
+export const PieChartPreview = ({ theme, data }) => {
+  // Use provided data or default
+  const defaultData = [
+    { name: 'Primary', value: 60 },
+    { name: 'Secondary', value: 25 },
+    { name: 'Other', value: 15 },
+  ];
+  
+  const chartData = data && data.length > 0 ? data.slice(0, 5) : defaultData;
+  const total = chartData.reduce((sum, d) => sum + (d.value || 0), 0) || 1;
+  
+  // Calculate angles for each slice
+  let startAngle = 0;
+  const colors = [theme.primary, theme.accent, theme.secondary, '#94a3b8', '#64748b'];
+  
   return (
     <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg viewBox="0 0 100 100" style={{ width: '128px', height: '128px' }}>
-        {/* Primary slice - 60% */}
-        <circle
-          cx="50" cy="50" r="40"
-          fill="transparent"
-          stroke={theme.primary}
-          strokeWidth="20"
-          strokeDasharray="150.8 251.33"
-          transform="rotate(-90 50 50)"
-        />
-        {/* Accent slice - 25% */}
-        <circle
-          cx="50" cy="50" r="40"
-          fill="transparent"
-          stroke={theme.accent}
-          strokeWidth="20"
-          strokeDasharray="62.83 251.33"
-          strokeDashoffset="-150.8"
-          transform="rotate(-90 50 50)"
-        />
-        {/* Secondary slice - 15% */}
-        <circle
-          cx="50" cy="50" r="40"
-          fill="transparent"
-          stroke={theme.secondary}
-          strokeWidth="20"
-          strokeDasharray="37.7 251.33"
-          strokeDashoffset="-213.63"
-          transform="rotate(-90 50 50)"
-        />
+        {chartData.map((item, i) => {
+          const percentage = (item.value || 0) / total;
+          const dashArray = percentage * 251.33;
+          const dashOffset = -startAngle * 251.33;
+          startAngle += percentage;
+          
+          return (
+            <circle
+              key={i}
+              cx="50" cy="50" r="40"
+              fill="transparent"
+              stroke={colors[i % colors.length]}
+              strokeWidth="20"
+              strokeDasharray={`${dashArray} 251.33`}
+              strokeDashoffset={dashOffset}
+              transform="rotate(-90 50 50)"
+            />
+          );
+        })}
       </svg>
     </div>
   );
