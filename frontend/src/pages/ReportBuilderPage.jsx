@@ -410,10 +410,18 @@ const ReportBuilderPage = () => {
           {/* Report Preview Canvas */}
           <div 
             ref={reportCanvasRef}
-            className="bg-white rounded-2xl border-2 shadow-lg overflow-hidden"
-            style={{ borderColor: theme.primary + '30' }}
+            className="bg-white overflow-hidden"
+            style={{ 
+              borderColor: theme.primary + '30',
+              borderWidth: '2px',
+              borderStyle: 'solid',
+              borderRadius: '16px',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+            }}
             data-testid="report-canvas"
           >
+            {/* Inner container for PDF capture */}
+            <div data-testid="report-preview-content" style={{ backgroundColor: '#ffffff' }}>
             {/* Report Header */}
             <div 
               className="p-8 text-white relative overflow-hidden"
