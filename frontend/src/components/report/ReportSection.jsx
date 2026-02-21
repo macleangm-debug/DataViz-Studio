@@ -428,6 +428,32 @@ const ReportSection = ({
             >
               <ArrowDown size={14} className="text-gray-500" />
             </button>
+            
+            {/* Data binding button - only for chart/table sections */}
+            {['bar_chart', 'pie_chart', 'line_chart', 'data_table'].includes(section.type) && (
+              <>
+                {section.datasetId ? (
+                  <button
+                    onClick={() => onRemoveBinding && onRemoveBinding(index)}
+                    className="p-1 rounded hover:bg-orange-100 group"
+                    title="Remove data binding"
+                    data-testid={`unbind-data-${index}`}
+                  >
+                    <Unlink size={14} className="text-orange-500" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onDataBind && onDataBind(index)}
+                    className="p-1 rounded hover:bg-green-100 group"
+                    title="Bind to dataset"
+                    data-testid={`bind-data-${index}`}
+                  >
+                    <Database size={14} className="text-green-600" />
+                  </button>
+                )}
+              </>
+            )}
+            
             <button
               onClick={() => onDelete(index)}
               className="p-1 rounded hover:bg-red-100"
@@ -435,6 +461,17 @@ const ReportSection = ({
             >
               <Trash2 size={14} className="text-red-500" />
             </button>
+          </div>
+        )}
+        
+        {/* Data binding indicator */}
+        {section.datasetId && !isPreview && (
+          <div 
+            className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+            style={{ backgroundColor: theme.primary + '20', color: theme.primary }}
+          >
+            <Link2 size={10} />
+            <span>Live Data</span>
           </div>
         )}
       </div>
