@@ -228,7 +228,7 @@ const ReportSection = ({
       case 'bar_chart':
         return (
           <div className="p-4">
-            <BarChartPreview theme={theme} />
+            <BarChartPreview theme={theme} data={section.chartData} />
             {!isPreview && (
               <input
                 type="text"
@@ -245,35 +245,55 @@ const ReportSection = ({
       case 'pie_chart':
         return (
           <div className="p-4">
-            <PieChartPreview theme={theme} />
-            <div className="flex justify-center gap-4 mt-2">
-              <div className="flex items-center gap-1 text-xs">
-                <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.primary }} />
-                <span>Primary (60%)</span>
+            <PieChartPreview theme={theme} data={section.chartData} />
+            {!section.chartData && (
+              <div className="flex justify-center gap-4 mt-2">
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.primary }} />
+                  <span>Primary (60%)</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.accent }} />
+                  <span>Secondary (25%)</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.secondary }} />
+                  <span>Other (15%)</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1 text-xs">
-                <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.accent }} />
-                <span>Secondary (25%)</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs">
-                <div className="w-3 h-3 rounded" style={{ backgroundColor: theme.secondary }} />
-                <span>Other (15%)</span>
-              </div>
-            </div>
+            )}
           </div>
         );
       
       case 'line_chart':
         return (
           <div className="p-4">
-            <LineChartPreview theme={theme} />
+            <LineChartPreview theme={theme} data={section.chartData} />
           </div>
         );
       
       case 'data_table':
         return (
           <div className="p-4">
-            <DataTablePreview theme={theme} />
+            <DataTablePreview 
+              theme={theme} 
+              data={section.tableData}
+              showSparklines={section.showSparklines || false}
+              sparklineData={section.sparklineData}
+            />
+            {!isPreview && (
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={section.showSparklines || false}
+                    onChange={(e) => onUpdate(index, { ...section, showSparklines: e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Show Sparklines
+                </label>
+              </div>
+            )}
           </div>
         );
       
