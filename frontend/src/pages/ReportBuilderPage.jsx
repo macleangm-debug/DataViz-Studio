@@ -81,6 +81,52 @@ const ReportBuilderPage = () => {
   const [showSettings, setShowSettings] = useState(true);
   const [customColors, setCustomColors] = useState({ primary: '#3B82F6', accent: '#EF4444' });
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const logoInputRef = useRef(null);
+  
+  // Handle logo upload
+  const handleLogoUpload = useCallback((event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size should be less than 2MB');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setReportConfig(prev => ({
+        ...prev,
+        coverPageLogo: e.target.result,
+        coverPageLogoName: file.name
+      }));
+      toast.success('Logo uploaded successfully');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read file');
+    };
+    reader.readAsDataURL(file);
+  }, []);
+  
+  // Remove logo
+  const handleRemoveLogo = useCallback(() => {
+    setReportConfig(prev => ({
+      ...prev,
+      coverPageLogo: null,
+      coverPageLogoName: ''
+    }));
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
+  }, []);
   
   // Helper to generate lighter shade
   const getLighterHex = (hex, opacity) => {
