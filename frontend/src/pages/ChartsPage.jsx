@@ -679,6 +679,19 @@ const ChartStudio = ({
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [fullscreen, setFullscreen] = useState(false);
+  const [tierRestricted, setTierRestricted] = useState(false);
+  const [tierMessage, setTierMessage] = useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  // Custom themes state
+  const [customThemes, setCustomThemes] = useState([]);
+  const [showThemeBuilder, setShowThemeBuilder] = useState(false);
+  const [newTheme, setNewTheme] = useState({
+    name: '',
+    colors: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#6d28d9'],
+    background: '#ffffff',
+    textColor: '#333333'
+  });
   
   // Annotations state
   const [annotations, setAnnotations] = useState(initialChart?.config?.annotations || []);
@@ -697,6 +710,13 @@ const ChartStudio = ({
   });
 
   const currentDataset = datasets.find(d => d.id === selectedDataset);
+
+  // Auto-trigger AI suggestions when dataset is selected
+  useEffect(() => {
+    if (selectedDataset) {
+      getAISuggestions();
+    }
+  }, [selectedDataset]);
 
   // Fetch preview data when dataset/fields change
   useEffect(() => {
