@@ -2332,9 +2332,19 @@ Return ONLY valid JSON, no additional text."""
         
         response = await chat.send_message(UserMessage(text=prompt))
         
-        # Parse AI response
+        # Parse AI response - handle markdown code blocks
         try:
-            result = json.loads(response)
+            response_text = response.strip()
+            # Remove markdown code blocks if present
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            elif response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+            
+            result = json.loads(response_text)
             return SummaryResponse(
                 summary=result.get("summary", "Summary generation failed"),
                 keyInsights=result.get("keyInsights", [])[:5],
@@ -2342,8 +2352,8 @@ Return ONLY valid JSON, no additional text."""
                 generatedBy="ai",
                 confidence=0.95
             )
-        except json.JSONDecodeError:
-            logger.error("Failed to parse AI response as JSON, using template fallback")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse AI response as JSON: {e}. Response: {response[:200]}")
             return generate_template_summary(request)
             
     except Exception as e:
