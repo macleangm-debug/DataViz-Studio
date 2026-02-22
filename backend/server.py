@@ -276,6 +276,14 @@ class ReportLayout(BaseModel):
     columns: int = 2  # 1, 2, or 3 column layout
     sections: List[ReportSection] = []
 
+# Custom Chart Theme Model
+class CustomChartTheme(BaseModel):
+    name: str
+    colors: List[str]  # Array of 5-8 colors
+    background: Optional[str] = "#ffffff"
+    textColor: Optional[str] = "#333333"
+    gridColor: Optional[str] = "#e5e5e5"
+
 class ReportExportRequest(BaseModel):
     dashboard_id: Optional[str] = None
     chart_ids: Optional[List[str]] = None
