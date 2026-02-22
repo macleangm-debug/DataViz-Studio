@@ -938,48 +938,60 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 
 **Test Status:** 100% (17/17 tests) - iteration_22.json
 
-## Session 23 (Feb 22, 2026) - AI Executive Summary Feature
+## Session 24 (Feb 22, 2026) - AI Chart Recommendations, Custom Themes & Tier Restrictions
 
-### AI-Powered Report Summary with Fallback System
-- [x] **Backend Endpoint:** `POST /api/reports/generate-summary`
-  - Accepts report title, subtitle, sections data, tone, and length
-  - Uses GPT-4o via emergentintegrations library
-  - Automatic template fallback when AI unavailable
-  - Returns: summary text, 5 key insights, 3 recommendations
-  - Response includes `generatedBy` (ai/template) and `confidence` score
+### AI-Powered Chart Recommendations (Auto-trigger)
+- [x] **Backend Endpoint:** `POST /api/ai/suggest-charts?dataset_id=X`
+  - Analyzes dataset columns, types, cardinality, and sample values
+  - Returns 5 optimal chart suggestions with confidence scores (0.0-1.0)
+  - Enhanced prompt for better GPT-4o recommendations
+  - Tier checking: Free/Starter return tier_restricted=true
+  - Pro: 50 suggestions/month, Enterprise: Unlimited
+  
+- [x] **Frontend Auto-trigger**
+  - AI suggestions automatically triggered when dataset is selected (useEffect)
+  - Loading state: "Analyzing your data for optimal visualizations..."
+  - Toast notification: "Found X chart recommendations!"
+  - Suggestion cards show title, description, confidence %, chart type, aggregation
+  - One-click apply populates chart name, type, X/Y fields, aggregation
+  - Tier restriction notice with upgrade prompt for Free/Starter users
 
-- [x] **Backend Status Endpoint:** `GET /api/reports/summary-status`
-  - Returns AI availability status
-  - Provider information (OpenAI GPT-4o or Template Engine)
-  - Fallback availability status
+### Custom Chart Themes
+- [x] **10 Preset Themes:** Violet Dreams, Ocean Breeze, Sunset Glow, Forest Green, Rose Garden, Midnight Dark, Corporate Blue, Warm Earth, Cool Slate, Neon Nights
+- [x] **Backend Endpoints:**
+  - `GET /api/themes/presets` - Returns all preset themes
+  - `GET /api/themes/custom` - User's saved themes with limit info
+  - `POST /api/themes/custom` - Create new theme (checks tier limit)
+  - `PUT /api/themes/custom/{id}` - Update theme
+  - `DELETE /api/themes/custom/{id}` - Delete theme
+- [x] **Tier Limits:** Free: 3, Starter: 3, Pro: 10, Enterprise: Unlimited
 
-- [x] **Frontend AI Summary Modal**
-  - "AI Summary" button (emerald gradient with Brain icon) in Report Builder header
-  - PRO Feature badge
-  - Tone selection: Professional, Executive, Casual
-  - Length selection: Short, Medium, Long
-  - Report preview section showing sections to analyze
-  - AI-Powered Analysis info box
-  - Fallback Protection info box
-  - Generate Summary button with loading state
-  - Results display: Summary text, Key Insights (5), Recommendations (3)
-  - Add to Report button to insert summary as new section
-  - Regenerate option
+### AI Features Tier Restrictions
+- [x] **Tier Configuration (TIER_LIMITS):**
+  - Free/Starter: No AI features (has_ai_features=false)
+  - Pro: 50/month AI Summary, 50/month AI Chart Suggest
+  - Enterprise: Unlimited AI features
+- [x] **User Tier Info Endpoint:** `GET /api/user/tier-info`
+  - Returns tier, limits, current usage, remaining quota
+- [x] **Frontend Upgrade Prompts:**
+  - Tier restriction notice with gradient background
+  - "Upgrade to Pro" button linking to /pricing
+- [x] **Pricing Page Updates:**
+  - 4 AI feature cards (Chart Recommendations, Executive Summary, Insights Assistant, Fallback)
+  - Feature comparison table with AI & Analytics category
+  - Custom chart themes row with tier limits
 
-- [x] **Pricing Page AI Features Section**
-  - AI Executive Summary card with description
-  - AI Insights Assistant card
-  - Smart Fallback System card
-  - "Future-Proof AI Infrastructure" note with Shield icon
-
-- [x] **Bug Fix:** JSON parsing for AI responses wrapped in markdown code blocks
+### User Model Updates
+- Added `tier` field (free/starter/pro/enterprise)
+- Added `ai_usage` tracking (summary_count, chart_suggest_count, month)
+- Added `custom_themes` array for user-saved themes
 
 **Files Modified:**
-- `/app/backend/server.py` - Added generate-summary and summary-status endpoints
-- `/app/frontend/src/pages/ReportBuilderPage.jsx` - AI Summary modal and state
-- `/app/frontend/src/pages/PricingPage.jsx` - AI features highlight section
+- `/app/backend/server.py` - TIER_LIMITS, helper functions, new endpoints, tier checks
+- `/app/frontend/src/pages/ChartsPage.jsx` - Auto-trigger AI, tier handling, new UI
+- `/app/frontend/src/pages/PricingPage.jsx` - 4 AI cards, updated feature table
 
-**Test Status:** 100% (8/8 backend, 21/21 frontend) - iteration_23.json
+**Test Status:** 100% (22/22 backend, 25/25 frontend) - iteration_24.json
 
 ## Next Recommended Tasks
 - **Phase 3 Features** - Scheduled Email Reports UI
