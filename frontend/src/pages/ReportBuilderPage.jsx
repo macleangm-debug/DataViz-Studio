@@ -305,6 +305,70 @@ const ReportBuilderPage = () => {
     ? REPORT_TEMPLATES 
     : REPORT_TEMPLATES.filter(t => t.category === templateCategory);
   
+  // Generate AI Executive Summary
+  const generateAISummary = async () => {
+    setGeneratingSummary(true);
+    setAiSummary(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/api/reports/generate-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportTitle: reportConfig.title,
+          reportSubtitle: reportConfig.subtitle,
+          sections: sections.map(s => ({
+            type: s.type,
+            title: s.title,
+            content: s.content,
+            stats: s.stats,
+            chartData: s.chartData,
+            tableData: s.tableData
+          })),
+          tone: summaryTone,
+          length: summaryLength
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate summary');
+      }
+      
+      const data = await response.json();
+      setAiSummary(data);
+      
+      if (data.generatedBy === 'ai') {
+        toast.success('AI Executive Summary generated!');
+      } else {
+        toast.info('Generated using template engine (AI unavailable)');
+      }
+    } catch (error) {
+      console.error('Summary generation error:', error);
+      toast.error('Failed to generate summary. Please try again.');
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
+  
+  // Add AI summary as a section to the report
+  const addSummaryToReport = () => {
+    if (!aiSummary) return;
+    
+    const summarySection = {
+      id: `ai_summary_${Date.now()}`,
+      type: 'intro',
+      title: 'Executive Summary',
+      content: `${aiSummary.summary}\n\n**Key Insights:**\n${aiSummary.keyInsights.map((i, idx) => `${idx + 1}. ${i}`).join('\n')}\n\n**Recommendations:**\n${aiSummary.recommendations.map((r, idx) => `${idx + 1}. ${r}`).join('\n')}`,
+      width: 100
+    };
+    
+    // Add at the beginning (after cover page sections)
+    const newSections = [summarySection, ...sections];
+    setSections(newSections);
+    setShowAISummaryModal(false);
+    toast.success('Executive Summary added to report!');
+  };
+  
   // Handle logo upload
   const handleLogoUpload = useCallback((event) => {
     const file = event.target.files?.[0];
