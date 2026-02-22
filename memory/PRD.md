@@ -938,60 +938,48 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 
 **Test Status:** 100% (17/17 tests) - iteration_22.json
 
-## Session 24 (Feb 22, 2026) - AI Chart Recommendations, Custom Themes & Tier Restrictions
+## Session 25 (Feb 22, 2026) - Custom Theme Builder UI
 
-### AI-Powered Chart Recommendations (Auto-trigger)
-- [x] **Backend Endpoint:** `POST /api/ai/suggest-charts?dataset_id=X`
-  - Analyzes dataset columns, types, cardinality, and sample values
-  - Returns 5 optimal chart suggestions with confidence scores (0.0-1.0)
-  - Enhanced prompt for better GPT-4o recommendations
-  - Tier checking: Free/Starter return tier_restricted=true
-  - Pro: 50 suggestions/month, Enterprise: Unlimited
-  
-- [x] **Frontend Auto-trigger**
-  - AI suggestions automatically triggered when dataset is selected (useEffect)
-  - Loading state: "Analyzing your data for optimal visualizations..."
-  - Toast notification: "Found X chart recommendations!"
-  - Suggestion cards show title, description, confidence %, chart type, aggregation
-  - One-click apply populates chart name, type, X/Y fields, aggregation
-  - Tier restriction notice with upgrade prompt for Free/Starter users
+### Custom Theme Builder Implementation
+- [x] **Theme Builder Dialog**
+  - Opens via "Create Theme" button in Chart Studio Style Options
+  - Theme Name input with placeholder
+  - Color Palette: 5 colors by default, expandable to 8 via "Add Color" button
+  - Color pickers with hex value display
+  - Live gradient preview of selected colors
+  - Theme usage counter (e.g., "3/10 themes used" for Pro tier)
+  - Save/Cancel buttons with gradient styling
+  - Edit mode for updating existing themes
 
-### Custom Chart Themes
-- [x] **10 Preset Themes:** Violet Dreams, Ocean Breeze, Sunset Glow, Forest Green, Rose Garden, Midnight Dark, Corporate Blue, Warm Earth, Cool Slate, Neon Nights
-- [x] **Backend Endpoints:**
-  - `GET /api/themes/presets` - Returns all preset themes
-  - `GET /api/themes/custom` - User's saved themes with limit info
-  - `POST /api/themes/custom` - Create new theme (checks tier limit)
-  - `PUT /api/themes/custom/{id}` - Update theme
-  - `DELETE /api/themes/custom/{id}` - Delete theme
-- [x] **Tier Limits:** Free: 3, Starter: 3, Pro: 10, Enterprise: Unlimited
+- [x] **Frontend Theme Selection UI**
+  - **BUILT-IN** section: 6 hardcoded color themes
+  - **PROFESSIONAL** section: 6 preset themes from API
+  - **MY THEMES** section: User's custom themes with crown icon
+    - Shows count/limit (e.g., "4/10")
+    - Edit button (blue paintbrush) on hover
+    - Delete button (red X) on hover
+    - Selected theme shows ring highlight
+    - Toast notification when theme applied
 
-### AI Features Tier Restrictions
-- [x] **Tier Configuration (TIER_LIMITS):**
-  - Free/Starter: No AI features (has_ai_features=false)
-  - Pro: 50/month AI Summary, 50/month AI Chart Suggest
-  - Enterprise: Unlimited AI features
-- [x] **User Tier Info Endpoint:** `GET /api/user/tier-info`
-  - Returns tier, limits, current usage, remaining quota
-- [x] **Frontend Upgrade Prompts:**
-  - Tier restriction notice with gradient background
-  - "Upgrade to Pro" button linking to /pricing
-- [x] **Pricing Page Updates:**
-  - 4 AI feature cards (Chart Recommendations, Executive Summary, Insights Assistant, Fallback)
-  - Feature comparison table with AI & Analytics category
-  - Custom chart themes row with tier limits
+- [x] **Theme Management Functions**
+  - `fetchThemes()`: Loads preset and custom themes on mount
+  - `saveCustomTheme()`: Creates/updates theme via API
+  - `deleteCustomTheme()`: Removes theme via API
+  - `applyCustomTheme()`: Applies colors to chart
+  - `editTheme()`: Opens dialog in edit mode
+  - `updateThemeColor()`: Updates single color in palette
+  - `addColorSlot()` / `removeColorSlot()`: Manage palette size
 
-### User Model Updates
-- Added `tier` field (free/starter/pro/enterprise)
-- Added `ai_usage` tracking (summary_count, chart_suggest_count, month)
-- Added `custom_themes` array for user-saved themes
+- [x] **Tier Limit Handling**
+  - Free/Starter: 3 themes max
+  - Pro: 10 themes max
+  - Enterprise: Unlimited
+  - Shows amber warning when limit reached with upgrade link
 
 **Files Modified:**
-- `/app/backend/server.py` - TIER_LIMITS, helper functions, new endpoints, tier checks
-- `/app/frontend/src/pages/ChartsPage.jsx` - Auto-trigger AI, tier handling, new UI
-- `/app/frontend/src/pages/PricingPage.jsx` - 4 AI cards, updated feature table
+- `/app/frontend/src/pages/ChartsPage.jsx` - Added Theme Builder dialog, state management, API calls
 
-**Test Status:** 100% (22/22 backend, 25/25 frontend) - iteration_24.json
+**Test Status:** 100% (22/22 backend, 19/19 frontend) - iteration_25.json
 
 ## Next Recommended Tasks
 - **Phase 3 Features** - Scheduled Email Reports UI
