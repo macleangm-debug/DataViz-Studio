@@ -1307,23 +1307,35 @@ const ChartStudio = ({
                       <span className="text-xs text-muted-foreground uppercase tracking-wide">Professional</span>
                       <div className="flex gap-2 flex-wrap">
                         {presetThemes.slice(0, 6).map((theme) => (
-                          <button
-                            key={theme.id}
-                            onClick={() => {
-                              COLOR_THEMES[`preset_${theme.id}`] = theme.colors;
-                              setColorTheme(`preset_${theme.id}`);
-                            }}
-                            className={`w-8 h-8 rounded-full border-2 transition-all relative group ${
-                              colorTheme === `preset_${theme.id}` ? 'border-foreground scale-110 ring-2 ring-violet-500/30' : 'border-transparent hover:scale-105'
-                            }`}
-                            style={{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }}
-                            title={theme.name}
-                            data-testid={`preset-theme-${theme.id}`}
-                          >
+                          <div key={theme.id} className="relative group">
+                            <button
+                              onClick={() => {
+                                COLOR_THEMES[`preset_${theme.id}`] = theme.colors;
+                                setColorTheme(`preset_${theme.id}`);
+                              }}
+                              className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                colorTheme === `preset_${theme.id}` ? 'border-foreground scale-110 ring-2 ring-violet-500/30' : 'border-transparent hover:scale-105'
+                              }`}
+                              style={{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }}
+                              title={theme.name}
+                              data-testid={`preset-theme-${theme.id}`}
+                            />
+                            {/* Customize button on hover */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                customizePresetTheme(theme);
+                              }}
+                              className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              title={`Customize ${theme.name}`}
+                              data-testid={`customize-preset-${theme.id}`}
+                            >
+                              <Paintbrush className="w-2.5 h-2.5 text-white" />
+                            </button>
                             <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                               {theme.name}
                             </span>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     </div>
