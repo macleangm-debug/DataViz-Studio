@@ -62,6 +62,23 @@ const ReportBuilderPage = () => {
     coverPageLogoName: '',
     authorName: '',
     confidentialityLevel: 'Internal',
+    // Watermark settings
+    watermark: {
+      enabled: false,
+      type: 'text', // 'text' or 'image'
+      text: 'CONFIDENTIAL',
+      imageData: null,
+      position: 'center', // 'center', 'diagonal', 'corner'
+      opacity: 30, // 10-100
+    },
+    // Font settings
+    fontFamily: 'Inter',
+    fontSize: 'medium', // 'small', 'medium', 'large'
+    // Password protection
+    passwordProtection: {
+      enabled: false,
+      password: '',
+    },
   });
   
   // Sections state
