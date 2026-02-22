@@ -688,7 +688,11 @@ const ChartStudio = ({
   
   // Custom themes state
   const [customThemes, setCustomThemes] = useState([]);
+  const [presetThemes, setPresetThemes] = useState([]);
   const [showThemeBuilder, setShowThemeBuilder] = useState(false);
+  const [editingTheme, setEditingTheme] = useState(null);
+  const [themeLimit, setThemeLimit] = useState({ limit: 3, count: 0, can_create_more: true });
+  const [savingTheme, setSavingTheme] = useState(false);
   const [newTheme, setNewTheme] = useState({
     name: '',
     colors: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#6d28d9'],
@@ -714,6 +718,11 @@ const ChartStudio = ({
 
   const currentDataset = datasets.find(d => d.id === selectedDataset);
 
+  // Fetch themes on mount
+  useEffect(() => {
+    fetchThemes();
+  }, []);
+
   // Auto-trigger AI suggestions when dataset is selected
   useEffect(() => {
     if (selectedDataset) {
@@ -727,6 +736,136 @@ const ChartStudio = ({
       fetchPreviewData();
     }
   }, [selectedDataset, xField, yField, aggregation]);
+
+  // Fetch preset and custom themes
+  const fetchThemes = async () => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Fetch preset themes
+      const presetsRes = await axios.get(`${API_URL}/api/themes/presets`);
+      setPresetThemes(presetsRes.data.themes || []);
+      
+      // Fetch custom themes
+      const customRes = await axios.get(`${API_URL}/api/themes/custom`, { headers });
+      setCustomThemes(customRes.data.themes || []);
+      setThemeLimit({
+        limit: customRes.data.limit,
+        count: customRes.data.count,
+        can_create_more: customRes.data.can_create_more
+      });
+    } catch (error) {
+      console.error('Error fetching themes:', error);
+    }
+  };
+
+  // Save custom theme
+  const saveCustomTheme = async () => {
+    if (!newTheme.name.trim()) {
+      toast.error('Please enter a theme name');
+      return;
+    }
+    
+    setSavingTheme(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      if (editingTheme) {
+        // Update existing theme
+        await axios.put(
+          `${API_URL}/api/themes/custom/${editingTheme.id}`,
+          newTheme,
+          { headers }
+        );
+        toast.success('Theme updated successfully!');
+      } else {
+        // Create new theme
+        await axios.post(
+          `${API_URL}/api/themes/custom`,
+          newTheme,
+          { headers }
+        );
+        toast.success('Theme created successfully!');
+      }
+      
+      // Refresh themes
+      await fetchThemes();
+      setShowThemeBuilder(false);
+      setEditingTheme(null);
+      setNewTheme({
+        name: '',
+        colors: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#6d28d9'],
+        background: '#ffffff',
+        textColor: '#333333'
+      });
+    } catch (error) {
+      if (error.response?.status === 403) {
+        toast.error(error.response.data.detail || 'Theme limit reached. Upgrade for more themes.');
+      } else {
+        toast.error('Failed to save theme');
+      }
+    } finally {
+      setSavingTheme(false);
+    }
+  };
+
+  // Delete custom theme
+  const deleteCustomTheme = async (themeId) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`${API_URL}/api/themes/custom/${themeId}`, { headers });
+      toast.success('Theme deleted');
+      await fetchThemes();
+    } catch (error) {
+      toast.error('Failed to delete theme');
+    }
+  };
+
+  // Apply custom theme to chart
+  const applyCustomTheme = (theme) => {
+    // Add custom theme to COLOR_THEMES dynamically
+    const customThemeId = `custom_${theme.id}`;
+    COLOR_THEMES[customThemeId] = theme.colors;
+    setColorTheme(customThemeId);
+    toast.success(`Applied "${theme.name}" theme`);
+  };
+
+  // Open theme builder for editing
+  const editTheme = (theme) => {
+    setEditingTheme(theme);
+    setNewTheme({
+      name: theme.name,
+      colors: theme.colors,
+      background: theme.background || '#ffffff',
+      textColor: theme.textColor || '#333333'
+    });
+    setShowThemeBuilder(true);
+  };
+
+  // Update a specific color in the theme
+  const updateThemeColor = (index, color) => {
+    const newColors = [...newTheme.colors];
+    newColors[index] = color;
+    setNewTheme({ ...newTheme, colors: newColors });
+  };
+
+  // Add a new color slot
+  const addColorSlot = () => {
+    if (newTheme.colors.length < 8) {
+      setNewTheme({
+        ...newTheme,
+        colors: [...newTheme.colors, '#6b7280']
+      });
+    }
+  };
+
+  // Remove a color slot
+  const removeColorSlot = (index) => {
+    if (newTheme.colors.length > 3) {
+      const newColors = newTheme.colors.filter((_, i) => i !== index);
+      setNewTheme({ ...newTheme, colors: newColors });
+    }
+  };
 
   const fetchPreviewData = async () => {
     if (!selectedDataset || !xField) return;
