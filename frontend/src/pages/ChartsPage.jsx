@@ -842,6 +842,19 @@ const ChartStudio = ({
     setShowThemeBuilder(true);
   };
 
+  // Customize a preset theme (start from preset)
+  const customizePresetTheme = (presetTheme) => {
+    setEditingTheme(null); // Not editing, creating new
+    setNewTheme({
+      name: `Custom ${presetTheme.name}`,
+      colors: [...presetTheme.colors],
+      background: presetTheme.background || '#ffffff',
+      textColor: presetTheme.textColor || '#333333'
+    });
+    setShowThemeBuilder(true);
+    toast.info(`Starting from "${presetTheme.name}" - customize and save as your own!`);
+  };
+
   // Update a specific color in the theme
   const updateThemeColor = (index, color) => {
     const newColors = [...newTheme.colors];
