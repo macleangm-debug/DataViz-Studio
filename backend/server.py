@@ -442,7 +442,14 @@ async def register(user: UserCreate):
         "name": user.name,
         "password_hash": hashed.decode(),
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "role": "user"
+        "role": "user",
+        "tier": "free",  # free, starter, pro, enterprise
+        "ai_usage": {
+            "summary_count": 0,
+            "chart_suggest_count": 0,
+            "month": datetime.now(timezone.utc).strftime("%Y-%m")
+        },
+        "custom_themes": []  # User's saved chart themes
     }
     
     await db.users.insert_one(user_doc)
@@ -453,6 +460,7 @@ async def register(user: UserCreate):
         "name": f"{user.name}'s Workspace",
         "slug": user.email.split('@')[0],
         "owner_id": user_doc["id"],
+        "tier": "free",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.organizations.insert_one(org_doc)
