@@ -2136,6 +2136,230 @@ Only return the JSON array, no other text."""
 # Export Routes
 # =============================================================================
 
+# AI Executive Summary Models
+class ReportSectionData(BaseModel):
+    type: str
+    title: str
+    content: Optional[str] = None
+    stats: Optional[List[Dict[str, Any]]] = None
+    chartData: Optional[List[Dict[str, Any]]] = None
+    tableData: Optional[List[Dict[str, Any]]] = None
+
+class GenerateSummaryRequest(BaseModel):
+    reportTitle: str
+    reportSubtitle: Optional[str] = None
+    sections: List[ReportSectionData]
+    tone: Optional[str] = "professional"  # professional, casual, executive
+    length: Optional[str] = "medium"  # short, medium, long
+
+class SummaryResponse(BaseModel):
+    summary: str
+    keyInsights: List[str]
+    recommendations: List[str]
+    generatedBy: str  # "ai" or "template"
+    confidence: Optional[float] = None
+
+def generate_template_summary(request: GenerateSummaryRequest) -> SummaryResponse:
+    """
+    Fallback template-based summary generation when AI is unavailable.
+    Analyzes report structure and generates a reasonable summary.
+    """
+    sections = request.sections
+    report_title = request.reportTitle
+    
+    # Analyze sections
+    stat_sections = [s for s in sections if s.type == 'stat_cards']
+    chart_sections = [s for s in sections if s.type in ['bar_chart', 'pie_chart', 'line_chart']]
+    table_sections = [s for s in sections if s.type == 'data_table']
+    text_sections = [s for s in sections if s.type in ['intro', 'conclusion', 'text_block']]
+    
+    # Extract key metrics from stat cards
+    metrics = []
+    for section in stat_sections:
+        if section.stats:
+            for stat in section.stats:
+                if isinstance(stat, dict):
+                    metrics.append(f"{stat.get('value', 'N/A')} ({stat.get('label', 'metric')})")
+    
+    # Build summary based on content
+    summary_parts = []
+    
+    # Opening
+    summary_parts.append(f"This {report_title} provides a comprehensive analysis across {len(sections)} key areas.")
+    
+    # Metrics highlight
+    if metrics:
+        metric_preview = metrics[:4]
+        summary_parts.append(f"Key performance indicators show: {', '.join(metric_preview)}.")
+    
+    # Section overview
+    if chart_sections:
+        chart_types = set(s.type.replace('_', ' ').title() for s in chart_sections)
+        summary_parts.append(f"Visual analysis is presented through {len(chart_sections)} charts including {', '.join(chart_types)}.")
+    
+    if table_sections:
+        summary_parts.append(f"Detailed breakdowns are provided in {len(table_sections)} data table(s) for deeper analysis.")
+    
+    # Extract insights from text sections
+    insights = []
+    if text_sections:
+        for section in text_sections[:3]:
+            if section.content:
+                # Take first sentence as insight
+                first_sentence = section.content.split('.')[0].strip()
+                if len(first_sentence) > 20:
+                    insights.append(first_sentence)
+    
+    # Default insights if none extracted
+    if not insights:
+        insights = [
+            "Performance metrics indicate stable operational efficiency",
+            "Data trends suggest continued growth trajectory",
+            "Key areas show positive momentum compared to baseline"
+        ]
+    
+    # Recommendations based on report type
+    recommendations = []
+    title_lower = report_title.lower()
+    
+    if 'sales' in title_lower:
+        recommendations = [
+            "Focus on high-performing regions to maximize revenue",
+            "Analyze conversion rates in underperforming segments",
+            "Consider targeted campaigns for growth opportunities"
+        ]
+    elif 'market' in title_lower or 'research' in title_lower:
+        recommendations = [
+            "Leverage identified market opportunities for expansion",
+            "Monitor competitive landscape for strategic positioning",
+            "Invest in areas showing strongest growth potential"
+        ]
+    elif 'executive' in title_lower or 'quarterly' in title_lower:
+        recommendations = [
+            "Continue focus on strategic initiatives showing ROI",
+            "Address underperforming areas with targeted interventions",
+            "Align resources with highest-impact opportunities"
+        ]
+    elif 'hr' in title_lower or 'people' in title_lower:
+        recommendations = [
+            "Enhance retention programs for high-value employees",
+            "Address engagement gaps identified in metrics",
+            "Invest in training and development initiatives"
+        ]
+    else:
+        recommendations = [
+            "Continue monitoring key performance indicators",
+            "Implement improvements based on identified trends",
+            "Review and adjust strategies for optimal outcomes"
+        ]
+    
+    return SummaryResponse(
+        summary=" ".join(summary_parts),
+        keyInsights=insights[:5],
+        recommendations=recommendations[:3],
+        generatedBy="template",
+        confidence=0.7
+    )
+
+@api_router.post("/reports/generate-summary")
+async def generate_executive_summary(request: GenerateSummaryRequest):
+    """
+    Generate an AI-powered executive summary for a report.
+    Falls back to template-based generation if AI is unavailable.
+    """
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    
+    if not api_key:
+        logger.warning("EMERGENT_LLM_KEY not configured, using template fallback")
+        return generate_template_summary(request)
+    
+    # Prepare data summary for AI
+    sections_summary = []
+    for section in request.sections:
+        section_info = {"type": section.type, "title": section.title}
+        if section.stats:
+            section_info["metrics"] = [
+                f"{s.get('value', 'N/A')}: {s.get('label', '')}" 
+                for s in section.stats if isinstance(s, dict)
+            ]
+        if section.content:
+            section_info["content_preview"] = section.content[:200]
+        if section.chartData:
+            section_info["data_points"] = len(section.chartData)
+        if section.tableData:
+            section_info["table_rows"] = len(section.tableData)
+        sections_summary.append(section_info)
+    
+    # Determine length based on request
+    length_guide = {
+        "short": "2-3 sentences",
+        "medium": "4-6 sentences",
+        "long": "7-10 sentences"
+    }
+    target_length = length_guide.get(request.length, "4-6 sentences")
+    
+    prompt = f"""Analyze this report and generate an executive summary.
+
+Report Title: {request.reportTitle}
+Subtitle: {request.reportSubtitle or 'N/A'}
+Tone: {request.tone}
+Target Length: {target_length}
+
+Report Sections:
+{json.dumps(sections_summary, indent=2)}
+
+Please provide a response in this exact JSON format:
+{{
+    "summary": "A {request.tone} executive summary of the report in {target_length}",
+    "keyInsights": ["insight 1", "insight 2", "insight 3", "insight 4", "insight 5"],
+    "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
+}}
+
+Focus on:
+1. Highlighting the most important metrics and trends
+2. Providing actionable insights
+3. Making strategic recommendations based on the data
+4. Using a {request.tone} tone appropriate for executive audiences
+
+Return ONLY valid JSON, no additional text."""
+
+    try:
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"dataviz-summary-{uuid.uuid4()}",
+            system_message="You are an expert business analyst who creates executive summaries. Always respond with valid JSON only."
+        ).with_model("openai", "gpt-4o")
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        
+        # Parse AI response
+        try:
+            result = json.loads(response)
+            return SummaryResponse(
+                summary=result.get("summary", "Summary generation failed"),
+                keyInsights=result.get("keyInsights", [])[:5],
+                recommendations=result.get("recommendations", [])[:3],
+                generatedBy="ai",
+                confidence=0.95
+            )
+        except json.JSONDecodeError:
+            logger.error("Failed to parse AI response as JSON, using template fallback")
+            return generate_template_summary(request)
+            
+    except Exception as e:
+        logger.error(f"AI summary generation failed: {str(e)}, using template fallback")
+        return generate_template_summary(request)
+
+@api_router.get("/reports/summary-status")
+async def get_summary_service_status():
+    """Check if AI summary service is available"""
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    return {
+        "ai_available": bool(api_key),
+        "fallback_available": True,
+        "provider": "OpenAI GPT-4o" if api_key else "Template Engine"
+    }
+
 @api_router.get("/exports/{dataset_id}/csv")
 async def export_csv(dataset_id: str):
     """Export dataset as CSV"""
