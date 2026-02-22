@@ -97,6 +97,11 @@ const ReportBuilderPage = () => {
   const [selectedSectionForBinding, setSelectedSectionForBinding] = useState(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateCategory, setTemplateCategory] = useState('All');
+  const [showAISummaryModal, setShowAISummaryModal] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [summaryTone, setSummaryTone] = useState('professional');
+  const [summaryLength, setSummaryLength] = useState('medium');
   const logoInputRef = useRef(null);
   
   // Data binding state
