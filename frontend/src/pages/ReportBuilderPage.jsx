@@ -857,6 +857,16 @@ const ReportBuilderPage = () => {
               <p className="text-gray-500 text-sm">Design professional infographic-style reports</p>
             </div>
             <div className="flex items-center gap-3">
+              {/* AI Summary Button */}
+              <button
+                onClick={() => setShowAISummaryModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md"
+                data-testid="ai-summary-btn"
+              >
+                <Brain size={18} />
+                <span className="font-medium">AI Summary</span>
+              </button>
+              
               {/* Templates Button */}
               <button
                 onClick={() => setShowTemplateModal(true)}
