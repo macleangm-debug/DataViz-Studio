@@ -441,11 +441,31 @@ export function PricingPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* AI Chart Recommendations */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-violet-500/10 to-indigo-500/10 rounded-2xl p-6 border border-violet-500/20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center mb-4">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">AI Chart Recommendations</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Automatically analyze your data and get smart suggestions for the best visualization types.
+              </p>
+              <div className="flex items-center gap-2 text-violet-400 text-sm">
+                <CheckCircle className="w-4 h-4" />
+                <span>Pro & Enterprise</span>
+              </div>
+            </motion.div>
+            
             {/* AI Executive Summary */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
               className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-2xl p-6 border border-emerald-500/20"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-4">
@@ -453,8 +473,7 @@ export function PricingPage() {
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">AI Executive Summary</h3>
               <p className="text-gray-400 text-sm mb-4">
-                Generate professional executive summaries from your reports with one click. 
-                Includes key insights and actionable recommendations.
+                Generate professional executive summaries from your reports with one click.
               </p>
               <div className="flex items-center gap-2 text-emerald-400 text-sm">
                 <CheckCircle className="w-4 h-4" />
@@ -466,7 +485,7 @@ export function PricingPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.2 }}
               className="bg-gradient-to-br from-purple-500/10 to-fuchsia-500/10 rounded-2xl p-6 border border-purple-500/20"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center mb-4">
@@ -474,8 +493,7 @@ export function PricingPage() {
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">AI Insights Assistant</h3>
               <p className="text-gray-400 text-sm mb-4">
-                Ask questions about your data in plain English. Get intelligent answers, 
-                chart suggestions, and trend analysis.
+                Ask questions about your data in plain English. Get intelligent answers.
               </p>
               <div className="flex items-center gap-2 text-purple-400 text-sm">
                 <CheckCircle className="w-4 h-4" />
@@ -487,7 +505,7 @@ export function PricingPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-2xl p-6 border border-blue-500/20"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4">
@@ -495,8 +513,7 @@ export function PricingPage() {
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Smart Fallback System</h3>
               <p className="text-gray-400 text-sm mb-4">
-                Never lose functionality. If AI services are temporarily unavailable, 
-                our template engine ensures you always get quality results.
+                Template engine ensures quality results even when AI is unavailable.
               </p>
               <div className="flex items-center gap-2 text-blue-400 text-sm">
                 <CheckCircle className="w-4 h-4" />
