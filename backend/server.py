@@ -2610,19 +2610,19 @@ async def generate_executive_summary(request_data: GenerateSummaryRequest, reque
             section_info["table_rows"] = len(section.tableData)
         sections_summary.append(section_info)
     
-    # Determine length based on request
+    # Determine length based on request_data
     length_guide = {
         "short": "2-3 sentences",
         "medium": "4-6 sentences",
         "long": "7-10 sentences"
     }
-    target_length = length_guide.get(request.length, "4-6 sentences")
+    target_length = length_guide.get(request_data.length, "4-6 sentences")
     
     prompt = f"""Analyze this report and generate an executive summary.
 
-Report Title: {request.reportTitle}
-Subtitle: {request.reportSubtitle or 'N/A'}
-Tone: {request.tone}
+Report Title: {request_data.reportTitle}
+Subtitle: {request_data.reportSubtitle or 'N/A'}
+Tone: {request_data.tone}
 Target Length: {target_length}
 
 Report Sections:
@@ -2630,7 +2630,7 @@ Report Sections:
 
 Please provide a response in this exact JSON format:
 {{
-    "summary": "A {request.tone} executive summary of the report in {target_length}",
+    "summary": "A {request_data.tone} executive summary of the report in {target_length}",
     "keyInsights": ["insight 1", "insight 2", "insight 3", "insight 4", "insight 5"],
     "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
 }}
@@ -2639,7 +2639,7 @@ Focus on:
 1. Highlighting the most important metrics and trends
 2. Providing actionable insights
 3. Making strategic recommendations based on the data
-4. Using a {request.tone} tone appropriate for executive audiences
+4. Using a {request_data.tone} tone appropriate for executive audiences
 
 Return ONLY valid JSON, no additional text."""
 
@@ -2665,6 +2665,9 @@ Return ONLY valid JSON, no additional text."""
             response_text = response_text.strip()
             
             result = json.loads(response_text)
+            # Increment AI usage for the user
+            await increment_ai_usage(user["id"], "summary")
+            
             return SummaryResponse(
                 summary=result.get("summary", "Summary generation failed"),
                 keyInsights=result.get("keyInsights", [])[:5],
@@ -2674,11 +2677,11 @@ Return ONLY valid JSON, no additional text."""
             )
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse AI response as JSON: {e}. Response: {response[:200]}")
-            return generate_template_summary(request)
+            return generate_template_summary(request_data)
             
     except Exception as e:
         logger.error(f"AI summary generation failed: {str(e)}, using template fallback")
-        return generate_template_summary(request)
+        return generate_template_summary(request_data)
 
 @api_router.get("/reports/summary-status")
 async def get_summary_service_status():
