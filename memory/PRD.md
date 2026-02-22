@@ -938,48 +938,57 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 
 **Test Status:** 100% (17/17 tests) - iteration_22.json
 
-## Session 25 (Feb 22, 2026) - Custom Theme Builder UI
+## Session 26 (Feb 22, 2026) - Theme Templates & Report Builder Features
 
-### Custom Theme Builder Implementation
-- [x] **Theme Builder Dialog**
-  - Opens via "Create Theme" button in Chart Studio Style Options
-  - Theme Name input with placeholder
-  - Color Palette: 5 colors by default, expandable to 8 via "Add Color" button
-  - Color pickers with hex value display
-  - Live gradient preview of selected colors
-  - Theme usage counter (e.g., "3/10 themes used" for Pro tier)
-  - Save/Cancel buttons with gradient styling
-  - Edit mode for updating existing themes
+### Theme Templates (Start from Preset)
+- [x] **Customize Button on Preset Themes**
+  - Small violet paintbrush icon appears on hover over professional themes
+  - Opens Theme Builder dialog with preset's colors pre-filled
+  - Auto-generates name: "Custom [Preset Name]" (e.g., "Custom Violet Dreams")
+  - Toast notification: "Starting from '[Name]' - customize and save as your own!"
+  - User can modify any color and save as their own custom theme
 
-- [x] **Frontend Theme Selection UI**
-  - **BUILT-IN** section: 6 hardcoded color themes
-  - **PROFESSIONAL** section: 6 preset themes from API
-  - **MY THEMES** section: User's custom themes with crown icon
-    - Shows count/limit (e.g., "4/10")
-    - Edit button (blue paintbrush) on hover
-    - Delete button (red X) on hover
-    - Selected theme shows ring highlight
-    - Toast notification when theme applied
+### Report Builder - Watermarks
+- [x] **Watermark Settings Section**
+  - Toggle to enable/disable (default off)
+  - **Type Selection:** Text or Image buttons
+  - **Text Watermark:**
+    - Custom text input
+    - Quick presets: CONFIDENTIAL, DRAFT, COPY
+  - **Image Watermark:** File upload for custom image
+  - **Position:** Center, Diagonal, Bottom Right Corner
+  - **Opacity:** Slider 10-100% (default 30%)
+  - Applied to each page during PDF export
 
-- [x] **Theme Management Functions**
-  - `fetchThemes()`: Loads preset and custom themes on mount
-  - `saveCustomTheme()`: Creates/updates theme via API
-  - `deleteCustomTheme()`: Removes theme via API
-  - `applyCustomTheme()`: Applies colors to chart
-  - `editTheme()`: Opens dialog in edit mode
-  - `updateThemeColor()`: Updates single color in palette
-  - `addColorSlot()` / `removeColorSlot()`: Manage palette size
+### Report Builder - Custom Fonts (Typography)
+- [x] **Font Family Dropdown (8 Google Fonts):**
+  - Inter (Modern) - default
+  - Roboto (Clean)
+  - Playfair Display (Elegant)
+  - Montserrat (Professional)
+  - Open Sans (Readable)
+  - Lato (Friendly)
+  - Merriweather (Classic)
+  - Source Sans Pro (Technical)
+- [x] **Font Size Selection:**
+  - Small (Compact)
+  - Medium (Default)
+  - Large (Readable)
+- Applied during HTML-to-canvas conversion for PDF export
 
-- [x] **Tier Limit Handling**
-  - Free/Starter: 3 themes max
-  - Pro: 10 themes max
-  - Enterprise: Unlimited
-  - Shows amber warning when limit reached with upgrade link
+### Report Builder - Password Protection
+- [x] **Password Protection Section**
+  - "PDF Only" badge indicator
+  - Toggle to enable/disable
+  - Password input field (min 6 characters)
+  - Shield icon and validation message
+  - Note: Displays info toast about PDF encryption library requirement
 
 **Files Modified:**
-- `/app/frontend/src/pages/ChartsPage.jsx` - Added Theme Builder dialog, state management, API calls
+- `/app/frontend/src/pages/ChartsPage.jsx` - Added customizePresetTheme function, customize button on preset themes
+- `/app/frontend/src/pages/ReportBuilderPage.jsx` - Added watermark, fontFamily, fontSize, passwordProtection to reportConfig, full UI sections for all features, updated handleExportPDF with watermark rendering and font application
 
-**Test Status:** 100% (22/22 backend, 19/19 frontend) - iteration_25.json
+**Test Status:** 100% frontend (all 4 features verified) - iteration_26.json
 
 ## Next Recommended Tasks
 - **Phase 3 Features** - Scheduled Email Reports UI
