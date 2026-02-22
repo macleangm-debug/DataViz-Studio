@@ -2189,8 +2189,20 @@ If asked about statistics, provide clear explanations."""
         raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
 
 @api_router.post("/ai/suggest-charts")
-async def suggest_charts(dataset_id: str):
-    """Get AI suggestions for charts based on dataset"""
+async def suggest_charts(dataset_id: str, request: Request):
+    """Get AI suggestions for charts based on dataset - requires Pro or Enterprise tier"""
+    # Check user tier
+    user = await get_user_from_token(request)
+    can_use, message = await check_ai_usage(user, "chart_suggest")
+    
+    if not can_use:
+        return {
+            "suggestions": [],
+            "tier_restricted": True,
+            "message": message,
+            "user_tier": user.get("tier", "free")
+        }
+    
     dataset = await db.datasets.find_one({"id": dataset_id})
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
@@ -2201,47 +2213,226 @@ async def suggest_charts(dataset_id: str):
     
     columns = dataset.get("columns", [])
     
-    # Get sample data
+    # Get sample data for better analysis
     sample = await db.dataset_data.find(
         {"dataset_id": dataset_id},
         {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
-    ).limit(10).to_list(10)
+    ).limit(20).to_list(20)
     
-    prompt = f"""Analyze this dataset and suggest 3-5 useful visualizations.
+    # Analyze column types for better suggestions
+    column_analysis = []
+    for col in columns:
+        col_values = [row.get(col) for row in sample if row.get(col) is not None]
+        is_numeric = all(isinstance(v, (int, float)) or (isinstance(v, str) and v.replace('.', '').replace('-', '').isdigit()) for v in col_values[:10])
+        unique_count = len(set(str(v) for v in col_values))
+        column_analysis.append({
+            "name": col,
+            "is_numeric": is_numeric,
+            "unique_values": unique_count,
+            "sample": col_values[:3]
+        })
+    
+    prompt = f"""Analyze this dataset and suggest 5 optimal visualizations based on the data characteristics.
 
 Dataset: {dataset['name']}
-Columns: {json.dumps(columns)}
 Row count: {dataset.get('row_count', 0)}
-Sample data: {json.dumps(sample[:5] if sample else [])}
+Column Analysis:
+{json.dumps(column_analysis, indent=2)}
+
+Sample data (first 5 rows):
+{json.dumps(sample[:5] if sample else [], indent=2)}
+
+Consider:
+- Use bar charts for categorical comparisons
+- Use line charts for time series or trends
+- Use pie charts for part-to-whole relationships (max 6-8 categories)
+- Use scatter plots for correlation between numeric variables
+- Use area charts for cumulative data over time
+- Use funnel for sequential stages
+- Use gauge for single KPI values
 
 Return suggestions as JSON array with format:
-[{{"type": "bar|line|pie|scatter|area", "title": "Chart Title", "x_field": "column_name", "y_field": "column_name", "description": "Why this chart is useful"}}]
+[{{"type": "bar|line|pie|scatter|area|funnel|gauge|radar|heatmap|treemap|waterfall", "title": "Descriptive Chart Title", "x_field": "column_name", "y_field": "column_name_or_null", "aggregation": "count|sum|mean|max|min", "description": "2-sentence explanation of why this visualization is useful for this data", "confidence": 0.0-1.0}}]
 
-Only return the JSON array, no other text."""
+Return ONLY the JSON array, no markdown formatting or other text."""
 
     try:
         chat = LlmChat(
             api_key=api_key,
             session_id=f"dataviz-suggest-{uuid.uuid4()}",
-            system_message="You are a data visualization expert. Return only valid JSON."
-        ).with_model("openai", "gpt-5.2")
+            system_message="You are a data visualization expert. Analyze datasets and recommend the most insightful visualizations. Return only valid JSON arrays."
+        ).with_model("openai", "gpt-4o")
         
         response = await chat.send_message(UserMessage(text=prompt))
         
-        # Parse JSON response
+        # Parse JSON response - handle markdown code blocks
+        response_text = response.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        elif response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+        
         try:
-            suggestions = json.loads(response)
-        except:
+            suggestions = json.loads(response_text)
+            # Increment usage for Pro users
+            await increment_ai_usage(user["id"], "chart_suggest")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse AI suggestions: {e}. Response: {response[:200]}")
             suggestions = []
         
-        return {"suggestions": suggestions, "dataset_id": dataset_id}
+        return {
+            "suggestions": suggestions,
+            "dataset_id": dataset_id,
+            "tier_restricted": False,
+            "generated_by": "ai"
+        }
     except Exception as e:
         logger.error(f"AI suggest error: {str(e)}")
-        return {"suggestions": [], "error": str(e)}
+        return {"suggestions": [], "error": str(e), "tier_restricted": False}
 
 # =============================================================================
-# Export Routes
+# Custom Chart Themes Routes
 # =============================================================================
+
+# Preset chart themes
+PRESET_CHART_THEMES = [
+    {"id": "violet", "name": "Violet Dreams", "colors": ["#8b5cf6", "#a78bfa", "#c4b5fd", "#7c3aed", "#6d28d9"], "background": "#ffffff", "textColor": "#1f2937"},
+    {"id": "ocean", "name": "Ocean Breeze", "colors": ["#06b6d4", "#22d3ee", "#67e8f9", "#0891b2", "#0e7490"], "background": "#ffffff", "textColor": "#1f2937"},
+    {"id": "sunset", "name": "Sunset Glow", "colors": ["#f97316", "#fb923c", "#fdba74", "#ea580c", "#c2410c"], "background": "#ffffff", "textColor": "#1f2937"},
+    {"id": "forest", "name": "Forest Green", "colors": ["#22c55e", "#4ade80", "#86efac", "#16a34a", "#15803d"], "background": "#ffffff", "textColor": "#1f2937"},
+    {"id": "rose", "name": "Rose Garden", "colors": ["#f43f5e", "#fb7185", "#fda4af", "#e11d48", "#be123c"], "background": "#ffffff", "textColor": "#1f2937"},
+    {"id": "midnight", "name": "Midnight Dark", "colors": ["#6366f1", "#818cf8", "#a5b4fc", "#4f46e5", "#4338ca"], "background": "#0f172a", "textColor": "#f1f5f9"},
+    {"id": "corporate", "name": "Corporate Blue", "colors": ["#3b82f6", "#60a5fa", "#93c5fd", "#2563eb", "#1d4ed8"], "background": "#ffffff", "textColor": "#1f2937"},
+    {"id": "warm", "name": "Warm Earth", "colors": ["#d97706", "#fbbf24", "#fcd34d", "#b45309", "#92400e"], "background": "#fffbeb", "textColor": "#451a03"},
+    {"id": "cool", "name": "Cool Slate", "colors": ["#64748b", "#94a3b8", "#cbd5e1", "#475569", "#334155"], "background": "#f8fafc", "textColor": "#0f172a"},
+    {"id": "neon", "name": "Neon Nights", "colors": ["#f0abfc", "#c084fc", "#a855f7", "#d946ef", "#ec4899"], "background": "#18181b", "textColor": "#fafafa"},
+]
+
+@api_router.get("/themes/presets")
+async def get_preset_themes():
+    """Get all preset chart themes"""
+    return {"themes": PRESET_CHART_THEMES}
+
+@api_router.get("/themes/custom")
+async def get_custom_themes(request: Request):
+    """Get user's custom chart themes"""
+    user = await get_user_from_token(request)
+    custom_themes = user.get("custom_themes", [])
+    tier = user.get("tier", "free")
+    limit = TIER_LIMITS.get(tier, TIER_LIMITS["free"])["custom_themes_limit"]
+    
+    return {
+        "themes": custom_themes,
+        "count": len(custom_themes),
+        "limit": limit,
+        "can_create_more": limit == -1 or len(custom_themes) < limit
+    }
+
+@api_router.post("/themes/custom")
+async def create_custom_theme(theme: CustomChartTheme, request: Request):
+    """Create a new custom chart theme"""
+    user = await get_user_from_token(request)
+    tier = user.get("tier", "free")
+    limit = TIER_LIMITS.get(tier, TIER_LIMITS["free"])["custom_themes_limit"]
+    custom_themes = user.get("custom_themes", [])
+    
+    if limit != -1 and len(custom_themes) >= limit:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Custom theme limit reached ({limit} themes). Upgrade to Pro for 10 themes or Enterprise for unlimited."
+        )
+    
+    new_theme = {
+        "id": str(uuid.uuid4()),
+        "name": theme.name,
+        "colors": theme.colors,
+        "background": theme.background,
+        "textColor": theme.textColor,
+        "gridColor": theme.gridColor,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$push": {"custom_themes": new_theme}}
+    )
+    
+    return {"theme": new_theme, "message": "Theme created successfully"}
+
+@api_router.put("/themes/custom/{theme_id}")
+async def update_custom_theme(theme_id: str, theme: CustomChartTheme, request: Request):
+    """Update a custom chart theme"""
+    user = await get_user_from_token(request)
+    
+    result = await db.users.update_one(
+        {"id": user["id"], "custom_themes.id": theme_id},
+        {"$set": {
+            "custom_themes.$.name": theme.name,
+            "custom_themes.$.colors": theme.colors,
+            "custom_themes.$.background": theme.background,
+            "custom_themes.$.textColor": theme.textColor,
+            "custom_themes.$.gridColor": theme.gridColor
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Theme not found")
+    
+    return {"message": "Theme updated successfully"}
+
+@api_router.delete("/themes/custom/{theme_id}")
+async def delete_custom_theme(theme_id: str, request: Request):
+    """Delete a custom chart theme"""
+    user = await get_user_from_token(request)
+    
+    result = await db.users.update_one(
+        {"id": user["id"]},
+        {"$pull": {"custom_themes": {"id": theme_id}}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Theme not found")
+    
+    return {"message": "Theme deleted successfully"}
+
+@api_router.get("/user/tier-info")
+async def get_user_tier_info(request: Request):
+    """Get user's tier information and usage stats"""
+    user = await get_user_from_token(request)
+    tier = user.get("tier", "free")
+    limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+    ai_usage = user.get("ai_usage", {"summary_count": 0, "chart_suggest_count": 0})
+    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    
+    # Reset usage if new month
+    if ai_usage.get("month") != current_month:
+        ai_usage = {"summary_count": 0, "chart_suggest_count": 0, "month": current_month}
+    
+    return {
+        "tier": tier,
+        "limits": limits,
+        "usage": {
+            "ai_summary": {
+                "used": ai_usage.get("summary_count", 0),
+                "limit": limits["ai_summary_limit"],
+                "remaining": -1 if limits["ai_summary_limit"] == -1 else max(0, limits["ai_summary_limit"] - ai_usage.get("summary_count", 0))
+            },
+            "ai_chart_suggest": {
+                "used": ai_usage.get("chart_suggest_count", 0),
+                "limit": limits["ai_chart_suggest_limit"],
+                "remaining": -1 if limits["ai_chart_suggest_limit"] == -1 else max(0, limits["ai_chart_suggest_limit"] - ai_usage.get("chart_suggest_count", 0))
+            },
+            "custom_themes": {
+                "used": len(user.get("custom_themes", [])),
+                "limit": limits["custom_themes_limit"],
+                "remaining": -1 if limits["custom_themes_limit"] == -1 else max(0, limits["custom_themes_limit"] - len(user.get("custom_themes", [])))
+            }
+        },
+        "has_ai_features": limits["has_ai_features"]
+    }
 
 # AI Executive Summary Models
 class ReportSectionData(BaseModel):
