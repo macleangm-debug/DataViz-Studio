@@ -2221,12 +2221,18 @@ async def suggest_charts(dataset_id: str, request: Request):
     
     # Analyze column types for better suggestions
     column_analysis = []
-    for col in columns:
-        col_values = [row.get(col) for row in sample if row.get(col) is not None]
-        is_numeric = all(isinstance(v, (int, float)) or (isinstance(v, str) and v.replace('.', '').replace('-', '').isdigit()) for v in col_values[:10])
+    for col_info in columns:
+        col_name = col_info.get("name") if isinstance(col_info, dict) else col_info
+        col_type = col_info.get("type", "string") if isinstance(col_info, dict) else "string"
+        col_values = [row.get(col_name) for row in sample if row.get(col_name) is not None]
+        is_numeric = col_type in ("int", "float", "number") or all(
+            isinstance(v, (int, float)) or (isinstance(v, str) and v.replace('.', '').replace('-', '').isdigit()) 
+            for v in col_values[:10] if v
+        )
         unique_count = len(set(str(v) for v in col_values))
         column_analysis.append({
-            "name": col,
+            "name": col_name,
+            "type": col_type,
             "is_numeric": is_numeric,
             "unique_values": unique_count,
             "sample": col_values[:3]
