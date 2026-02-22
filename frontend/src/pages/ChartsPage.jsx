@@ -938,6 +938,7 @@ const ChartStudio = ({
                   setXField('');
                   setYField('');
                   setSuggestions([]);
+                  setTierRestricted(false);
                 }}>
                   <SelectTrigger data-testid="dataset-select">
                     <SelectValue placeholder="Select a dataset" />
@@ -950,19 +951,41 @@ const ChartStudio = ({
                     ))}
                   </SelectContent>
                 </Select>
-                {selectedDataset && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2"
-                    onClick={getAISuggestions}
-                    disabled={aiSuggesting}
-                  >
-                    <Sparkles className={`w-4 h-4 mr-2 ${aiSuggesting ? 'animate-pulse' : ''}`} />
-                    {aiSuggesting ? 'Analyzing...' : 'Get AI Suggestions'}
-                  </Button>
-                )}
               </div>
+
+              {/* AI Suggestions Loading */}
+              {selectedDataset && aiSuggesting && (
+                <div className="flex items-center gap-2 p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-700">
+                  <Sparkles className="w-4 h-4 text-violet-500 animate-pulse" />
+                  <span className="text-sm text-violet-700 dark:text-violet-300">Analyzing your data for optimal visualizations...</span>
+                </div>
+              )}
+              
+              {/* Tier Restriction Notice */}
+              {tierRestricted && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200 dark:border-amber-700"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg">
+                      <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-300" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-amber-800 dark:text-amber-200">AI Chart Recommendations</h4>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">{tierMessage}</p>
+                      <Button 
+                        size="sm" 
+                        className="mt-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                        onClick={() => window.location.href = '/pricing'}
+                      >
+                        Upgrade to Pro
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* AI Suggestions */}
               <AnimatePresence>
@@ -976,17 +999,31 @@ const ChartStudio = ({
                     <Label className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-violet-500" />
                       AI Recommendations
+                      <Badge variant="secondary" className="ml-auto text-xs">{suggestions.length} found</Badge>
                     </Label>
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                      {suggestions.slice(0, 3).map((suggestion, idx) => (
+                    <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                      {suggestions.slice(0, 5).map((suggestion, idx) => (
                         <button
                           key={idx}
                           onClick={() => applySuggestion(suggestion)}
-                          className="w-full text-left p-3 rounded-lg border border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                          className="w-full text-left p-3 rounded-lg border border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors group"
+                          data-testid={`ai-suggestion-${idx}`}
                         >
-                          <p className="font-medium text-sm text-foreground">{suggestion.title}</p>
+                          <div className="flex items-start justify-between">
+                            <p className="font-medium text-sm text-foreground">{suggestion.title}</p>
+                            {suggestion.confidence && (
+                              <Badge variant="outline" className="text-xs ml-2">
+                                {Math.round(suggestion.confidence * 100)}% match
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{suggestion.description}</p>
-                          <Badge variant="secondary" className="mt-2">{suggestion.type}</Badge>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="secondary">{suggestion.type}</Badge>
+                            {suggestion.aggregation && (
+                              <Badge variant="outline" className="text-xs">{suggestion.aggregation}</Badge>
+                            )}
+                          </div>
                         </button>
                       ))}
                     </div>
