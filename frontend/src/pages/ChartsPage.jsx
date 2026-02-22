@@ -1688,6 +1688,149 @@ const ChartStudio = ({
             </DialogContent>
           </Dialog>
 
+          {/* Theme Builder Dialog */}
+          <Dialog open={showThemeBuilder} onOpenChange={setShowThemeBuilder}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Paintbrush className="w-5 h-5 text-violet-500" />
+                  {editingTheme ? 'Edit Theme' : 'Create Custom Theme'}
+                </DialogTitle>
+                <DialogDescription>
+                  Design your own color palette for charts
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6">
+                {/* Theme Name */}
+                <div className="space-y-2">
+                  <Label>Theme Name</Label>
+                  <Input
+                    value={newTheme.name}
+                    onChange={(e) => setNewTheme({ ...newTheme, name: e.target.value })}
+                    placeholder="My Custom Theme"
+                    data-testid="theme-name-input"
+                  />
+                </div>
+
+                {/* Color Palette */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Color Palette ({newTheme.colors.length}/8)</Label>
+                    {newTheme.colors.length < 8 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={addColorSlot}
+                        className="h-7"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Color
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-3">
+                    {newTheme.colors.map((color, index) => (
+                      <div key={index} className="relative group">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="relative">
+                            <input
+                              type="color"
+                              value={color}
+                              onChange={(e) => updateThemeColor(index, e.target.value)}
+                              className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-200 dark:border-gray-700 hover:border-violet-500 transition-colors"
+                              data-testid={`theme-color-${index}`}
+                            />
+                            {newTheme.colors.length > 3 && (
+                              <button
+                                onClick={() => removeColorSlot(index)}
+                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Remove color"
+                              >
+                                <X className="w-2.5 h-2.5 text-white" />
+                              </button>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground font-mono">{color}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview */}
+                <div className="space-y-2">
+                  <Label>Preview</Label>
+                  <div className="p-4 rounded-lg border bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      {newTheme.colors.map((color, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 h-8 rounded-md shadow-sm first:rounded-l-lg last:rounded-r-lg"
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      {newTheme.colors.slice(0, 5).map((color, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 rounded-md overflow-hidden"
+                        >
+                          <div
+                            className="h-16"
+                            style={{ 
+                              backgroundColor: color,
+                              opacity: 1 - (i * 0.1)
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Theme Limit Info */}
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Crown className="w-3.5 h-3.5 text-amber-500" />
+                    {themeLimit.limit === -1 
+                      ? 'Unlimited themes (Enterprise)' 
+                      : `${themeLimit.count}/${themeLimit.limit} themes used`}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => {
+                  setShowThemeBuilder(false);
+                  setEditingTheme(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={saveCustomTheme}
+                  disabled={savingTheme || !newTheme.name.trim()}
+                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                  data-testid="save-theme-btn"
+                >
+                  {savingTheme ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      {editingTheme ? 'Update Theme' : 'Save Theme'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Save Button */}
           <div className="p-4 border-t">
             <Button
