@@ -422,6 +422,101 @@ export function PricingPage() {
         </div>
       </section>
 
+      {/* AI Features Highlight */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 mb-4">
+              <Brain className="w-3 h-3 mr-1 inline" />
+              AI-Powered Features
+            </Badge>
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Intelligent Analytics at Your Fingertips
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Leverage the power of AI to generate executive summaries, uncover insights, 
+              and make data-driven decisions faster.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* AI Executive Summary */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-2xl p-6 border border-emerald-500/20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-4">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">AI Executive Summary</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Generate professional executive summaries from your reports with one click. 
+                Includes key insights and actionable recommendations.
+              </p>
+              <div className="flex items-center gap-2 text-emerald-400 text-sm">
+                <CheckCircle className="w-4 h-4" />
+                <span>Pro & Enterprise</span>
+              </div>
+            </motion.div>
+            
+            {/* AI Insights Assistant */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-purple-500/10 to-fuchsia-500/10 rounded-2xl p-6 border border-purple-500/20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center mb-4">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">AI Insights Assistant</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Ask questions about your data in plain English. Get intelligent answers, 
+                chart suggestions, and trend analysis.
+              </p>
+              <div className="flex items-center gap-2 text-purple-400 text-sm">
+                <CheckCircle className="w-4 h-4" />
+                <span>Pro & Enterprise</span>
+              </div>
+            </motion.div>
+            
+            {/* Smart Fallback */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-2xl p-6 border border-blue-500/20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Smart Fallback System</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Never lose functionality. If AI services are temporarily unavailable, 
+                our template engine ensures you always get quality results.
+              </p>
+              <div className="flex items-center gap-2 text-blue-400 text-sm">
+                <CheckCircle className="w-4 h-4" />
+                <span>All Plans</span>
+              </div>
+            </motion.div>
+          </div>
+          
+          {/* AI Availability Note */}
+          <div className="mt-8 p-4 bg-white/5 rounded-xl border border-white/10 flex items-start gap-3">
+            <Shield className="w-5 h-5 text-green-400 mt-0.5" />
+            <div className="text-sm">
+              <p className="text-gray-300 font-medium">Future-Proof AI Infrastructure</p>
+              <p className="text-gray-500">
+                Our AI features are built with provider redundancy. If one AI service changes or becomes unavailable, 
+                your workflows continue seamlessly with automatic fallback to alternative providers or our template engine.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Feature Comparison Table */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0f1d32]">
         <div className="max-w-7xl mx-auto">
