@@ -2456,6 +2456,8 @@ class SummaryResponse(BaseModel):
     recommendations: List[str]
     generatedBy: str  # "ai" or "template"
     confidence: Optional[float] = None
+    tier_restricted: Optional[bool] = False
+    tier_message: Optional[str] = None
 
 def generate_template_summary(request: GenerateSummaryRequest) -> SummaryResponse:
     """
