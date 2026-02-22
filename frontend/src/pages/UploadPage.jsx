@@ -36,6 +36,60 @@ export function UploadPage() {
   const [uploadResult, setUploadResult] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
+  // Download CSV Template
+  const downloadCSVTemplate = () => {
+    const csvContent = `name,email,department,sales,region,date
+John Smith,john@example.com,Sales,15000,North,2024-01-15
+Jane Doe,jane@example.com,Marketing,12500,South,2024-01-16
+Bob Johnson,bob@example.com,Sales,18000,East,2024-01-17
+Alice Brown,alice@example.com,Support,9500,West,2024-01-18
+Charlie Wilson,charlie@example.com,Marketing,21000,North,2024-01-19`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'dataviz_template.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast.success('CSV template downloaded!');
+  };
+
+  // Download Excel Template
+  const downloadExcelTemplate = async () => {
+    try {
+      // Dynamic import xlsx library
+      const XLSX = await import('xlsx');
+      
+      const templateData = [
+        { name: 'John Smith', email: 'john@example.com', department: 'Sales', sales: 15000, region: 'North', date: '2024-01-15' },
+        { name: 'Jane Doe', email: 'jane@example.com', department: 'Marketing', sales: 12500, region: 'South', date: '2024-01-16' },
+        { name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales', sales: 18000, region: 'East', date: '2024-01-17' },
+        { name: 'Alice Brown', email: 'alice@example.com', department: 'Support', sales: 9500, region: 'West', date: '2024-01-18' },
+        { name: 'Charlie Wilson', email: 'charlie@example.com', department: 'Marketing', sales: 21000, region: 'North', date: '2024-01-19' },
+      ];
+      
+      const worksheet = XLSX.utils.json_to_sheet(templateData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+      
+      // Set column widths
+      worksheet['!cols'] = [
+        { wch: 15 }, // name
+        { wch: 22 }, // email
+        { wch: 12 }, // department
+        { wch: 10 }, // sales
+        { wch: 10 }, // region
+        { wch: 12 }, // date
+      ];
+      
+      XLSX.writeFile(workbook, 'dataviz_template.xlsx');
+      toast.success('Excel template downloaded!');
+    } catch (error) {
+      console.error('Error creating Excel template:', error);
+      toast.error('Failed to download Excel template');
+    }
+  };
+
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
