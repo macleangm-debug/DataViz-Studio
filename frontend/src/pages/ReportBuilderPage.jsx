@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   FileText, Download, Settings, Eye, Plus, PieChart, RefreshCw, X, Maximize2,
   Upload, Image, FileSpreadsheet, FileImage, ChevronDown, BookOpen, Database, Link2, Unlink,
-  LayoutTemplate, Sparkles, Filter
+  LayoutTemplate, Sparkles, Filter, Wand2, Brain, Lightbulb, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../layouts/DashboardLayout';
