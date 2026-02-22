@@ -178,7 +178,9 @@ const FEATURE_CATEGORIES = [
   {
     name: 'AI & Analytics',
     features: [
-      { name: 'AI Insights', free: false, starter: false, pro: true, enterprise: true },
+      { name: 'AI Executive Summary', free: false, starter: false, pro: '50/mo', enterprise: 'Unlimited' },
+      { name: 'AI Insights Assistant', free: false, starter: false, pro: true, enterprise: true },
+      { name: 'Smart fallback (template engine)', free: true, starter: true, pro: true, enterprise: true },
       { name: 'Anomaly detection', free: false, starter: false, pro: true, enterprise: true },
       { name: 'Predictive analytics', free: false, starter: false, pro: false, enterprise: true },
       { name: 'Natural language queries', free: false, starter: false, pro: false, enterprise: true },
