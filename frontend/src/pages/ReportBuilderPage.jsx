@@ -1128,6 +1128,292 @@ const ReportBuilderPage = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Watermark Section */}
+                <div className="border-t border-gray-100 pt-4">
+                  <div 
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setReportConfig({ 
+                      ...reportConfig, 
+                      watermark: { ...reportConfig.watermark, enabled: !reportConfig.watermark.enabled }
+                    })}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Droplets className="w-4 h-4 text-blue-500" />
+                      <h4 className="font-semibold text-gray-800">Watermark</h4>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={reportConfig.watermark.enabled}
+                        onChange={(e) => setReportConfig({
+                          ...reportConfig,
+                          watermark: { ...reportConfig.watermark, enabled: e.target.checked }
+                        })}
+                        className="sr-only peer"
+                        data-testid="watermark-toggle"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                    </label>
+                  </div>
+                  
+                  {reportConfig.watermark.enabled && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="mt-4 space-y-3 pl-6"
+                    >
+                      {/* Watermark Type */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setReportConfig({
+                              ...reportConfig,
+                              watermark: { ...reportConfig.watermark, type: 'text' }
+                            })}
+                            className={`flex-1 p-2 rounded-lg border text-sm font-medium transition-all ${
+                              reportConfig.watermark.type === 'text' 
+                                ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                            data-testid="watermark-type-text"
+                          >
+                            Text
+                          </button>
+                          <button
+                            onClick={() => setReportConfig({
+                              ...reportConfig,
+                              watermark: { ...reportConfig.watermark, type: 'image' }
+                            })}
+                            className={`flex-1 p-2 rounded-lg border text-sm font-medium transition-all ${
+                              reportConfig.watermark.type === 'image' 
+                                ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                            data-testid="watermark-type-image"
+                          >
+                            Image
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Text Input or Image Upload */}
+                      {reportConfig.watermark.type === 'text' ? (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Watermark Text</label>
+                          <input
+                            type="text"
+                            value={reportConfig.watermark.text}
+                            onChange={(e) => setReportConfig({
+                              ...reportConfig,
+                              watermark: { ...reportConfig.watermark, text: e.target.value }
+                            })}
+                            className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="CONFIDENTIAL"
+                            data-testid="watermark-text-input"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            {['CONFIDENTIAL', 'DRAFT', 'COPY'].map((preset) => (
+                              <button
+                                key={preset}
+                                onClick={() => setReportConfig({
+                                  ...reportConfig,
+                                  watermark: { ...reportConfig.watermark, text: preset }
+                                })}
+                                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                              >
+                                {preset}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Watermark Image</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  setReportConfig({
+                                    ...reportConfig,
+                                    watermark: { ...reportConfig.watermark, imageData: ev.target.result }
+                                  });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            data-testid="watermark-image-input"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Position */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                        <select
+                          value={reportConfig.watermark.position}
+                          onChange={(e) => setReportConfig({
+                            ...reportConfig,
+                            watermark: { ...reportConfig.watermark, position: e.target.value }
+                          })}
+                          className="w-full p-2.5 border border-gray-200 rounded-lg bg-white"
+                          data-testid="watermark-position-select"
+                        >
+                          <option value="center">Center</option>
+                          <option value="diagonal">Diagonal</option>
+                          <option value="corner">Bottom Right Corner</option>
+                        </select>
+                      </div>
+                      
+                      {/* Opacity */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Opacity: {reportConfig.watermark.opacity}%
+                        </label>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          value={reportConfig.watermark.opacity}
+                          onChange={(e) => setReportConfig({
+                            ...reportConfig,
+                            watermark: { ...reportConfig.watermark, opacity: parseInt(e.target.value) }
+                          })}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          data-testid="watermark-opacity-slider"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Font Settings Section */}
+                <div className="border-t border-gray-100 pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Type className="w-4 h-4 text-purple-500" />
+                    <h4 className="font-semibold text-gray-800">Typography</h4>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* Font Family */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Font Family</label>
+                      <select
+                        value={reportConfig.fontFamily}
+                        onChange={(e) => setReportConfig({ ...reportConfig, fontFamily: e.target.value })}
+                        className="w-full p-2.5 border border-gray-200 rounded-lg bg-white"
+                        data-testid="font-family-select"
+                      >
+                        <option value="Inter">Inter (Modern)</option>
+                        <option value="Roboto">Roboto (Clean)</option>
+                        <option value="Playfair Display">Playfair Display (Elegant)</option>
+                        <option value="Montserrat">Montserrat (Professional)</option>
+                        <option value="Open Sans">Open Sans (Readable)</option>
+                        <option value="Lato">Lato (Friendly)</option>
+                        <option value="Merriweather">Merriweather (Classic)</option>
+                        <option value="Source Sans Pro">Source Sans Pro (Technical)</option>
+                      </select>
+                    </div>
+                    
+                    {/* Font Size */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Font Size</label>
+                      <div className="flex gap-2">
+                        {[
+                          { value: 'small', label: 'Small', desc: 'Compact' },
+                          { value: 'medium', label: 'Medium', desc: 'Default' },
+                          { value: 'large', label: 'Large', desc: 'Readable' }
+                        ].map((size) => (
+                          <button
+                            key={size.value}
+                            onClick={() => setReportConfig({ ...reportConfig, fontSize: size.value })}
+                            className={`flex-1 p-2 rounded-lg border text-center transition-all ${
+                              reportConfig.fontSize === size.value
+                                ? 'bg-purple-50 border-purple-500 text-purple-700'
+                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                            data-testid={`font-size-${size.value}`}
+                          >
+                            <div className="text-sm font-medium">{size.label}</div>
+                            <div className="text-xs text-gray-500">{size.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Password Protection Section */}
+                <div className="border-t border-gray-100 pt-4">
+                  <div 
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setReportConfig({
+                      ...reportConfig,
+                      passwordProtection: { ...reportConfig.passwordProtection, enabled: !reportConfig.passwordProtection.enabled }
+                    })}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-amber-500" />
+                      <h4 className="font-semibold text-gray-800">Password Protection</h4>
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">PDF Only</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={reportConfig.passwordProtection.enabled}
+                        onChange={(e) => setReportConfig({
+                          ...reportConfig,
+                          passwordProtection: { ...reportConfig.passwordProtection, enabled: e.target.checked }
+                        })}
+                        className="sr-only peer"
+                        data-testid="password-protection-toggle"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                  </div>
+                  
+                  {reportConfig.passwordProtection.enabled && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="mt-4 pl-6"
+                    >
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">PDF Password</label>
+                        <div className="relative">
+                          <input
+                            type="password"
+                            value={reportConfig.passwordProtection.password}
+                            onChange={(e) => setReportConfig({
+                              ...reportConfig,
+                              passwordProtection: { ...reportConfig.passwordProtection, password: e.target.value }
+                            })}
+                            className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 pr-10"
+                            placeholder="Min 6 characters"
+                            minLength={6}
+                            data-testid="password-input"
+                          />
+                          <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        </div>
+                        {reportConfig.passwordProtection.password && reportConfig.passwordProtection.password.length < 6 && (
+                          <p className="text-xs text-red-500 mt-1">Password must be at least 6 characters</p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          PDF will require this password to open
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
