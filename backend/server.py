@@ -2560,20 +2560,42 @@ def generate_template_summary(request: GenerateSummaryRequest) -> SummaryRespons
     )
 
 @api_router.post("/reports/generate-summary")
-async def generate_executive_summary(request: GenerateSummaryRequest):
+async def generate_executive_summary(request_data: GenerateSummaryRequest, request: Request):
     """
     Generate an AI-powered executive summary for a report.
     Falls back to template-based generation if AI is unavailable.
+    Requires Pro or Enterprise tier.
     """
+    # Check user tier for AI features
+    try:
+        user = await get_user_from_token(request)
+        can_use, message = await check_ai_usage(user, "summary")
+        
+        if not can_use:
+            # Return template fallback with tier restriction notice
+            result = generate_template_summary(request_data)
+            return SummaryResponse(
+                summary=result.summary,
+                keyInsights=result.keyInsights,
+                recommendations=result.recommendations,
+                generatedBy="template",
+                confidence=0.7,
+                tier_restricted=True,
+                tier_message=message
+            )
+    except HTTPException:
+        # If no auth token, use template fallback
+        return generate_template_summary(request_data)
+    
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     
     if not api_key:
         logger.warning("EMERGENT_LLM_KEY not configured, using template fallback")
-        return generate_template_summary(request)
+        return generate_template_summary(request_data)
     
     # Prepare data summary for AI
     sections_summary = []
-    for section in request.sections:
+    for section in request_data.sections:
         section_info = {"type": section.type, "title": section.title}
         if section.stats:
             section_info["metrics"] = [
