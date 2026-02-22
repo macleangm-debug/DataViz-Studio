@@ -1257,21 +1257,130 @@ const ChartStudio = ({
                   Style Options
                 </Label>
                 
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Color Theme</Label>
-                  <div className="flex gap-2 flex-wrap">
-                    {Object.entries(COLOR_THEMES).map(([name, colors]) => (
-                      <button
-                        key={name}
-                        onClick={() => setColorTheme(name)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          colorTheme === name ? 'border-foreground scale-110' : 'border-transparent'
-                        }`}
-                        style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}
-                        title={name}
-                      />
-                    ))}
+                {/* Color Theme Selection */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm text-muted-foreground">Color Theme</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingTheme(null);
+                        setNewTheme({
+                          name: '',
+                          colors: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#6d28d9'],
+                          background: '#ffffff',
+                          textColor: '#333333'
+                        });
+                        setShowThemeBuilder(true);
+                      }}
+                      className="h-7 text-xs"
+                      data-testid="create-theme-btn"
+                    >
+                      <Paintbrush className="w-3 h-3 mr-1" />
+                      Create Theme
+                    </Button>
                   </div>
+                  
+                  {/* Built-in Themes */}
+                  <div className="space-y-2">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide">Built-in</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {Object.entries(COLOR_THEMES).filter(([name]) => !name.startsWith('custom_')).map(([name, colors]) => (
+                        <button
+                          key={name}
+                          onClick={() => setColorTheme(name)}
+                          className={`w-8 h-8 rounded-full border-2 transition-all ${
+                            colorTheme === name ? 'border-foreground scale-110 ring-2 ring-violet-500/30' : 'border-transparent hover:scale-105'
+                          }`}
+                          style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})` }}
+                          title={name.charAt(0).toUpperCase() + name.slice(1)}
+                          data-testid={`theme-${name}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Preset Themes from API */}
+                  {presetThemes.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Professional</span>
+                      <div className="flex gap-2 flex-wrap">
+                        {presetThemes.slice(0, 6).map((theme) => (
+                          <button
+                            key={theme.id}
+                            onClick={() => {
+                              COLOR_THEMES[`preset_${theme.id}`] = theme.colors;
+                              setColorTheme(`preset_${theme.id}`);
+                            }}
+                            className={`w-8 h-8 rounded-full border-2 transition-all relative group ${
+                              colorTheme === `preset_${theme.id}` ? 'border-foreground scale-110 ring-2 ring-violet-500/30' : 'border-transparent hover:scale-105'
+                            }`}
+                            style={{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }}
+                            title={theme.name}
+                            data-testid={`preset-theme-${theme.id}`}
+                          >
+                            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                              {theme.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Custom Themes */}
+                  {customThemes.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-amber-500" />
+                        My Themes ({customThemes.length}/{themeLimit.limit === -1 ? '∞' : themeLimit.limit})
+                      </span>
+                      <div className="flex gap-2 flex-wrap">
+                        {customThemes.map((theme) => (
+                          <div key={theme.id} className="relative group">
+                            <button
+                              onClick={() => applyCustomTheme(theme)}
+                              className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                colorTheme === `custom_${theme.id}` ? 'border-foreground scale-110 ring-2 ring-amber-500/30' : 'border-transparent hover:scale-105'
+                              }`}
+                              style={{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }}
+                              title={theme.name}
+                              data-testid={`custom-theme-${theme.id}`}
+                            />
+                            {/* Edit/Delete buttons on hover */}
+                            <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); editTheme(theme); }}
+                                className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center"
+                                title="Edit"
+                              >
+                                <Paintbrush className="w-2.5 h-2.5 text-white" />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteCustomTheme(theme.id); }}
+                                className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center"
+                                title="Delete"
+                              >
+                                <X className="w-2.5 h-2.5 text-white" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Theme limit notice */}
+                  {!themeLimit.can_create_more && (
+                    <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Theme limit reached ({themeLimit.count}/{themeLimit.limit}).
+                        <a href="/pricing" className="underline font-medium">Upgrade</a>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between">
