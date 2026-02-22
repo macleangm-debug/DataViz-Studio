@@ -1804,6 +1804,229 @@ const ReportBuilderPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* AI Executive Summary Modal */}
+      <Dialog open={showAISummaryModal} onOpenChange={setShowAISummaryModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Brain size={24} className="text-emerald-600" />
+              AI Executive Summary
+              <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full font-medium">
+                PRO Feature
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {!aiSummary ? (
+              <>
+                {/* Configuration Options */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tone</label>
+                    <div className="flex gap-2">
+                      {['professional', 'executive', 'casual'].map((tone) => (
+                        <button
+                          key={tone}
+                          onClick={() => setSummaryTone(tone)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            summaryTone === tone
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {tone.charAt(0).toUpperCase() + tone.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Length</label>
+                    <div className="flex gap-2">
+                      {['short', 'medium', 'long'].map((length) => (
+                        <button
+                          key={length}
+                          onClick={() => setSummaryLength(length)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            summaryLength === length
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {length.charAt(0).toUpperCase() + length.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Report Preview */}
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-800 mb-2">Report to Analyze</h4>
+                  <p className="text-sm text-gray-600">
+                    <strong>{reportConfig.title}</strong> - {sections.length} sections
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {sections.slice(0, 5).map((s, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-white rounded text-xs text-gray-500 border">
+                        {s.title}
+                      </span>
+                    ))}
+                    {sections.length > 5 && (
+                      <span className="px-2 py-0.5 text-xs text-gray-400">
+                        +{sections.length - 5} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* AI Features Info */}
+                <div className="flex items-start gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <Wand2 size={20} className="text-emerald-600 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-emerald-800">AI-Powered Analysis</p>
+                    <p className="text-emerald-700">
+                      Our AI will analyze your report data to generate an executive summary with key insights and actionable recommendations.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <AlertCircle size={20} className="text-blue-600 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-800">Fallback Protection</p>
+                    <p className="text-blue-700">
+                      If AI is temporarily unavailable, we'll automatically use our template engine to generate a quality summary.
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Summary Results */
+              <div className="space-y-4">
+                {/* Generation Status */}
+                <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                  aiSummary.generatedBy === 'ai' 
+                    ? 'bg-emerald-50 text-emerald-700' 
+                    : 'bg-amber-50 text-amber-700'
+                }`}>
+                  {aiSummary.generatedBy === 'ai' ? (
+                    <>
+                      <CheckCircle2 size={16} />
+                      <span className="text-sm font-medium">Generated by AI (GPT-4o)</span>
+                      <span className="ml-auto text-xs opacity-75">
+                        {Math.round((aiSummary.confidence || 0.95) * 100)}% confidence
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={16} />
+                      <span className="text-sm font-medium">Generated by Template Engine</span>
+                      <span className="ml-auto text-xs opacity-75">Fallback mode</span>
+                    </>
+                  )}
+                </div>
+                
+                {/* Summary Content */}
+                <div className="p-4 bg-white border rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <FileText size={16} />
+                    Executive Summary
+                  </h4>
+                  <p className="text-gray-700 leading-relaxed">{aiSummary.summary}</p>
+                </div>
+                
+                {/* Key Insights */}
+                <div className="p-4 bg-white border rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Lightbulb size={16} className="text-yellow-500" />
+                    Key Insights
+                  </h4>
+                  <ul className="space-y-2">
+                    {aiSummary.keyInsights.map((insight, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xs font-medium flex-shrink-0">
+                          {i + 1}
+                        </span>
+                        {insight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {/* Recommendations */}
+                <div className="p-4 bg-white border rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-blue-500" />
+                    Recommendations
+                  </h4>
+                  <ul className="space-y-2">
+                    {aiSummary.recommendations.map((rec, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="w-5 h-5 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs font-medium flex-shrink-0">
+                          {i + 1}
+                        </span>
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAISummaryModal(false);
+                setAiSummary(null);
+              }}
+            >
+              {aiSummary ? 'Close' : 'Cancel'}
+            </Button>
+            
+            {!aiSummary ? (
+              <Button
+                onClick={generateAISummary}
+                disabled={generatingSummary}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                data-testid="generate-summary-btn"
+              >
+                {generatingSummary ? (
+                  <>
+                    <RefreshCw size={16} className="mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 size={16} className="mr-2" />
+                    Generate Summary
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setAiSummary(null)}
+                >
+                  Regenerate
+                </Button>
+                <Button
+                  onClick={addSummaryToReport}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  data-testid="add-summary-btn"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add to Report
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
