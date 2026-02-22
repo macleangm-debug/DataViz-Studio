@@ -284,6 +284,37 @@ Charlie Wilson,charlie@example.com,Marketing,21000,North,2024-01-19`;
                       <p className="text-xs text-muted-foreground mt-4">
                         Supported formats: CSV, Excel (.xlsx, .xls), JSON
                       </p>
+                      
+                      {/* Template Download Section */}
+                      <div className="mt-6 pt-6 border-t border-dashed border-muted-foreground/20">
+                        <p className="text-sm font-medium text-muted-foreground mb-3">
+                          Need a template? Download one to get started:
+                        </p>
+                        <div className="flex justify-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={downloadCSVTemplate}
+                            className="gap-2 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 dark:hover:bg-emerald-900/20"
+                            data-testid="download-csv-template"
+                          >
+                            <FileText className="w-4 h-4" />
+                            CSV Template
+                            <Download className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={downloadExcelTemplate}
+                            className="gap-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 dark:hover:bg-blue-900/20"
+                            data-testid="download-excel-template"
+                          >
+                            <FileSpreadsheet className="w-4 h-4" />
+                            Excel Template
+                            <Download className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
