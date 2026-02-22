@@ -529,6 +529,13 @@ const ReportBuilderPage = () => {
         return;
       }
       
+      // Validate password if protection enabled
+      if (reportConfig.passwordProtection.enabled && reportConfig.passwordProtection.password.length < 6) {
+        toast.error('Password must be at least 6 characters');
+        setIsExporting(false);
+        return;
+      }
+      
       // Switch to preview mode for clean export
       const wasInEditMode = !isPreview;
       if (wasInEditMode) {
@@ -554,6 +561,9 @@ const ReportBuilderPage = () => {
       // Get theme colors as RGB
       const primaryRgb = hexToRgb(theme.primary);
       
+      // Font size multiplier
+      const fontSizeMultiplier = reportConfig.fontSize === 'small' ? 0.85 : reportConfig.fontSize === 'large' ? 1.2 : 1;
+      
       // Capture the full report as canvas with optimized settings for PDF
       const canvas = await html2canvas(reportElement, {
         scale: 2.5, // Good balance between quality and performance
@@ -572,6 +582,16 @@ const ReportBuilderPage = () => {
             clonedElement.style.maxWidth = '850px';
             clonedElement.style.overflow = 'visible';
             
+            // Apply custom font
+            clonedElement.style.fontFamily = `'${reportConfig.fontFamily}', sans-serif`;
+            
+            // Apply font size
+            if (reportConfig.fontSize === 'small') {
+              clonedElement.style.fontSize = '14px';
+            } else if (reportConfig.fontSize === 'large') {
+              clonedElement.style.fontSize = '18px';
+            }
+            
             // Force stat cards to 2-column layout for PDF
             const statGrids = clonedElement.querySelectorAll('.stat-cards-grid');
             statGrids.forEach(grid => {
@@ -583,10 +603,12 @@ const ReportBuilderPage = () => {
             // Add print-specific styles
             const style = clonedDoc.createElement('style');
             style.textContent = `
+              @import url('https://fonts.googleapis.com/css2?family=${reportConfig.fontFamily.replace(/ /g, '+')}:wght@400;500;600;700&display=swap');
               * { 
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important;
                 box-sizing: border-box !important;
+                font-family: '${reportConfig.fontFamily}', sans-serif !important;
               }
               .rounded-xl, .rounded-2xl, .rounded-lg { border-radius: 12px !important; }
               svg { shape-rendering: geometricPrecision; }
@@ -613,9 +635,60 @@ const ReportBuilderPage = () => {
       // Check if we need multiple pages
       const totalPages = Math.max(1, Math.ceil(imgHeight / contentHeight));
       
+      // Function to add watermark to a page
+      const addWatermark = (pdfDoc, pageWidth, pageHeight) => {
+        if (!reportConfig.watermark.enabled) return;
+        
+        const opacity = reportConfig.watermark.opacity / 100;
+        pdfDoc.setGState(new pdfDoc.GState({ opacity: opacity }));
+        
+        if (reportConfig.watermark.type === 'text') {
+          const watermarkText = reportConfig.watermark.text || 'CONFIDENTIAL';
+          
+          if (reportConfig.watermark.position === 'diagonal') {
+            // Diagonal watermark
+            pdfDoc.setFontSize(60 * fontSizeMultiplier);
+            pdfDoc.setTextColor(200, 200, 200);
+            pdfDoc.text(watermarkText, pageWidth / 2 - 50, pageHeight / 2 + 20, { angle: 45 });
+          } else if (reportConfig.watermark.position === 'center') {
+            // Center watermark
+            pdfDoc.setFontSize(40 * fontSizeMultiplier);
+            pdfDoc.setTextColor(200, 200, 200);
+            const textWidth = pdfDoc.getTextWidth(watermarkText);
+            pdfDoc.text(watermarkText, (pageWidth - textWidth) / 2, pageHeight / 2);
+          } else if (reportConfig.watermark.position === 'corner') {
+            // Bottom right corner
+            pdfDoc.setFontSize(14 * fontSizeMultiplier);
+            pdfDoc.setTextColor(180, 180, 180);
+            const textWidth = pdfDoc.getTextWidth(watermarkText);
+            pdfDoc.text(watermarkText, pageWidth - margin - textWidth, pageHeight - margin - 20);
+          }
+        } else if (reportConfig.watermark.type === 'image' && reportConfig.watermark.imageData) {
+          // Image watermark
+          const imgSize = reportConfig.watermark.position === 'corner' ? 30 : 60;
+          
+          if (reportConfig.watermark.position === 'center') {
+            pdfDoc.addImage(reportConfig.watermark.imageData, 'PNG', (pageWidth - imgSize) / 2, (pageHeight - imgSize) / 2, imgSize, imgSize);
+          } else if (reportConfig.watermark.position === 'corner') {
+            pdfDoc.addImage(reportConfig.watermark.imageData, 'PNG', pageWidth - margin - imgSize, pageHeight - margin - imgSize - 15, imgSize, imgSize);
+          } else {
+            // Diagonal - multiple smaller images
+            for (let x = 0; x < pageWidth; x += 80) {
+              for (let y = 0; y < pageHeight; y += 80) {
+                pdfDoc.addImage(reportConfig.watermark.imageData, 'PNG', x, y, 40, 40);
+              }
+            }
+          }
+        }
+        
+        // Reset opacity
+        pdfDoc.setGState(new pdfDoc.GState({ opacity: 1 }));
+      };
+      
       if (imgHeight <= contentHeight) {
         // Single page - simple case
         pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+        addWatermark(pdf, pdfWidth, pdfHeight);
         addFooter(pdf, pdfWidth, pdfHeight, margin, 1, totalPages, primaryRgb);
       } else {
         // Multi-page handling
@@ -652,13 +725,14 @@ const ReportBuilderPage = () => {
             // Add continuation header with proper styling
             pdf.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b);
             pdf.rect(margin, margin, usableWidth, 10, 'F');
-            pdf.setFontSize(10);
+            pdf.setFontSize(10 * fontSizeMultiplier);
             pdf.setTextColor(255, 255, 255);
             pdf.text(`${reportConfig.title} (continued)`, margin + 4, margin + 7);
             yOffset = margin + 12;
           }
           
           pdf.addImage(pageImgData, 'PNG', margin, yOffset, imgWidth, destHeight);
+          addWatermark(pdf, pdfWidth, pdfHeight);
           addFooter(pdf, pdfWidth, pdfHeight, margin, page + 1, totalPages, primaryRgb);
         }
       }
@@ -671,27 +745,37 @@ const ReportBuilderPage = () => {
         pdfDoc.rect(m, footerY - 10, usableWidth, 10, 'F');
         
         // DataViz Studio logo (text-based for reliability)
-        pdfDoc.setFontSize(10);
+        pdfDoc.setFontSize(10 * fontSizeMultiplier);
         pdfDoc.setFont('helvetica', 'bold');
         pdfDoc.setTextColor(255, 255, 255);
         pdfDoc.text('DataViz Studio', m + 4, footerY - 3.5);
         
         // Page number - prominent styling
-        pdfDoc.setFontSize(9);
+        pdfDoc.setFontSize(9 * fontSizeMultiplier);
         pdfDoc.setFont('helvetica', 'normal');
         const pageText = `Page ${currentPage} of ${totalPgs}`;
         const pageTextWidth = pdfDoc.getTextWidth(pageText);
         pdfDoc.text(pageText, width - m - pageTextWidth - 4, footerY - 3.5);
         
         // Date in center
-        pdfDoc.setFontSize(8);
+        pdfDoc.setFontSize(8 * fontSizeMultiplier);
         const dateText = reportConfig.reportDate;
         const dateTextWidth = pdfDoc.getTextWidth(dateText);
         pdfDoc.text(dateText, (width - dateTextWidth) / 2, footerY - 3.5);
       }
       
-      const fileName = `${reportConfig.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
+      // Handle password protection
+      let fileName = `${reportConfig.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      if (reportConfig.passwordProtection.enabled && reportConfig.passwordProtection.password) {
+        // Note: jsPDF doesn't support native PDF encryption
+        // Show a notice to the user
+        toast.info('Password protection requires PDF encryption library. Exporting without password.', { duration: 5000 });
+        // For actual implementation, you would use pdf-lib or another library that supports encryption
+        pdf.save(fileName);
+      } else {
+        pdf.save(fileName);
+      }
       
       if (wasInEditMode) {
         setIsPreview(false);
