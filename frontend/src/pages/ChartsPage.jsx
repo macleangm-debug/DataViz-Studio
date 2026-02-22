@@ -782,11 +782,14 @@ const ChartStudio = ({
     }
   };
 
-  // Get AI suggestions
+  // Get AI suggestions with tier check
   const getAISuggestions = async () => {
     if (!selectedDataset) return;
     
     setAiSuggesting(true);
+    setTierRestricted(false);
+    setTierMessage('');
+    
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.post(
@@ -794,10 +797,24 @@ const ChartStudio = ({
         {},
         { headers }
       );
-      setSuggestions(response.data.suggestions || []);
+      
+      // Check for tier restriction
+      if (response.data.tier_restricted) {
+        setTierRestricted(true);
+        setTierMessage(response.data.message || 'AI features require Pro or Enterprise plan');
+        setSuggestions([]);
+      } else {
+        setSuggestions(response.data.suggestions || []);
+        if (response.data.suggestions?.length > 0) {
+          toast.success(`Found ${response.data.suggestions.length} chart recommendations!`);
+        }
+      }
     } catch (error) {
       console.error('Error getting suggestions:', error);
-      toast.error('Could not get AI suggestions');
+      // Don't show error toast for tier restrictions
+      if (error.response?.status !== 403) {
+        toast.error('Could not get AI suggestions');
+      }
     } finally {
       setAiSuggesting(false);
     }
@@ -808,6 +825,9 @@ const ChartStudio = ({
     setChartType(suggestion.type);
     setXField(suggestion.x_field);
     setYField(suggestion.y_field || '');
+    if (suggestion.aggregation) {
+      setAggregation(suggestion.aggregation);
+    }
     toast.success('Applied AI suggestion');
   };
 
