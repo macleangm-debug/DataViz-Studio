@@ -83,6 +83,97 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # =============================================================================
+# Tier Limits Configuration
+# =============================================================================
+TIER_LIMITS = {
+    "free": {
+        "ai_summary_limit": 0,
+        "ai_chart_suggest_limit": 0,
+        "custom_themes_limit": 3,
+        "has_ai_features": False
+    },
+    "starter": {
+        "ai_summary_limit": 0,
+        "ai_chart_suggest_limit": 0,
+        "custom_themes_limit": 3,
+        "has_ai_features": False
+    },
+    "pro": {
+        "ai_summary_limit": 50,
+        "ai_chart_suggest_limit": 50,
+        "custom_themes_limit": 10,
+        "has_ai_features": True
+    },
+    "enterprise": {
+        "ai_summary_limit": -1,  # Unlimited
+        "ai_chart_suggest_limit": -1,  # Unlimited
+        "custom_themes_limit": -1,  # Unlimited
+        "has_ai_features": True
+    }
+}
+
+async def get_user_from_token(request: Request) -> dict:
+    """Extract and verify user from JWT token"""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing authorization")
+    
+    token = auth_header.split(" ")[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = payload.get("user_id") or payload.get("sub")
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def check_ai_usage(user: dict, feature: str) -> tuple[bool, str]:
+    """Check if user can use AI feature based on tier and usage"""
+    tier = user.get("tier", "free")
+    limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+    
+    if not limits["has_ai_features"]:
+        return False, f"AI features require Pro or Enterprise plan. Current plan: {tier.title()}"
+    
+    # Check monthly usage for Pro tier
+    if tier == "pro":
+        ai_usage = user.get("ai_usage", {})
+        current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+        
+        # Reset if new month
+        if ai_usage.get("month") != current_month:
+            ai_usage = {"summary_count": 0, "chart_suggest_count": 0, "month": current_month}
+            await db.users.update_one(
+                {"id": user["id"]},
+                {"$set": {"ai_usage": ai_usage}}
+            )
+        
+        limit_key = f"ai_{feature}_limit"
+        count_key = f"{feature}_count"
+        
+        if limits[limit_key] != -1 and ai_usage.get(count_key, 0) >= limits[limit_key]:
+            return False, f"Monthly {feature.replace('_', ' ')} limit reached ({limits[limit_key]}/month). Upgrade to Enterprise for unlimited."
+    
+    return True, ""
+
+async def increment_ai_usage(user_id: str, feature: str):
+    """Increment AI usage counter for user"""
+    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    count_key = f"ai_usage.{feature}_count"
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {
+            "$inc": {count_key: 1},
+            "$set": {"ai_usage.month": current_month}
+        }
+    )
+
+# =============================================================================
 # Models
 # =============================================================================
 
