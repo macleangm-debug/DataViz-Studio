@@ -155,6 +155,7 @@ export function DataSourcesPage() {
   
   // State
   const [sources, setSources] = useState([]);
+  const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('connectors');
@@ -170,13 +171,21 @@ export function DataSourcesPage() {
   const [showTransformDialog, setShowTransformDialog] = useState(false);
   const [showBlendDialog, setShowBlendDialog] = useState(false);
   
-  // S3 specific state
+  // S3 Browser state
+  const [showS3Browser, setShowS3Browser] = useState(false);
+  const [selectedS3Connection, setSelectedS3Connection] = useState(null);
   const [s3Buckets, setS3Buckets] = useState([]);
   const [s3Files, setS3Files] = useState([]);
+  const [s3Folders, setS3Folders] = useState([]);
+  const [s3CurrentBucket, setS3CurrentBucket] = useState(null);
+  const [s3CurrentPrefix, setS3CurrentPrefix] = useState('');
   const [s3Loading, setS3Loading] = useState(false);
+  const [s3Importing, setS3Importing] = useState(false);
   
-  // Google specific state
-  const [googleFiles, setGoogleFiles] = useState([]);
+  // Google Sheets state
+  const [showGoogleBrowser, setShowGoogleBrowser] = useState(false);
+  const [selectedGoogleConnection, setSelectedGoogleConnection] = useState(null);
+  const [googleSpreadsheets, setGoogleSpreadsheets] = useState([]);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   // Check for OAuth callback
