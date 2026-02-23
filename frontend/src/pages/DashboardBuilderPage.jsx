@@ -448,10 +448,10 @@ export function DashboardBuilderPage() {
     i: w.id,
     x: w.position?.x || 0,
     y: w.position?.y || 0,
-    w: w.position?.w || 4,
-    h: w.position?.h || 3,
+    w: w.position?.w || 3,
+    h: w.position?.h || 4,
     minW: 2,
-    minH: 2
+    minH: 3
   }));
 
   return (
