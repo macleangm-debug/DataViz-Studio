@@ -163,10 +163,25 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
 
       case 'chart':
         const chartType = widget.config?.chart_type || 'bar';
+        const widgetId = widget.id;
         if (!Array.isArray(data) || data.length === 0) {
           return <div className="h-full flex items-center justify-center text-muted-foreground">No data</div>;
         }
         
+        // Common tooltip style
+        const tooltipStyle = {
+          contentStyle: { 
+            backgroundColor: 'rgba(17, 17, 27, 0.95)', 
+            border: `1px solid ${colorScheme.accent}40`,
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            padding: '12px 16px'
+          },
+          labelStyle: { color: '#fff', fontWeight: 600, marginBottom: '4px' },
+          itemStyle: { color: colorScheme.colors[1] }
+        };
+        
+        // Pie Chart
         if (chartType === 'pie') {
           return (
             <ResponsiveContainer width="100%" height="100%">
@@ -177,89 +192,149 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius="40%"
-                  outerRadius="70%"
+                  outerRadius="75%"
+                  paddingAngle={2}
+                  strokeWidth={0}
+                >
+                  {data.map((_, index) => (
+                    <Cell 
+                      key={index} 
+                      fill={colorScheme.colors[index % colorScheme.colors.length]} 
+                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
+              </RePieChart>
+            </ResponsiveContainer>
+          );
+        }
+        
+        // Donut Chart
+        if (chartType === 'donut') {
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <RePieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="50%"
+                  outerRadius="80%"
                   paddingAngle={3}
                   strokeWidth={0}
                 >
                   {data.map((_, index) => (
                     <Cell 
                       key={index} 
-                      fill={COLORS[index % COLORS.length]} 
+                      fill={colorScheme.colors[index % colorScheme.colors.length]} 
                       style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
                     />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(17, 17, 27, 0.95)', 
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    padding: '12px 16px'
-                  }}
-                  labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: '4px' }}
-                  formatter={(value, name) => [value.toLocaleString(), name]}
-                />
+                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
               </RePieChart>
             </ResponsiveContainer>
           );
-        } else if (chartType === 'line') {
+        }
+        
+        // Line Chart
+        if (chartType === 'line') {
           return (
             <ResponsiveContainer width="100%" height="100%">
               <ReLineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                 <defs>
-                  <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  <linearGradient id={`lineGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor={colorScheme.gradient[0]}/>
+                    <stop offset="100%" stopColor={colorScheme.gradient[1]}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
-                  stroke="rgba(255,255,255,0.1)"
-                  axisLine={false}
-                  tickLine={false}
-                  dy={10}
-                />
-                <YAxis 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
-                  stroke="rgba(255,255,255,0.1)"
-                  axisLine={false}
-                  tickLine={false}
-                  dx={-10}
-                  tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(17, 17, 27, 0.95)', 
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    padding: '12px 16px'
-                  }}
-                  labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: '4px' }}
-                  itemStyle={{ color: '#a78bfa' }}
-                  formatter={(value) => [value.toLocaleString(), 'Value']}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="url(#lineGradientStroke)" 
+                  stroke={`url(#lineGradient-${widgetId})`}
                   strokeWidth={3} 
-                  dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 4 }}
-                  activeDot={{ fill: '#a78bfa', strokeWidth: 0, r: 6 }}
+                  dot={{ fill: colorScheme.accent, strokeWidth: 0, r: 4 }}
+                  activeDot={{ fill: colorScheme.colors[1], strokeWidth: 0, r: 6 }}
                 />
-                <defs>
-                  <linearGradient id="lineGradientStroke" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#8b5cf6"/>
-                    <stop offset="100%" stopColor="#a78bfa"/>
-                  </linearGradient>
-                </defs>
               </ReLineChart>
             </ResponsiveContainer>
           );
+        }
+        
+        // Area Chart
+        if (chartType === 'area') {
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <ReLineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                <defs>
+                  <linearGradient id={`areaGradient-${widgetId}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={colorScheme.accent} stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor={colorScheme.accent} stopOpacity={0.05}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke={colorScheme.accent}
+                  strokeWidth={2} 
+                  fill={`url(#areaGradient-${widgetId})`}
+                  dot={false}
+                />
+              </ReLineChart>
+            </ResponsiveContainer>
+          );
+        }
+        
+        // Horizontal Bar Chart
+        if (chartType === 'horizontal_bar') {
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} layout="vertical" margin={{ top: 10, right: 30, left: 60, bottom: 10 }} barCategoryGap="25%">
+                <defs>
+                  <linearGradient id={`hbarGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor={colorScheme.gradient[1]} stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor={colorScheme.gradient[0]} stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} />
+                <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15` }} formatter={(value) => [value.toLocaleString(), 'Value']} />
+                <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 6, 6, 0]} maxBarSize={35} />
+              </BarChart>
+            </ResponsiveContainer>
+          );
+        }
+        
+        // Default: Vertical Bar Chart
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} barCategoryGap="20%">
+              <defs>
+                <linearGradient id={`barGradient-${widgetId}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={colorScheme.gradient[0]} stopOpacity={1}/>
+                  <stop offset="100%" stopColor={colorScheme.gradient[1]} stopOpacity={0.8}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+              <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15`, radius: 4 }} formatter={(value) => [value.toLocaleString(), 'Value']} />
+              <Bar dataKey="value" fill={`url(#barGradient-${widgetId})`} radius={[8, 8, 0, 0]} maxBarSize={60} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
         } else {
           return (
             <ResponsiveContainer width="100%" height="100%">
