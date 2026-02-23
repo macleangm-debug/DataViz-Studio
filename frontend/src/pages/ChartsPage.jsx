@@ -2272,14 +2272,14 @@ export function ChartsPage() {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // SVG Logo as data URI
-      const logoSvg = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" 
-          stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" fill="none"
-          stroke-dasharray="47 16" stroke-dashoffset="12"/>
-        <path d="M12 2v10l7 7" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>`;
-      const logoDataUri = 'data:image/svg+xml;base64,' + btoa(logoSvg);
+      // Logo as inline SVG for proper rendering
+      const logoSvgInline = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+          <path d="M12 2 L12 12 L20 12" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="12" cy="12" r="3" fill="#8b5cf6"/>
+        </svg>
+      `;
 
       // Render HTML to canvas
       const renderTemplate = async (htmlContent, width = 794, height = 1123) => {
@@ -2287,16 +2287,15 @@ export function ChartsPage() {
         container.innerHTML = htmlContent;
         container.style.cssText = `position: absolute; left: -9999px; width: ${width}px; height: ${height}px;`;
         document.body.appendChild(container);
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 150));
         const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
         document.body.removeChild(container);
         return canvas;
       };
 
       const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-      const chartTypes = [...new Set(chartsToExport.map(c => c.type))].map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ');
 
-      // Pre-render all chart images
+      // Pre-render all chart images with data
       const chartImages = [];
       for (const chart of chartsToExport) {
         try {
@@ -2306,7 +2305,7 @@ export function ChartsPage() {
 
           if (chartData.length > 0) {
             const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 380px; height: 280px; background: #ffffff;';
+            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 340px; height: 220px; background: #ffffff;';
             document.body.appendChild(tempContainer);
 
             const options = generateChartOptions(chart.type, chartData, chart.config || {}, chart.config?.theme || 'violet');
@@ -2330,51 +2329,92 @@ export function ChartsPage() {
         }
       }
 
+      // Calculate total pages
+      const chartsOnFirstPage = 4;
+      const chartsPerPage = 6;
+      const remainingAfterFirst = Math.max(0, chartImages.length - chartsOnFirstPage);
+      const additionalPages = Math.ceil(remainingAfterFirst / chartsPerPage);
+      const totalPages = 1 + additionalPages;
+
+      // Chart card HTML generator with shadow and border
+      const generateChartCard = (chart) => `
+        <div style="width: calc(50% - 12px); background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.15), 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+          <div style="padding: 12px 16px; background: linear-gradient(135deg, #f8f7ff 0%, #f3f4f6 100%); border-bottom: 2px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; font-weight: 600; color: #1f2937;">${chart.name}</span>
+            <span style="font-size: 10px; color: #fff; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); padding: 4px 10px; border-radius: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${chart.type}</span>
+          </div>
+          <div style="height: 160px; display: flex; align-items: center; justify-content: center; padding: 12px; background: #fafafa;">
+            ${chart.image ? `<img src="${chart.image}" style="max-width: 100%; max-height: 140px; object-fit: contain;" />` : `<span style="color: #9ca3af; font-size: 12px;">No data</span>`}
+          </div>
+          ${chart.data.length > 0 ? `
+            <div style="padding: 8px 12px; background: #f8f7ff; border-top: 1px solid #e5e7eb;">
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #6b7280;">
+                <span>Top: <strong style="color: #1f2937;">${chart.data[0]?.name || '-'}</strong></span>
+                <span>Value: <strong style="color: #8b5cf6;">${(chart.data[0]?.value || 0).toLocaleString()}</strong></span>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
       // ===== PAGE 1: COVER =====
       const coverHtml = `
         <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative;">
-          <!-- Purple left accent -->
-          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%);"></div>
           
           <!-- Header -->
-          <div style="margin: 30px 30px 20px 40px; padding: 20px 25px; background: #f3f4f6; border-radius: 8px;">
-            <div style="font-size: 24px; font-weight: 700; color: #1f2937; margin-bottom: 4px;">DataViz Studio Chart Report</div>
-            <div style="font-size: 14px; color: #6b7280;">Total Charts: <strong style="color: #8b5cf6;">${chartsToExport.length}</strong></div>
-            <div style="font-size: 13px; color: #9ca3af;">${dateStr}</div>
+          <div style="margin: 35px 40px 25px; padding: 22px 28px; background: linear-gradient(135deg, #f8f7ff 0%, #f1f5f9 100%); border-radius: 12px; border-left: 4px solid #8b5cf6;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+              ${logoSvgInline}
+              <span style="font-size: 26px; font-weight: 700; color: #1f2937;">DataViz Studio</span>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #374151;">Chart Report</div>
+            <div style="display: flex; gap: 30px; margin-top: 10px;">
+              <div style="font-size: 13px; color: #6b7280;">Total Charts: <strong style="color: #8b5cf6; font-size: 15px;">${chartsToExport.length}</strong></div>
+              <div style="font-size: 13px; color: #6b7280;">${dateStr}</div>
+            </div>
           </div>
           
           <!-- Chart Names Card -->
-          <div style="margin: 0 30px 25px 40px; padding: 20px 25px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <div style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px;">Chart Names</div>
-            ${chartsToExport.map(c => `
-              <div style="font-size: 13px; color: #4b5563; padding: 4px 0;">
-                <span style="font-weight: 500;">${c.name}</span>, <span style="color: #9ca3af;">${c.type.charAt(0).toUpperCase() + c.type.slice(1)} Chart</span>
-              </div>
-            `).join('')}
+          <div style="margin: 0 40px 20px; padding: 18px 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #8b5cf6; display: inline-block;">Chart Names</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 20px;">
+              ${chartsToExport.map(c => `
+                <div style="font-size: 12px; color: #4b5563; padding: 3px 0;">
+                  <span style="font-weight: 500;">${c.name}</span> <span style="color: #9ca3af; font-size: 11px;">(${c.type})</span>
+                </div>
+              `).join('')}
+            </div>
           </div>
           
-          <!-- Charts Grid (2 per row) -->
-          <div style="margin: 0 30px 0 40px; display: flex; flex-wrap: wrap; gap: 15px;">
-            ${chartImages.slice(0, 4).map((chart, idx) => `
-              <div style="width: calc(50% - 8px); background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                <div style="padding: 10px 15px; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 13px; font-weight: 600; color: #374151;">${chart.name}</span>
-                  <span style="font-size: 10px; color: #fff; background: #8b5cf6; padding: 3px 8px; border-radius: 10px;">${chart.type}</span>
-                </div>
-                <div style="height: 180px; display: flex; align-items: center; justify-content: center; padding: 10px;">
-                  ${chart.image ? `<img src="${chart.image}" style="max-width: 100%; max-height: 160px; object-fit: contain;" />` : `<span style="color: #9ca3af; font-size: 12px;">No data</span>`}
-                </div>
-              </div>
-            `).join('')}
+          <!-- Charts Grid (2x2) -->
+          <div style="margin: 0 40px; display: flex; flex-wrap: wrap; gap: 20px;">
+            ${chartImages.slice(0, 4).map(chart => generateChartCard(chart)).join('')}
+          </div>
+          
+          <!-- Data Summary -->
+          <div style="margin: 25px 40px 0; padding: 16px 20px; background: #f8f7ff; border-radius: 10px; border: 1px solid #e5e7eb;">
+            <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 10px;">Data Summary</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+              ${chartImages.slice(0, 4).filter(c => c.data.length > 0).map(chart => {
+                const total = chart.data.reduce((sum, d) => sum + (d.value || 0), 0);
+                return `
+                  <div style="flex: 1; min-width: 150px; padding: 10px 14px; background: #fff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 11px; font-weight: 600; color: #8b5cf6; margin-bottom: 4px;">${chart.name}</div>
+                    <div style="font-size: 10px; color: #6b7280;">Total: <strong style="color: #1f2937;">${total.toLocaleString()}</strong></div>
+                    <div style="font-size: 10px; color: #6b7280;">Items: <strong style="color: #1f2937;">${chart.data.length}</strong></div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
           </div>
           
           <!-- Footer -->
-          <div style="position: absolute; bottom: 0; left: 8px; right: 0; padding: 15px 30px 15px 32px; background: #6366f1; display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <img src="${logoDataUri}" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
-              <span style="font-size: 13px; color: #fff; font-weight: 500;">DataViz Studio</span>
+          <div style="position: absolute; bottom: 25px; left: 40px; right: 40px; display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              ${logoSvgInline}
+              <span style="font-size: 13px; color: #6b7280; font-weight: 500;">DataViz Studio</span>
             </div>
-            <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Page 1 of ${Math.ceil((chartsToExport.length - 4) / 6) + 1 + (chartsToExport.length > 4 ? 1 : 0)}</span>
+            <span style="font-size: 12px; color: #9ca3af;">Page 1 of ${totalPages}</span>
           </div>
         </div>
       `;
@@ -2384,8 +2424,6 @@ export function ChartsPage() {
 
       // ===== ADDITIONAL PAGES (6 charts per page) =====
       const remainingCharts = chartImages.slice(4);
-      const chartsPerPage = 6;
-      const totalPages = Math.ceil((chartsToExport.length - 4) / chartsPerPage) + 1 + (chartsToExport.length > 4 ? 1 : 0);
 
       for (let pageIdx = 0; pageIdx < Math.ceil(remainingCharts.length / chartsPerPage); pageIdx++) {
         pdf.addPage();
@@ -2394,37 +2432,28 @@ export function ChartsPage() {
 
         const pageHtml = `
           <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative;">
-            <!-- Purple left accent -->
-            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%);"></div>
             
             <!-- Header -->
-            <div style="margin: 25px 30px 20px 40px; display: flex; justify-content: space-between; align-items: center;">
-              <div style="font-size: 18px; font-weight: 600; color: #374151;">Charts (continued)</div>
+            <div style="margin: 30px 40px 20px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #8b5cf6;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                ${logoSvgInline}
+                <span style="font-size: 18px; font-weight: 600; color: #374151;">Charts (continued)</span>
+              </div>
               <div style="font-size: 12px; color: #9ca3af;">${dateStr}</div>
             </div>
             
             <!-- Charts Grid (2x3) -->
-            <div style="margin: 0 30px 0 40px; display: flex; flex-wrap: wrap; gap: 15px;">
-              ${pageCharts.map(chart => `
-                <div style="width: calc(50% - 8px); background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                  <div style="padding: 10px 15px; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 13px; font-weight: 600; color: #374151;">${chart.name}</span>
-                    <span style="font-size: 10px; color: #fff; background: #8b5cf6; padding: 3px 8px; border-radius: 10px;">${chart.type}</span>
-                  </div>
-                  <div style="height: 280px; display: flex; align-items: center; justify-content: center; padding: 10px;">
-                    ${chart.image ? `<img src="${chart.image}" style="max-width: 100%; max-height: 260px; object-fit: contain;" />` : `<span style="color: #9ca3af; font-size: 12px;">No data</span>`}
-                  </div>
-                </div>
-              `).join('')}
+            <div style="margin: 0 40px; display: flex; flex-wrap: wrap; gap: 18px;">
+              ${pageCharts.map(chart => generateChartCard(chart)).join('')}
             </div>
             
             <!-- Footer -->
-            <div style="position: absolute; bottom: 0; left: 8px; right: 0; padding: 15px 30px 15px 32px; background: #6366f1; display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <img src="${logoDataUri}" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
-                <span style="font-size: 13px; color: #fff; font-weight: 500;">DataViz Studio</span>
+            <div style="position: absolute; bottom: 25px; left: 40px; right: 40px; display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                ${logoSvgInline}
+                <span style="font-size: 13px; color: #6b7280; font-weight: 500;">DataViz Studio</span>
               </div>
-              <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Page ${currentPage} of ${totalPages}</span>
+              <span style="font-size: 12px; color: #9ca3af;">Page ${currentPage} of ${totalPages}</span>
             </div>
           </div>
         `;
