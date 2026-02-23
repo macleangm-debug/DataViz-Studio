@@ -648,7 +648,7 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         return {
           name: d.name,
           value: [start, cumulative],
-          itemStyle: { color: d.value >= 0 ? colors[0] : colors[4] || '#ef4444' },
+          itemStyle: { color: d.value >= 0 ? primaryColor : '#ef4444' },
         };
       });
       return {
@@ -656,13 +656,16 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         xAxis: {
           type: 'category',
           data: data.map(d => d.name),
-          axisLabel: { color: '#888', rotate: data.length > 6 ? 45 : 0 },
-          axisLine: { lineStyle: { color: '#333' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11, rotate: data.length > 6 ? 45 : 0 },
+          axisLine: { show: false },
+          axisTick: { show: false },
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
         },
         series: [{
           type: 'bar',
@@ -677,15 +680,25 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           data: waterfallData.map((d, i) => ({ 
             value: d.value[1] - d.value[0],
             itemStyle: { 
-              color: (d.value[1] - d.value[0]) >= 0 ? colors[0] : '#ef4444',
-              borderRadius: [4, 4, 0, 0],
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: (d.value[1] - d.value[0]) >= 0 ? secondaryColor : '#f87171' },
+                  { offset: 1, color: (d.value[1] - d.value[0]) >= 0 ? primaryColor : '#ef4444' }
+                ]
+              },
+              borderRadius: [6, 6, 0, 0],
+              shadowBlur: 8,
+              shadowColor: (d.value[1] - d.value[0]) >= 0 ? `${primaryColor}40` : 'rgba(239,68,68,0.3)'
             },
           })),
           label: {
             show: true,
             position: 'top',
-            color: '#888',
-            formatter: (params) => params.value.toLocaleString(),
+            color: '#9ca3af',
+            fontSize: 10,
+            formatter: (params) => params.value >= 1000 ? `${(params.value/1000).toFixed(1)}k` : params.value,
           },
         }],
       };
@@ -703,23 +716,32 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         xAxis: {
           type: 'category',
           data: ['Distribution'],
-          axisLabel: { color: '#888' },
-          axisLine: { lineStyle: { color: '#333' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
         },
         series: [{
           type: 'boxplot',
           data: [[min, q1, median, q3, max]],
-          itemStyle: { color: colors[0], borderColor: colors[0] },
+          itemStyle: { 
+            color: `${primaryColor}30`, 
+            borderColor: primaryColor,
+            borderWidth: 2,
+            shadowBlur: 10,
+            shadowColor: `${primaryColor}40`
+          },
         }, {
           type: 'scatter',
           data: data.map((d, i) => [0, d.value]),
-          symbolSize: 6,
-          itemStyle: { color: colors[1], opacity: 0.6 },
+          symbolSize: 8,
+          itemStyle: { color: secondaryColor, opacity: 0.8, shadowBlur: 5, shadowColor: `${secondaryColor}50` },
         }],
       };
 
@@ -737,11 +759,11 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           type: 'sankey',
           layout: 'none',
           emphasis: { focus: 'adjacency' },
-          data: nodes,
+          data: nodes.map((n, i) => ({ ...n, itemStyle: { color: colors[i % colors.length] } })),
           links: links,
-          lineStyle: { color: 'gradient', curveness: 0.5 },
-          itemStyle: { borderWidth: 1, borderColor: '#1a1a2e' },
-          label: { color: '#888' },
+          lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.6 },
+          itemStyle: { borderWidth: 2, borderColor: '#11111b' },
+          label: { color: '#9ca3af', fontSize: 11 },
         }],
       };
 
