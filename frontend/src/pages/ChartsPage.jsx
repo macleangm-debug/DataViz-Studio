@@ -2255,25 +2255,197 @@ export function ChartsPage() {
 
   const handleExportPdf = async (chartIds = null) => {
     setExportingPdf(true);
+    toast.info('Generating PDF with your charts...');
+    
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.post(`${API_URL}/api/reports/export/pdf`, {
-        chart_ids: chartIds || charts.map(c => c.id),
-        include_data_tables: true,
-        title: 'DataViz Studio Charts Report'
-      }, { headers });
+      const chartsToExport = chartIds 
+        ? charts.filter(c => chartIds.includes(c.id))
+        : charts;
       
-      if (response.data.status === 'success') {
-        // Download PDF
-        const link = document.createElement('a');
-        link.href = `data:application/pdf;base64,${response.data.pdf_base64}`;
-        link.download = response.data.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success('PDF exported successfully');
+      if (chartsToExport.length === 0) {
+        toast.error('No charts to export');
+        setExportingPdf(false);
+        return;
       }
+
+      // Create PDF with A4 dimensions
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      
+      // Add cover page
+      pdf.setFillColor(17, 17, 27); // Dark background
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Header bar
+      pdf.setFillColor(139, 92, 246); // Violet
+      pdf.rect(0, 0, pageWidth, 50, 'F');
+      
+      // Title
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(28);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('DataViz Studio', pageWidth / 2, 25, { align: 'center' });
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Charts Report', pageWidth / 2, 38, { align: 'center' });
+      
+      // Report info
+      pdf.setFontSize(12);
+      pdf.setTextColor(156, 163, 175);
+      const dateStr = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric' 
+      });
+      pdf.text(`Generated: ${dateStr}`, pageWidth / 2, 70, { align: 'center' });
+      pdf.text(`Total Charts: ${chartsToExport.length}`, pageWidth / 2, 80, { align: 'center' });
+      
+      // Chart list preview
+      pdf.setFontSize(10);
+      pdf.setTextColor(107, 114, 128);
+      let yPos = 100;
+      chartsToExport.forEach((chart, idx) => {
+        if (yPos < pageHeight - 30) {
+          pdf.text(`${idx + 1}. ${chart.name} (${chart.type})`, margin + 20, yPos);
+          yPos += 8;
+        }
+      });
+      
+      // Footer
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Powered by DataViz Studio', pageWidth / 2, pageHeight - 15, { align: 'center' });
+
+      // Now render each chart
+      for (let i = 0; i < chartsToExport.length; i++) {
+        const chart = chartsToExport[i];
+        pdf.addPage();
+        
+        // Dark background
+        pdf.setFillColor(17, 17, 27);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        
+        // Header bar with chart info
+        pdf.setFillColor(139, 92, 246);
+        pdf.rect(0, 0, pageWidth, 25, 'F');
+        
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(16);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(chart.name, margin, 16);
+        
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        pdf.text(`Type: ${chart.type.charAt(0).toUpperCase() + chart.type.slice(1)} Chart`, pageWidth - margin, 16, { align: 'right' });
+        
+        // Try to render the chart using ECharts getDataURL
+        try {
+          // Get chart data
+          const headers = { Authorization: `Bearer ${token}` };
+          const dataRes = await axios.get(`${API_URL}/api/charts/${chart.id}/data`, { headers });
+          const chartData = dataRes.data.data || [];
+          
+          if (chartData.length > 0) {
+            // Create a temporary container for the chart
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 800px; height: 500px; background: #11111b;';
+            document.body.appendChild(tempContainer);
+            
+            // Render chart options
+            const options = generateChartOptions(chart.type, chartData, chart.config || {}, chart.config?.theme || 'violet');
+            
+            // Create ECharts instance
+            const echarts = await import('echarts');
+            const chartInstance = echarts.init(tempContainer);
+            chartInstance.setOption(options);
+            
+            // Wait for render
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Get image data
+            const imgData = chartInstance.getDataURL({
+              type: 'png',
+              pixelRatio: 2,
+              backgroundColor: '#11111b'
+            });
+            
+            // Add to PDF
+            const imgWidth = contentWidth;
+            const imgHeight = imgWidth * 0.625; // 16:10 aspect ratio
+            pdf.addImage(imgData, 'PNG', margin, 35, imgWidth, imgHeight);
+            
+            // Cleanup
+            chartInstance.dispose();
+            document.body.removeChild(tempContainer);
+            
+            // Add data table below chart
+            const tableY = 35 + imgHeight + 15;
+            pdf.setFillColor(30, 30, 40);
+            pdf.rect(margin, tableY, contentWidth, 10, 'F');
+            
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(10);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Data Summary', margin + 5, tableY + 7);
+            
+            // Table header
+            const colWidth = contentWidth / 3;
+            pdf.setFillColor(40, 40, 55);
+            pdf.rect(margin, tableY + 12, contentWidth, 8, 'F');
+            pdf.setFontSize(9);
+            pdf.text('Category', margin + 5, tableY + 18);
+            pdf.text('Value', margin + colWidth + 5, tableY + 18);
+            pdf.text('Share', margin + colWidth * 2 + 5, tableY + 18);
+            
+            // Table rows
+            const total = chartData.reduce((sum, d) => sum + (d.value || 0), 0);
+            let rowY = tableY + 22;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(200, 200, 200);
+            
+            chartData.slice(0, 8).forEach((d, idx) => {
+              if (rowY < pageHeight - 30) {
+                const share = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0';
+                pdf.setFillColor(idx % 2 === 0 ? 25 : 30, idx % 2 === 0 ? 25 : 30, idx % 2 === 0 ? 35 : 45);
+                pdf.rect(margin, rowY, contentWidth, 7, 'F');
+                pdf.text(String(d.name || '').substring(0, 25), margin + 5, rowY + 5);
+                pdf.text(d.value?.toLocaleString() || '0', margin + colWidth + 5, rowY + 5);
+                pdf.text(`${share}%`, margin + colWidth * 2 + 5, rowY + 5);
+                rowY += 7;
+              }
+            });
+          } else {
+            // No data message
+            pdf.setFontSize(14);
+            pdf.setTextColor(107, 114, 128);
+            pdf.text('No data available for this chart', pageWidth / 2, pageHeight / 2, { align: 'center' });
+          }
+        } catch (chartError) {
+          console.error('Error rendering chart:', chartError);
+          pdf.setFontSize(12);
+          pdf.setTextColor(239, 68, 68);
+          pdf.text('Error rendering chart', pageWidth / 2, 60, { align: 'center' });
+        }
+        
+        // Footer
+        pdf.setFontSize(8);
+        pdf.setTextColor(75, 85, 99);
+        pdf.text(`Page ${i + 2} of ${chartsToExport.length + 1}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      }
+      
+      // Download PDF
+      const filename = `charts_report_${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(filename);
+      toast.success('PDF exported successfully!');
+      
     } catch (error) {
+      console.error('Export error:', error);
       toast.error('Failed to export PDF');
     } finally {
       setExportingPdf(false);
