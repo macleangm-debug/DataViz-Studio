@@ -784,13 +784,16 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         xAxis: {
           type: 'category',
           data: data.map(d => d.name),
-          axisLabel: { color: '#888' },
-          axisLine: { lineStyle: { color: '#333' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
           scale: true,
         },
         series: [{
@@ -799,8 +802,11 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           itemStyle: {
             color: '#10b981', // bullish
             color0: '#ef4444', // bearish
-            borderColor: '#10b981',
-            borderColor0: '#ef4444',
+            borderColor: '#34d399',
+            borderColor0: '#f87171',
+            borderWidth: 1.5,
+            shadowBlur: 5,
+            shadowColor: 'rgba(0,0,0,0.2)'
           },
         }],
       };
@@ -820,9 +826,9 @@ const ChartPreview = ({ chartType, data, config, theme, fullscreen, onClose }) =
   if (fullscreen) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent className="max-w-5xl h-[80vh]">
+        <DialogContent className="max-w-5xl h-[80vh] bg-[#11111b] border-violet-500/20">
           <DialogHeader>
-            <DialogTitle>Chart Preview</DialogTitle>
+            <DialogTitle className="text-white">Chart Preview</DialogTitle>
           </DialogHeader>
           <div className="flex-1 h-full min-h-[500px]">
             <ReactECharts
