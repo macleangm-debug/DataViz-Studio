@@ -28,6 +28,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 # PDF generation
 from fpdf import FPDF
+from weasyprint import HTML, CSS
 import math
 
 # Scalability utilities
