@@ -2473,15 +2473,15 @@ export function ChartsPage() {
           setDrillDownData(null);
           setDrillBreadcrumb([]);
         }}>
-          <DialogContent className="max-w-5xl h-[85vh]">
+          <DialogContent className="max-w-5xl h-[85vh] bg-[#11111b] border-violet-500/20">
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <DialogTitle className="flex items-center gap-2">
-                    {viewChart && React.createElement(getChartIcon(viewChart.type), { className: 'w-5 h-5 text-violet-600' })}
+                  <DialogTitle className="flex items-center gap-2 text-white">
+                    {viewChart && React.createElement(getChartIcon(viewChart.type), { className: 'w-5 h-5 text-violet-400' })}
                     {viewChart?.name}
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="text-gray-400">
                     {viewChart?.config?.x_field && `X: ${viewChart.config.x_field}`}
                     {viewChart?.config?.y_field && ` | Y: ${viewChart.config.y_field}`}
                   </DialogDescription>
@@ -2492,6 +2492,7 @@ export function ChartsPage() {
                     size="sm"
                     onClick={() => handleExportPdf([viewChart?.id])}
                     disabled={exportingPdf}
+                    className="border-violet-500/30 text-violet-300 hover:bg-violet-500/10 hover:text-violet-200"
                   >
                     {exportingPdf ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -2506,34 +2507,34 @@ export function ChartsPage() {
             
             {/* Drill-down breadcrumb */}
             {drillBreadcrumb.length > 0 && (
-              <div className="flex items-center gap-2 py-2 px-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
+              <div className="flex items-center gap-2 py-2 px-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
                 <button 
                   onClick={resetDrillDown}
-                  className="text-sm text-violet-600 hover:underline flex items-center gap-1"
+                  className="text-sm text-violet-400 hover:text-violet-300 hover:underline flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3 h-3" />
                   Reset
                 </button>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-4 h-4 text-gray-500" />
                 {drillBreadcrumb.map((crumb, idx) => (
                   <React.Fragment key={idx}>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="bg-violet-500/20 text-violet-300 border-violet-500/30">
                       {crumb.field}: {crumb.value}
                     </Badge>
                     {idx < drillBreadcrumb.length - 1 && (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      <ChevronRight className="w-4 h-4 text-gray-500" />
                     )}
                   </React.Fragment>
                 ))}
                 {drillDownData?.total_rows && (
-                  <span className="text-xs text-muted-foreground ml-auto">
+                  <span className="text-xs text-gray-400 ml-auto">
                     {drillDownData.total_rows} rows
                   </span>
                 )}
               </div>
             )}
 
-            <div className="flex-1 min-h-[350px]">
+            <div className="flex-1 min-h-[350px] rounded-lg overflow-hidden">
               {viewChart && (
                 <ChartPreview
                   chartType={viewChart.type}
@@ -2546,15 +2547,15 @@ export function ChartsPage() {
 
             {/* Drill-down options */}
             {drillOptions.length > 0 && (
-              <div className="border-t pt-4">
+              <div className="border-t border-gray-700/50 pt-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <ZoomIn className="w-4 h-4 text-violet-600" />
-                  <span className="text-sm font-medium">Click to Drill Down</span>
+                  <ZoomIn className="w-4 h-4 text-violet-400" />
+                  <span className="text-sm font-medium text-gray-200">Click to Drill Down</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {drillOptions.map((option) => (
                     <div key={option.field} className="flex flex-col gap-1">
-                      <span className="text-xs text-muted-foreground">{option.field}</span>
+                      <span className="text-xs text-gray-400">{option.field}</span>
                       <div className="flex flex-wrap gap-1">
                         {option.values?.slice(0, 5).map((value) => (
                           <Button
