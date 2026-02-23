@@ -136,24 +136,109 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
         } else if (chartType === 'line') {
           return (
             <ResponsiveContainer width="100%" height="100%">
-              <ReLineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+              <ReLineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+                  stroke="rgba(255,255,255,0.1)"
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
+                />
+                <YAxis 
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+                  stroke="rgba(255,255,255,0.1)"
+                  axisLine={false}
+                  tickLine={false}
+                  dx={-10}
+                  tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(17, 17, 27, 0.95)', 
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    padding: '12px 16px'
+                  }}
+                  labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: '4px' }}
+                  itemStyle={{ color: '#a78bfa' }}
+                  formatter={(value) => [value.toLocaleString(), 'Value']}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="url(#lineGradientStroke)" 
+                  strokeWidth={3} 
+                  dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 4 }}
+                  activeDot={{ fill: '#a78bfa', strokeWidth: 0, r: 6 }}
+                />
+                <defs>
+                  <linearGradient id="lineGradientStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#8b5cf6"/>
+                    <stop offset="100%" stopColor="#a78bfa"/>
+                  </linearGradient>
+                </defs>
               </ReLineChart>
             </ResponsiveContainer>
           );
         } else {
           return (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip />
-                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} barCategoryGap="20%">
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a78bfa" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                  </linearGradient>
+                  <linearGradient id="barGradientHover" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#c4b5fd" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.9}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+                  stroke="rgba(255,255,255,0.1)"
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
+                />
+                <YAxis 
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+                  stroke="rgba(255,255,255,0.1)"
+                  axisLine={false}
+                  tickLine={false}
+                  dx={-10}
+                  tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(139, 92, 246, 0.1)', radius: 4 }}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(17, 17, 27, 0.95)', 
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    padding: '12px 16px'
+                  }}
+                  labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: '4px' }}
+                  itemStyle={{ color: '#a78bfa' }}
+                  formatter={(value) => [value.toLocaleString(), 'Value']}
+                />
+                <Bar 
+                  dataKey="value" 
+                  fill="url(#barGradient)" 
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={60}
+                />
               </BarChart>
             </ResponsiveContainer>
           );
@@ -200,11 +285,11 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
   };
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden group">
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+    <Card className="h-full flex flex-col overflow-hidden group bg-card/50 backdrop-blur-sm border-border/50">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/30 bg-muted/20">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <GripVertical className="w-4 h-4 text-muted-foreground cursor-move drag-handle" />
-          <span className="font-medium text-sm text-foreground truncate">{widget.title}</span>
+          <GripVertical className="w-4 h-4 text-muted-foreground/50 cursor-move drag-handle hover:text-muted-foreground transition-colors" />
+          <span className="font-medium text-sm text-foreground/90 truncate">{widget.title}</span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(widget)}>
@@ -215,7 +300,7 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
           </Button>
         </div>
       </div>
-      <div className="flex-1 p-3 overflow-hidden">
+      <div className="flex-1 p-2 overflow-hidden">
         {renderContent()}
       </div>
     </Card>
