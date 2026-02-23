@@ -2255,7 +2255,7 @@ export function ChartsPage() {
 
   const handleExportPdf = async (chartIds = null) => {
     setExportingPdf(true);
-    toast.info('Generating professional PDF report...');
+    toast.info('Generating PDF report...');
     
     try {
       const chartsToExport = chartIds 
@@ -2268,12 +2268,7 @@ export function ChartsPage() {
         return;
       }
 
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
@@ -2286,86 +2281,100 @@ export function ChartsPage() {
       </svg>`;
       const logoDataUri = 'data:image/svg+xml;base64,' + btoa(logoSvg);
 
-      // Helper to render HTML template to canvas
+      // Render HTML to canvas
       const renderTemplate = async (htmlContent, width = 794, height = 1123) => {
         const container = document.createElement('div');
         container.innerHTML = htmlContent;
         container.style.cssText = `position: absolute; left: -9999px; width: ${width}px; height: ${height}px;`;
         document.body.appendChild(container);
-        
         await new Promise(r => setTimeout(r, 100));
-        const canvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff'
-        });
+        const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
         document.body.removeChild(container);
         return canvas;
       };
 
-      const dateStr = new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', month: 'long', day: 'numeric' 
-      });
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const chartTypes = [...new Set(chartsToExport.map(c => c.type))].map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ');
 
-      // ===== COVER PAGE =====
+      // Pre-render all chart images
+      const chartImages = [];
+      for (const chart of chartsToExport) {
+        try {
+          const headers = { Authorization: `Bearer ${token}` };
+          const dataRes = await axios.get(`${API_URL}/api/charts/${chart.id}/data`, { headers });
+          const chartData = dataRes.data.data || [];
+
+          if (chartData.length > 0) {
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 380px; height: 280px; background: #ffffff;';
+            document.body.appendChild(tempContainer);
+
+            const options = generateChartOptions(chart.type, chartData, chart.config || {}, chart.config?.theme || 'violet');
+            options.backgroundColor = '#ffffff';
+
+            const echarts = await import('echarts');
+            const chartInstance = echarts.init(tempContainer);
+            chartInstance.setOption(options);
+            await new Promise(r => setTimeout(r, 400));
+
+            const imgData = chartInstance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' });
+            chartImages.push({ name: chart.name, type: chart.type, image: imgData, data: chartData });
+
+            chartInstance.dispose();
+            document.body.removeChild(tempContainer);
+          } else {
+            chartImages.push({ name: chart.name, type: chart.type, image: null, data: [] });
+          }
+        } catch (e) {
+          chartImages.push({ name: chart.name, type: chart.type, image: null, data: [] });
+        }
+      }
+
+      // ===== PAGE 1: COVER =====
       const coverHtml = `
-        <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative; box-sizing: border-box;">
-          <!-- Top accent bar -->
-          <div style="height: 8px; background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);"></div>
+        <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative;">
+          <!-- Purple left accent -->
+          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%);"></div>
           
           <!-- Header -->
-          <div style="padding: 40px 50px 30px;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <img src="${logoDataUri}" style="width: 36px; height: 36px;" />
-              <span style="font-size: 28px; font-weight: 600; color: #1f2937;">DataViz Studio</span>
-            </div>
+          <div style="margin: 30px 30px 20px 40px; padding: 20px 25px; background: #f3f4f6; border-radius: 8px;">
+            <div style="font-size: 24px; font-weight: 700; color: #1f2937; margin-bottom: 4px;">DataViz Studio Chart Report</div>
+            <div style="font-size: 14px; color: #6b7280;">Total Charts: <strong style="color: #8b5cf6;">${chartsToExport.length}</strong></div>
+            <div style="font-size: 13px; color: #9ca3af;">${dateStr}</div>
           </div>
           
-          <!-- Divider -->
-          <div style="margin: 0 50px; height: 1px; background: #e5e7eb;"></div>
-          
-          <!-- Main Title Section -->
-          <div style="padding: 60px 50px 40px; text-align: center;">
-            <h1 style="font-size: 42px; font-weight: 700; color: #111827; margin: 0 0 16px;">Charts Report</h1>
-            <p style="font-size: 16px; color: #6b7280; margin: 0;">${dateStr}</p>
-          </div>
-          
-          <!-- Summary Card -->
-          <div style="margin: 20px 50px; padding: 24px 30px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-            <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 16px; text-transform: uppercase; letter-spacing: 0.5px;">Report Summary</h3>
-            <div style="display: flex; gap: 40px;">
-              <div>
-                <p style="font-size: 13px; color: #6b7280; margin: 0 0 4px;">Total Charts</p>
-                <p style="font-size: 24px; font-weight: 700; color: #8b5cf6; margin: 0;">${chartsToExport.length}</p>
+          <!-- Chart Names Card -->
+          <div style="margin: 0 30px 25px 40px; padding: 20px 25px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px;">Chart Names</div>
+            ${chartsToExport.map(c => `
+              <div style="font-size: 13px; color: #4b5563; padding: 4px 0;">
+                <span style="font-weight: 500;">${c.name}</span>, <span style="color: #9ca3af;">${c.type.charAt(0).toUpperCase() + c.type.slice(1)} Chart</span>
               </div>
-              <div>
-                <p style="font-size: 13px; color: #6b7280; margin: 0 0 4px;">Chart Types</p>
-                <p style="font-size: 16px; font-weight: 500; color: #374151; margin: 0;">${[...new Set(chartsToExport.map(c => c.type))].map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ')}</p>
-              </div>
-            </div>
+            `).join('')}
           </div>
           
-          <!-- Charts List -->
-          <div style="margin: 40px 50px;">
-            <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 20px; padding-bottom: 10px; border-bottom: 3px solid #8b5cf6; display: inline-block;">Charts Included</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              ${chartsToExport.map((chart, idx) => `
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <div style="width: 28px; height: 28px; background: #8b5cf6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600;">${idx + 1}</div>
-                  <span style="font-size: 15px; color: #374151; font-weight: 500;">${chart.name}</span>
-                  <span style="font-size: 13px; color: #9ca3af; background: #f3f4f6; padding: 4px 10px; border-radius: 12px;">${chart.type.charAt(0).toUpperCase() + chart.type.slice(1)} Chart</span>
+          <!-- Charts Grid (2 per row) -->
+          <div style="margin: 0 30px 0 40px; display: flex; flex-wrap: wrap; gap: 15px;">
+            ${chartImages.slice(0, 4).map((chart, idx) => `
+              <div style="width: calc(50% - 8px); background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                <div style="padding: 10px 15px; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 13px; font-weight: 600; color: #374151;">${chart.name}</span>
+                  <span style="font-size: 10px; color: #fff; background: #8b5cf6; padding: 3px 8px; border-radius: 10px;">${chart.type}</span>
                 </div>
-              `).join('')}
-            </div>
+                <div style="height: 180px; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                  ${chart.image ? `<img src="${chart.image}" style="max-width: 100%; max-height: 160px; object-fit: contain;" />` : `<span style="color: #9ca3af; font-size: 12px;">No data</span>`}
+                </div>
+              </div>
+            `).join('')}
           </div>
           
           <!-- Footer -->
-          <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 50px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+          <div style="position: absolute; bottom: 0; left: 8px; right: 0; padding: 15px 30px 15px 32px; background: #6366f1; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <img src="${logoDataUri}" style="width: 20px; height: 20px;" />
-              <span style="font-size: 12px; color: #6b7280;">DataViz Studio</span>
+              <img src="${logoDataUri}" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
+              <span style="font-size: 13px; color: #fff; font-weight: 500;">DataViz Studio</span>
             </div>
-            <span style="font-size: 12px; color: #9ca3af;">Page 1 of ${chartsToExport.length + 1}</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Page 1 of ${Math.ceil((chartsToExport.length - 4) / 6) + 1 + (chartsToExport.length > 4 ? 1 : 0)}</span>
           </div>
         </div>
       `;
@@ -2373,119 +2382,60 @@ export function ChartsPage() {
       const coverCanvas = await renderTemplate(coverHtml);
       pdf.addImage(coverCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageWidth, pageHeight);
 
-      // ===== CHART PAGES =====
-      for (let i = 0; i < chartsToExport.length; i++) {
-        const chart = chartsToExport[i];
+      // ===== ADDITIONAL PAGES (6 charts per page) =====
+      const remainingCharts = chartImages.slice(4);
+      const chartsPerPage = 6;
+      const totalPages = Math.ceil((chartsToExport.length - 4) / chartsPerPage) + 1 + (chartsToExport.length > 4 ? 1 : 0);
+
+      for (let pageIdx = 0; pageIdx < Math.ceil(remainingCharts.length / chartsPerPage); pageIdx++) {
         pdf.addPage();
+        const pageCharts = remainingCharts.slice(pageIdx * chartsPerPage, (pageIdx + 1) * chartsPerPage);
+        const currentPage = pageIdx + 2;
 
-        // Get chart data and render chart image
-        let chartImageData = null;
-        let chartData = [];
-        try {
-          const headers = { Authorization: `Bearer ${token}` };
-          const dataRes = await axios.get(`${API_URL}/api/charts/${chart.id}/data`, { headers });
-          chartData = dataRes.data.data || [];
-
-          if (chartData.length > 0) {
-            const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 700px; height: 400px; background: #ffffff;';
-            document.body.appendChild(tempContainer);
-
-            const options = generateChartOptions(chart.type, chartData, chart.config || {}, chart.config?.theme || 'violet');
-            // Override for light background
-            if (options.backgroundColor) options.backgroundColor = '#ffffff';
-
-            const echarts = await import('echarts');
-            const chartInstance = echarts.init(tempContainer);
-            chartInstance.setOption(options);
-            await new Promise(r => setTimeout(r, 500));
-
-            chartImageData = chartInstance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' });
-            chartInstance.dispose();
-            document.body.removeChild(tempContainer);
-          }
-        } catch (e) {
-          console.error('Chart render error:', e);
-        }
-
-        // Build data table rows
-        const total = chartData.reduce((sum, d) => sum + (d.value || 0), 0);
-        const tableRows = chartData.slice(0, 6).map((d, idx) => {
-          const share = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0';
-          const barWidth = Math.min(parseFloat(share), 100);
-          return `
-            <tr style="background: ${idx % 2 === 0 ? '#fff' : '#f9fafb'};">
-              <td style="padding: 10px 14px; font-size: 13px; color: #374151; border-bottom: 1px solid #e5e7eb;">${String(d.name || '').substring(0, 25)}</td>
-              <td style="padding: 10px 14px; font-size: 13px; color: #374151; border-bottom: 1px solid #e5e7eb; text-align: right;">${(d.value || 0).toLocaleString()}</td>
-              <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div style="width: 60px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
-                    <div style="width: ${barWidth}%; height: 100%; background: #8b5cf6; border-radius: 3px;"></div>
-                  </div>
-                  <span style="font-size: 12px; color: #6b7280;">${share}%</span>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
-
-        const chartPageHtml = `
-          <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative; box-sizing: border-box;">
-            <!-- Top accent bar -->
-            <div style="height: 8px; background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);"></div>
+        const pageHtml = `
+          <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative;">
+            <!-- Purple left accent -->
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%);"></div>
             
             <!-- Header -->
-            <div style="padding: 24px 50px; background: #f8fafc; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-              <h2 style="font-size: 22px; font-weight: 600; color: #111827; margin: 0;">${chart.name}</h2>
-              <span style="font-size: 12px; color: #fff; background: #8b5cf6; padding: 6px 14px; border-radius: 16px; font-weight: 500;">${chart.type.charAt(0).toUpperCase() + chart.type.slice(1)} Chart</span>
+            <div style="margin: 25px 30px 20px 40px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 18px; font-weight: 600; color: #374151;">Charts (continued)</div>
+              <div style="font-size: 12px; color: #9ca3af;">${dateStr}</div>
             </div>
             
-            <!-- Chart Image -->
-            <div style="padding: 30px 50px;">
-              ${chartImageData 
-                ? `<div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <img src="${chartImageData}" style="width: 100%; height: auto; max-height: 350px; object-fit: contain;" />
-                  </div>`
-                : `<div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 8px; color: #9ca3af;">No chart data available</div>`
-              }
-            </div>
-            
-            <!-- Data Table -->
-            <div style="padding: 0 50px 30px;">
-              <h3 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 2px solid #8b5cf6; display: inline-block;">Data Summary</h3>
-              <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                <thead>
-                  <tr style="background: #8b5cf6;">
-                    <th style="padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 600; color: #fff; text-transform: uppercase;">Category</th>
-                    <th style="padding: 12px 14px; text-align: right; font-size: 12px; font-weight: 600; color: #fff; text-transform: uppercase;">Value</th>
-                    <th style="padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 600; color: #fff; text-transform: uppercase;">Share</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${tableRows || '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #9ca3af;">No data available</td></tr>'}
-                </tbody>
-              </table>
+            <!-- Charts Grid (2x3) -->
+            <div style="margin: 0 30px 0 40px; display: flex; flex-wrap: wrap; gap: 15px;">
+              ${pageCharts.map(chart => `
+                <div style="width: calc(50% - 8px); background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                  <div style="padding: 10px 15px; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; font-weight: 600; color: #374151;">${chart.name}</span>
+                    <span style="font-size: 10px; color: #fff; background: #8b5cf6; padding: 3px 8px; border-radius: 10px;">${chart.type}</span>
+                  </div>
+                  <div style="height: 280px; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                    ${chart.image ? `<img src="${chart.image}" style="max-width: 100%; max-height: 260px; object-fit: contain;" />` : `<span style="color: #9ca3af; font-size: 12px;">No data</span>`}
+                  </div>
+                </div>
+              `).join('')}
             </div>
             
             <!-- Footer -->
-            <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 50px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+            <div style="position: absolute; bottom: 0; left: 8px; right: 0; padding: 15px 30px 15px 32px; background: #6366f1; display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <img src="${logoDataUri}" style="width: 20px; height: 20px;" />
-                <span style="font-size: 12px; color: #6b7280;">DataViz Studio</span>
+                <img src="${logoDataUri}" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
+                <span style="font-size: 13px; color: #fff; font-weight: 500;">DataViz Studio</span>
               </div>
-              <span style="font-size: 12px; color: #9ca3af;">Page ${i + 2} of ${chartsToExport.length + 1}</span>
+              <span style="font-size: 12px; color: rgba(255,255,255,0.8);">Page ${currentPage} of ${totalPages}</span>
             </div>
           </div>
         `;
 
-        const chartCanvas = await renderTemplate(chartPageHtml);
-        pdf.addImage(chartCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageWidth, pageHeight);
+        const pageCanvas = await renderTemplate(pageHtml);
+        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageWidth, pageHeight);
       }
 
       // Download
-      const filename = `DataViz_Charts_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
-      pdf.save(filename);
-      toast.success('Professional PDF report exported!');
+      pdf.save(`DataViz_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success('PDF report exported!');
 
     } catch (error) {
       console.error('Export error:', error);
