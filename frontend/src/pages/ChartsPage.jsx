@@ -2268,7 +2268,6 @@ export function ChartsPage() {
         return;
       }
 
-      // Create PDF with A4 dimensions
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -2277,27 +2276,224 @@ export function ChartsPage() {
       
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      const contentWidth = pageWidth - (margin * 2);
-      
-      // Helper function to draw DataViz logo
-      const drawLogo = (x, y, size = 12, color = [139, 92, 246]) => {
-        pdf.setDrawColor(color[0], color[1], color[2]);
-        pdf.setLineWidth(0.8);
-        // Outer circle (pie chart outline)
-        pdf.circle(x + size/2, y + size/2, size/2, 'S');
-        // Inner segment line
-        pdf.line(x + size/2, y + size/2, x + size/2, y);
-        pdf.line(x + size/2, y + size/2, x + size, y + size);
+
+      // SVG Logo as data URI
+      const logoSvg = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" 
+          stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" fill="none"
+          stroke-dasharray="47 16" stroke-dashoffset="12"/>
+        <path d="M12 2v10l7 7" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+      const logoDataUri = 'data:image/svg+xml;base64,' + btoa(logoSvg);
+
+      // Helper to render HTML template to canvas
+      const renderTemplate = async (htmlContent, width = 794, height = 1123) => {
+        const container = document.createElement('div');
+        container.innerHTML = htmlContent;
+        container.style.cssText = `position: absolute; left: -9999px; width: ${width}px; height: ${height}px;`;
+        document.body.appendChild(container);
+        
+        await new Promise(r => setTimeout(r, 100));
+        const canvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        document.body.removeChild(container);
+        return canvas;
       };
-      
-      // Helper to add page footer
-      const addFooter = (pageNum, totalPages) => {
-        pdf.setDrawColor(230, 230, 230);
-        pdf.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
-        drawLogo(margin, pageHeight - 12, 8, [139, 92, 246]);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(8);
+
+      const dateStr = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric' 
+      });
+
+      // ===== COVER PAGE =====
+      const coverHtml = `
+        <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative; box-sizing: border-box;">
+          <!-- Top accent bar -->
+          <div style="height: 8px; background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);"></div>
+          
+          <!-- Header -->
+          <div style="padding: 40px 50px 30px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img src="${logoDataUri}" style="width: 36px; height: 36px;" />
+              <span style="font-size: 28px; font-weight: 600; color: #1f2937;">DataViz Studio</span>
+            </div>
+          </div>
+          
+          <!-- Divider -->
+          <div style="margin: 0 50px; height: 1px; background: #e5e7eb;"></div>
+          
+          <!-- Main Title Section -->
+          <div style="padding: 60px 50px 40px; text-align: center;">
+            <h1 style="font-size: 42px; font-weight: 700; color: #111827; margin: 0 0 16px;">Charts Report</h1>
+            <p style="font-size: 16px; color: #6b7280; margin: 0;">${dateStr}</p>
+          </div>
+          
+          <!-- Summary Card -->
+          <div style="margin: 20px 50px; padding: 24px 30px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 16px; text-transform: uppercase; letter-spacing: 0.5px;">Report Summary</h3>
+            <div style="display: flex; gap: 40px;">
+              <div>
+                <p style="font-size: 13px; color: #6b7280; margin: 0 0 4px;">Total Charts</p>
+                <p style="font-size: 24px; font-weight: 700; color: #8b5cf6; margin: 0;">${chartsToExport.length}</p>
+              </div>
+              <div>
+                <p style="font-size: 13px; color: #6b7280; margin: 0 0 4px;">Chart Types</p>
+                <p style="font-size: 16px; font-weight: 500; color: #374151; margin: 0;">${[...new Set(chartsToExport.map(c => c.type))].map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ')}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Charts List -->
+          <div style="margin: 40px 50px;">
+            <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 20px; padding-bottom: 10px; border-bottom: 3px solid #8b5cf6; display: inline-block;">Charts Included</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              ${chartsToExport.map((chart, idx) => `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 28px; height: 28px; background: #8b5cf6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600;">${idx + 1}</div>
+                  <span style="font-size: 15px; color: #374151; font-weight: 500;">${chart.name}</span>
+                  <span style="font-size: 13px; color: #9ca3af; background: #f3f4f6; padding: 4px 10px; border-radius: 12px;">${chart.type.charAt(0).toUpperCase() + chart.type.slice(1)} Chart</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 50px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <img src="${logoDataUri}" style="width: 20px; height: 20px;" />
+              <span style="font-size: 12px; color: #6b7280;">DataViz Studio</span>
+            </div>
+            <span style="font-size: 12px; color: #9ca3af;">Page 1 of ${chartsToExport.length + 1}</span>
+          </div>
+        </div>
+      `;
+
+      const coverCanvas = await renderTemplate(coverHtml);
+      pdf.addImage(coverCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageWidth, pageHeight);
+
+      // ===== CHART PAGES =====
+      for (let i = 0; i < chartsToExport.length; i++) {
+        const chart = chartsToExport[i];
+        pdf.addPage();
+
+        // Get chart data and render chart image
+        let chartImageData = null;
+        let chartData = [];
+        try {
+          const headers = { Authorization: `Bearer ${token}` };
+          const dataRes = await axios.get(`${API_URL}/api/charts/${chart.id}/data`, { headers });
+          chartData = dataRes.data.data || [];
+
+          if (chartData.length > 0) {
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 700px; height: 400px; background: #ffffff;';
+            document.body.appendChild(tempContainer);
+
+            const options = generateChartOptions(chart.type, chartData, chart.config || {}, chart.config?.theme || 'violet');
+            // Override for light background
+            if (options.backgroundColor) options.backgroundColor = '#ffffff';
+
+            const echarts = await import('echarts');
+            const chartInstance = echarts.init(tempContainer);
+            chartInstance.setOption(options);
+            await new Promise(r => setTimeout(r, 500));
+
+            chartImageData = chartInstance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' });
+            chartInstance.dispose();
+            document.body.removeChild(tempContainer);
+          }
+        } catch (e) {
+          console.error('Chart render error:', e);
+        }
+
+        // Build data table rows
+        const total = chartData.reduce((sum, d) => sum + (d.value || 0), 0);
+        const tableRows = chartData.slice(0, 6).map((d, idx) => {
+          const share = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0';
+          const barWidth = Math.min(parseFloat(share), 100);
+          return `
+            <tr style="background: ${idx % 2 === 0 ? '#fff' : '#f9fafb'};">
+              <td style="padding: 10px 14px; font-size: 13px; color: #374151; border-bottom: 1px solid #e5e7eb;">${String(d.name || '').substring(0, 25)}</td>
+              <td style="padding: 10px 14px; font-size: 13px; color: #374151; border-bottom: 1px solid #e5e7eb; text-align: right;">${(d.value || 0).toLocaleString()}</td>
+              <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 60px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${barWidth}%; height: 100%; background: #8b5cf6; border-radius: 3px;"></div>
+                  </div>
+                  <span style="font-size: 12px; color: #6b7280;">${share}%</span>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        const chartPageHtml = `
+          <div style="width: 794px; height: 1123px; background: #fff; font-family: 'Segoe UI', Arial, sans-serif; position: relative; box-sizing: border-box;">
+            <!-- Top accent bar -->
+            <div style="height: 8px; background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);"></div>
+            
+            <!-- Header -->
+            <div style="padding: 24px 50px; background: #f8fafc; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+              <h2 style="font-size: 22px; font-weight: 600; color: #111827; margin: 0;">${chart.name}</h2>
+              <span style="font-size: 12px; color: #fff; background: #8b5cf6; padding: 6px 14px; border-radius: 16px; font-weight: 500;">${chart.type.charAt(0).toUpperCase() + chart.type.slice(1)} Chart</span>
+            </div>
+            
+            <!-- Chart Image -->
+            <div style="padding: 30px 50px;">
+              ${chartImageData 
+                ? `<div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <img src="${chartImageData}" style="width: 100%; height: auto; max-height: 350px; object-fit: contain;" />
+                  </div>`
+                : `<div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 8px; color: #9ca3af;">No chart data available</div>`
+              }
+            </div>
+            
+            <!-- Data Table -->
+            <div style="padding: 0 50px 30px;">
+              <h3 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 2px solid #8b5cf6; display: inline-block;">Data Summary</h3>
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                <thead>
+                  <tr style="background: #8b5cf6;">
+                    <th style="padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 600; color: #fff; text-transform: uppercase;">Category</th>
+                    <th style="padding: 12px 14px; text-align: right; font-size: 12px; font-weight: 600; color: #fff; text-transform: uppercase;">Value</th>
+                    <th style="padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 600; color: #fff; text-transform: uppercase;">Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows || '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #9ca3af;">No data available</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Footer -->
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 50px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${logoDataUri}" style="width: 20px; height: 20px;" />
+                <span style="font-size: 12px; color: #6b7280;">DataViz Studio</span>
+              </div>
+              <span style="font-size: 12px; color: #9ca3af;">Page ${i + 2} of ${chartsToExport.length + 1}</span>
+            </div>
+          </div>
+        `;
+
+        const chartCanvas = await renderTemplate(chartPageHtml);
+        pdf.addImage(chartCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageWidth, pageHeight);
+      }
+
+      // Download
+      const filename = `DataViz_Charts_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(filename);
+      toast.success('Professional PDF report exported!');
+
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export PDF');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
         pdf.setTextColor(120, 120, 120);
         pdf.text('DataViz Studio', margin + 12, pageHeight - 8);
         pdf.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
