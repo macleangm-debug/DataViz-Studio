@@ -487,7 +487,7 @@ export function DashboardBuilderPage() {
         </div>
 
         {/* Grid Layout */}
-        <div className="bg-muted/30 rounded-xl p-4 min-h-[600px]">
+        <div className="bg-muted/30 rounded-xl p-3 min-h-[400px]">
           {widgets.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[500px] text-center">
               <LayoutDashboard className="w-16 h-16 text-muted-foreground mb-4" />
