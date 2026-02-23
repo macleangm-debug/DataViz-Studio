@@ -3,6 +3,9 @@
 Unified API routes for all data source connectors:
 - Google Sheets / Google Drive (OAuth)
 - AWS S3 (BYOK credentials)
+- Salesforce (OAuth)
+- HubSpot (OAuth)
+- Dropbox (OAuth)
 """
 
 from fastapi import APIRouter, HTTPException, Request, Query
@@ -13,6 +16,9 @@ import logging
 
 from connectors.google_connector import GoogleConnector
 from connectors.s3_connector import S3Connector
+from connectors.salesforce_connector import SalesforceConnector
+from connectors.hubspot_connector import HubSpotConnector
+from connectors.dropbox_connector import DropboxConnector
 
 logger = logging.getLogger(__name__)
 
