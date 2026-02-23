@@ -121,15 +121,30 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={2}
+                  innerRadius="40%"
+                  outerRadius="70%"
+                  paddingAngle={3}
+                  strokeWidth={0}
                 >
                   {data.map((_, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                    <Cell 
+                      key={index} 
+                      fill={COLORS[index % COLORS.length]} 
+                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+                    />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(17, 17, 27, 0.95)', 
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    padding: '12px 16px'
+                  }}
+                  labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: '4px' }}
+                  formatter={(value, name) => [value.toLocaleString(), name]}
+                />
               </RePieChart>
             </ResponsiveContainer>
           );
