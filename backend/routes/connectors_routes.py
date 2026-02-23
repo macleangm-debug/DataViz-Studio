@@ -80,7 +80,7 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Missing authorization")
     
     token = auth_header.split(" ")[1]
-    JWT_SECRET = os.environ.get("JWT_SECRET", "dataviz-studio-secret-2026")
+    JWT_SECRET = os.environ.get("JWT_SECRET", "dataviz-studio-secret")
     
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
