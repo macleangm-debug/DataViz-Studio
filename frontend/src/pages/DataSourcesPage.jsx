@@ -812,13 +812,191 @@ export function DataSourcesPage() {
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                   <p className="text-sm text-amber-700 dark:text-amber-300">
                     <Key className="w-4 h-4 inline mr-1" />
-                    Make sure to add <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">{window.location.origin}/dashboard/data-sources</code> as an authorized redirect URI in your Google Cloud Console.
+                    Make sure to add <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">{window.location.origin}/data-sources</code> as an authorized redirect URI in your Google Cloud Console.
                   </p>
                 </div>
               </div>
             );
           }
           
+          // Salesforce OAuth
+          if (selectedConnector.id === 'salesforce') {
+            return (
+              <div className="space-y-4">
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-sky-400 flex items-center justify-center mx-auto mb-4">
+                    <Cloud className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Connect with Salesforce</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your Salesforce Connected App credentials to authorize access.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <ExternalLink className="w-4 h-4 inline mr-1" />
+                    <a 
+                      href="https://login.salesforce.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:no-underline"
+                    >
+                      Create a Connected App in Salesforce Setup
+                    </a>
+                  </p>
+                </div>
+                
+                <div>
+                  <Label>Consumer Key (Client ID) *</Label>
+                  <Input
+                    value={connectorConfig.client_id || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_id: e.target.value })}
+                    placeholder="3MVG9..."
+                    data-testid="salesforce-client-id-input"
+                  />
+                </div>
+                
+                <div>
+                  <Label>Consumer Secret *</Label>
+                  <Input
+                    type="password"
+                    value={connectorConfig.client_secret || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_secret: e.target.value })}
+                    placeholder="Your Consumer Secret"
+                    data-testid="salesforce-client-secret-input"
+                  />
+                </div>
+                
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    <Key className="w-4 h-4 inline mr-1" />
+                    Add <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">{window.location.origin}/data-sources</code> as a Callback URL in your Connected App settings.
+                  </p>
+                </div>
+              </div>
+            );
+          }
+          
+          // HubSpot OAuth
+          if (selectedConnector.id === 'hubspot') {
+            return (
+              <div className="space-y-4">
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-red-400 flex items-center justify-center mx-auto mb-4">
+                    <Globe className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Connect with HubSpot</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your HubSpot App credentials to authorize access to your CRM.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <ExternalLink className="w-4 h-4 inline mr-1" />
+                    <a 
+                      href="https://developers.hubspot.com/docs/api/creating-an-app" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:no-underline"
+                    >
+                      Create an App in HubSpot Developer Portal
+                    </a>
+                  </p>
+                </div>
+                
+                <div>
+                  <Label>App Client ID *</Label>
+                  <Input
+                    value={connectorConfig.client_id || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_id: e.target.value })}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    data-testid="hubspot-client-id-input"
+                  />
+                </div>
+                
+                <div>
+                  <Label>App Client Secret *</Label>
+                  <Input
+                    type="password"
+                    value={connectorConfig.client_secret || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_secret: e.target.value })}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    data-testid="hubspot-client-secret-input"
+                  />
+                </div>
+                
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    <Key className="w-4 h-4 inline mr-1" />
+                    Add <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">{window.location.origin}/data-sources</code> as a Redirect URL in your HubSpot App settings.
+                  </p>
+                </div>
+              </div>
+            );
+          }
+          
+          // Dropbox OAuth
+          if (selectedConnector.id === 'dropbox') {
+            return (
+              <div className="space-y-4">
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center mx-auto mb-4">
+                    <FolderOpen className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Connect with Dropbox</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your Dropbox App credentials to access your files.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <ExternalLink className="w-4 h-4 inline mr-1" />
+                    <a 
+                      href="https://www.dropbox.com/developers/apps" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:no-underline"
+                    >
+                      Create an App in Dropbox App Console
+                    </a>
+                  </p>
+                </div>
+                
+                <div>
+                  <Label>App Key *</Label>
+                  <Input
+                    value={connectorConfig.client_id || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_id: e.target.value })}
+                    placeholder="Your App Key"
+                    data-testid="dropbox-client-id-input"
+                  />
+                </div>
+                
+                <div>
+                  <Label>App Secret *</Label>
+                  <Input
+                    type="password"
+                    value={connectorConfig.client_secret || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_secret: e.target.value })}
+                    placeholder="Your App Secret"
+                    data-testid="dropbox-client-secret-input"
+                  />
+                </div>
+                
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    <Key className="w-4 h-4 inline mr-1" />
+                    Add <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">{window.location.origin}/data-sources</code> as a Redirect URI in your Dropbox App settings.
+                  </p>
+                </div>
+              </div>
+            );
+          }
+          
+          // Generic OAuth fallback (OneDrive, Google Analytics, etc.)
           return (
             <div className="text-center py-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
@@ -826,10 +1004,32 @@ export function DataSourcesPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">Connect with {selectedConnector.name}</h3>
               <p className="text-muted-foreground mb-4">
-                You'll be redirected to {selectedConnector.name} to authorize access to your data.
+                This connector requires OAuth credentials. Please provide your {selectedConnector.name} app credentials.
               </p>
-              <p className="text-sm text-muted-foreground">
-                We only request read-only access to your files.
+              
+              <div className="space-y-4 text-left mt-4">
+                <div>
+                  <Label>Client ID *</Label>
+                  <Input
+                    value={connectorConfig.client_id || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_id: e.target.value })}
+                    placeholder="Your Client ID"
+                  />
+                </div>
+                <div>
+                  <Label>Client Secret *</Label>
+                  <Input
+                    type="password"
+                    value={connectorConfig.client_secret || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_secret: e.target.value })}
+                    placeholder="Your Client Secret"
+                  />
+                </div>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mt-4">
+                <Key className="w-4 h-4 inline mr-1" />
+                Add <code className="bg-muted px-1 rounded">{window.location.origin}/data-sources</code> as a redirect URI.
               </p>
             </div>
           );
