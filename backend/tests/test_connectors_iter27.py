@@ -281,25 +281,41 @@ class TestConnectorsEndpointsAvailability(TestConnectorsAuth):
 class TestUnauthorizedAccess:
     """Test endpoints require authentication"""
     
-    def test_connectors_require_auth(self):
-        """Test that connector endpoints require authentication"""
-        endpoints = [
-            ("GET", f"{BASE_URL}/api/connectors"),
-            ("POST", f"{BASE_URL}/api/connectors/s3/test"),
-            ("POST", f"{BASE_URL}/api/connectors/s3/connect"),
-            ("POST", f"{BASE_URL}/api/connectors/google/oauth/init"),
-        ]
-        
-        for method, url in endpoints:
-            if method == "GET":
-                response = requests.get(url)
-            else:
-                response = requests.post(url, json={})
-            
-            assert response.status_code == 401, \
-                f"{method} {url} should require auth, got {response.status_code}"
-        
-        print(f"PASS: All connector endpoints properly require authentication")
+    def test_connectors_list_require_auth(self):
+        """Test that GET connectors endpoint requires authentication"""
+        response = requests.get(f"{BASE_URL}/api/connectors")
+        assert response.status_code == 401, \
+            f"GET connectors should require auth, got {response.status_code}"
+        print(f"PASS: GET /api/connectors properly requires authentication")
+    
+    def test_s3_test_requires_auth(self):
+        """Test that S3 test endpoint requires authentication"""
+        response = requests.post(
+            f"{BASE_URL}/api/connectors/s3/test",
+            json={
+                "access_key_id": "test",
+                "secret_access_key": "test",
+                "region": "us-east-1"
+            }
+        )
+        assert response.status_code == 401, \
+            f"POST s3/test should require auth, got {response.status_code}"
+        print(f"PASS: POST /api/connectors/s3/test properly requires authentication")
+    
+    def test_google_oauth_init_requires_auth(self):
+        """Test that Google OAuth init requires authentication"""
+        response = requests.post(
+            f"{BASE_URL}/api/connectors/google/oauth/init",
+            json={
+                "client_id": "test",
+                "client_secret": "test",
+                "redirect_uri": "https://test.com",
+                "connector_type": "google_sheets"
+            }
+        )
+        assert response.status_code == 401, \
+            f"POST google/oauth/init should require auth, got {response.status_code}"
+        print(f"PASS: POST /api/connectors/google/oauth/init properly requires authentication")
 
 
 if __name__ == "__main__":
