@@ -98,10 +98,10 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
       case 'stat':
         return (
           <div className="h-full flex flex-col items-center justify-center">
-            <p className="text-4xl font-bold text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {typeof data.value === 'number' ? data.value.toLocaleString() : data.value}
             </p>
-            <p className="text-sm text-muted-foreground capitalize">{data.aggregation}</p>
+            <p className="text-xs text-muted-foreground capitalize">{data.aggregation}</p>
           </div>
         );
 
