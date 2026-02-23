@@ -1437,6 +1437,230 @@ export function DataSourcesPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* S3 File Browser Dialog */}
+        <Dialog open={showS3Browser} onOpenChange={setShowS3Browser}>
+          <DialogContent className="max-w-3xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Cloud className="w-5 h-5 text-orange-500" />
+                Browse S3 Files
+              </DialogTitle>
+              <DialogDescription>
+                Select a file to import as a dataset
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Breadcrumb navigation */}
+              <div className="flex items-center gap-2 text-sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setS3CurrentBucket(null);
+                    setS3CurrentPrefix('');
+                    setS3Files([]);
+                    setS3Folders([]);
+                  }}
+                  className={!s3CurrentBucket ? 'font-semibold' : ''}
+                >
+                  Buckets
+                </Button>
+                {s3CurrentBucket && (
+                  <>
+                    <ChevronRight className="w-4 h-4" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => loadS3Files(selectedS3Connection, s3CurrentBucket, '')}
+                      className={!s3CurrentPrefix ? 'font-semibold' : ''}
+                    >
+                      {s3CurrentBucket}
+                    </Button>
+                  </>
+                )}
+                {s3CurrentPrefix && s3CurrentPrefix.split('/').filter(Boolean).map((part, idx, arr) => {
+                  const prefixPath = arr.slice(0, idx + 1).join('/') + '/';
+                  return (
+                    <React.Fragment key={prefixPath}>
+                      <ChevronRight className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => loadS3Files(selectedS3Connection, s3CurrentBucket, prefixPath)}
+                        className={prefixPath === s3CurrentPrefix ? 'font-semibold' : ''}
+                      >
+                        {part}
+                      </Button>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
+              {/* File list */}
+              <div className="border rounded-lg overflow-hidden">
+                {s3Loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                  </div>
+                ) : !s3CurrentBucket ? (
+                  // Show buckets
+                  <div className="divide-y">
+                    {s3Buckets.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        No buckets found
+                      </div>
+                    ) : (
+                      s3Buckets.map((bucket) => (
+                        <div
+                          key={bucket.name}
+                          className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer"
+                          onClick={() => loadS3Files(selectedS3Connection, bucket.name, '')}
+                        >
+                          <FolderOpen className="w-5 h-5 text-orange-500" />
+                          <div className="flex-1">
+                            <p className="font-medium">{bucket.name}</p>
+                            {bucket.created && (
+                              <p className="text-xs text-muted-foreground">
+                                Created: {new Date(bucket.created).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  // Show files and folders
+                  <div className="divide-y max-h-[400px] overflow-y-auto">
+                    {s3Folders.length === 0 && s3Files.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        This folder is empty
+                      </div>
+                    ) : (
+                      <>
+                        {/* Folders */}
+                        {s3Folders.map((folder) => (
+                          <div
+                            key={folder.key}
+                            className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer"
+                            onClick={() => loadS3Files(selectedS3Connection, s3CurrentBucket, folder.key)}
+                          >
+                            <FolderOpen className="w-5 h-5 text-amber-500" />
+                            <div className="flex-1">
+                              <p className="font-medium">{folder.name}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        ))}
+                        {/* Files */}
+                        {s3Files.map((file) => (
+                          <div
+                            key={file.key}
+                            className="flex items-center gap-3 p-3 hover:bg-muted/50"
+                          >
+                            {file.type === 'csv' && <FileSpreadsheet className="w-5 h-5 text-green-500" />}
+                            {file.type === 'json' && <FileSpreadsheet className="w-5 h-5 text-blue-500" />}
+                            {file.type === 'excel' && <FileSpreadsheet className="w-5 h-5 text-emerald-500" />}
+                            {!['csv', 'json', 'excel', 'parquet'].includes(file.type) && (
+                              <HardDrive className="w-5 h-5 text-gray-400" />
+                            )}
+                            <div className="flex-1">
+                              <p className="font-medium">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {file.size_formatted} • {file.last_modified && new Date(file.last_modified).toLocaleString()}
+                              </p>
+                            </div>
+                            {file.importable && (
+                              <Button
+                                size="sm"
+                                onClick={() => importS3File(selectedS3Connection, s3CurrentBucket, file.key, file.name)}
+                                disabled={s3Importing}
+                                data-testid={`import-s3-file-${file.name}`}
+                              >
+                                {s3Importing ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Download className="w-4 h-4 mr-1" />
+                                    Import
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setShowS3Browser(false)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Google Sheets Browser Dialog */}
+        <Dialog open={showGoogleBrowser} onOpenChange={setShowGoogleBrowser}>
+          <DialogContent className="max-w-2xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-green-500" />
+                Your Google Sheets
+              </DialogTitle>
+              <DialogDescription>
+                Select a spreadsheet to import
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="border rounded-lg overflow-hidden">
+              {googleLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+                </div>
+              ) : googleSpreadsheets.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  No spreadsheets found
+                </div>
+              ) : (
+                <div className="divide-y max-h-[400px] overflow-y-auto">
+                  {googleSpreadsheets.map((sheet) => (
+                    <div
+                      key={sheet.id}
+                      className="flex items-center gap-3 p-3 hover:bg-muted/50"
+                    >
+                      <FileSpreadsheet className="w-5 h-5 text-green-500" />
+                      <div className="flex-1">
+                        <p className="font-medium">{sheet.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {sheet.owner && `By ${sheet.owner} • `}
+                          {sheet.modified_time && `Modified ${new Date(sheet.modified_time).toLocaleDateString()}`}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => importGoogleSpreadsheet(selectedGoogleConnection, sheet.id, sheet.name)}
+                        data-testid={`import-sheet-${sheet.id}`}
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Import
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setShowGoogleBrowser(false)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
