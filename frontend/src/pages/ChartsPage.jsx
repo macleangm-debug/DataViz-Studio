@@ -2494,10 +2494,8 @@ export function ChartsPage() {
       setExportingPdf(false);
     }
   };
-        pdf.setTextColor(120, 120, 120);
-        pdf.text('DataViz Studio', margin + 12, pageHeight - 8);
-        pdf.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
-      };
+
+  const getChartIcon = (type) => {
 
       // ========== COVER PAGE ==========
       // Clean white background (default)
