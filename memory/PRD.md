@@ -1134,8 +1134,44 @@ Dropbox:
 
 **Test Status:** Backend OAuth init endpoints verified via curl. Frontend UI verified via screenshots.
 
+## Session 31 (Dec 2025) - Chart Popup Styling Enhancement
+
+### Dark Theme Chart Popup Fix
+- [x] **Chart View Dialog Styling**
+  - Dark background (`#11111b`) matching dashboard theme
+  - Violet accent borders and buttons
+  - Styled breadcrumb navigation
+  - Modern drill-down filter buttons
+  
+- [x] **Enhanced Chart Visualizations (All Chart Types)**
+  - **Bar Charts:** Gradient fills (top to bottom), rounded corners (8px), shadow effects
+  - **Line Charts:** Gradient line strokes, gradient area fills when enabled
+  - **Area Charts:** Smooth gradient fills with opacity transitions
+  - **Pie/Donut Charts:** Enhanced shadows, better spacing, scale animations
+  - **Scatter Charts:** Glow effects, larger symbols
+  - **Radar Charts:** Radial gradients, polygon styling
+  - **Funnel Charts:** Per-segment gradients, improved labeling
+  - **Gauge Charts:** Rounded caps, progress bar styling
+  - **Heatmap:** Better color transitions, border radius
+  - **Treemap:** Enhanced borders, shadows
+  - **Waterfall:** Per-bar gradients (green/red for +/-)
+  - **Boxplot:** Styled box and scatter points
+  - **Sankey:** Node colors, gradient links
+  - **Candlestick:** Improved bullish/bearish styling
+
+- [x] **Common Styling Updates**
+  - Tooltips: Dark background with accent borders, rounded corners, shadows
+  - Axes: Hidden axis lines, dashed grid lines (rgba 6% opacity)
+  - Labels: Gray text (#9ca3af), proper k-formatting for large numbers
+  - Legend: Bottom positioning with proper spacing
+
+**Files Modified:**
+- `/app/frontend/src/pages/ChartsPage.jsx` - Updated `generateChartOptions()` function and View Chart Dialog
+
+**Test Status:** Visual verification via screenshots confirms dark theme applied correctly.
+
 ## Next Recommended Tasks
-- **Implement Remaining Connectors** - Salesforce, HubSpot, Stripe, Dropbox (OAuth flows)
+- **Complete New Chart Types & Color Scheme** - Finish implementation in DashboardBuilderPage.jsx
 - **SSO Integration** - Survey360, FieldForce, DataPulse integration
 - **Scheduled Report Delivery UI** - Build frontend for report scheduling
 - **Email Integration Activation** - Add RESEND_API_KEY to enable report delivery
