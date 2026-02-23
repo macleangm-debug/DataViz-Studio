@@ -503,13 +503,13 @@ export function DashboardBuilderPage() {
               className="layout"
               layout={layout}
               cols={12}
-              rowHeight={50}
+              rowHeight={40}
               width={1100}
               onLayoutChange={handleLayoutChange}
               draggableHandle=".drag-handle"
               compactType="vertical"
               preventCollision={false}
-              margin={[12, 12]}
+              margin={[10, 10]}
               containerPadding={[0, 0]}
             >
               {widgets.map(widget => (
