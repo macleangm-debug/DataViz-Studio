@@ -495,8 +495,479 @@ async def generic_connect(
             "endpoint": "/api/connectors/google/oauth/init"
         }
     
+    elif data.connector_type in ["salesforce", "hubspot", "dropbox"]:
+        # For OAuth connectors, return instructions
+        return {
+            "status": "oauth_required",
+            "message": f"This connector requires OAuth. Use the OAuth init endpoint.",
+            "endpoint": f"/api/connectors/{data.connector_type}/oauth/init"
+        }
+    
     else:
         raise HTTPException(
             status_code=400, 
             detail=f"Unsupported connector type: {data.connector_type}"
         )
+
+
+# =============================================================================
+# Salesforce OAuth Routes
+# =============================================================================
+
+class SalesforceOAuthInitRequest(BaseModel):
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+
+
+class SalesforceOAuthCallbackRequest(BaseModel):
+    code: str
+    state: str
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+
+
+class SalesforceImportRequest(BaseModel):
+    object_name: str
+    fields: Optional[List[str]] = None
+    dataset_name: Optional[str] = None
+    org_id: Optional[str] = None
+
+
+@router.post("/salesforce/oauth/init")
+async def salesforce_oauth_init(
+    data: SalesforceOAuthInitRequest,
+    request: Request
+):
+    """Initialize Salesforce OAuth flow"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = SalesforceConnector(db)
+    
+    result = await connector.get_oauth_url(
+        user_id=user_id,
+        client_id=data.client_id,
+        redirect_uri=data.redirect_uri
+    )
+    
+    return result
+
+
+@router.post("/salesforce/oauth/callback")
+async def salesforce_oauth_callback(
+    data: SalesforceOAuthCallbackRequest,
+    request: Request
+):
+    """Handle Salesforce OAuth callback"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = SalesforceConnector(db)
+    
+    try:
+        result = await connector.handle_oauth_callback(
+            code=data.code,
+            state=data.state,
+            client_id=data.client_id,
+            client_secret=data.client_secret,
+            redirect_uri=data.redirect_uri,
+            user_id=user_id
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/salesforce/{connection_id}/objects")
+async def list_salesforce_objects(
+    connection_id: str,
+    request: Request
+):
+    """List available Salesforce objects"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = SalesforceConnector(db)
+    
+    try:
+        objects = await connector.list_objects(connection_id, user_id)
+        return {"objects": objects}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/salesforce/{connection_id}/objects/{object_name}/fields")
+async def get_salesforce_object_fields(
+    connection_id: str,
+    object_name: str,
+    request: Request
+):
+    """Get fields for a Salesforce object"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = SalesforceConnector(db)
+    
+    try:
+        fields = await connector.get_object_fields(connection_id, user_id, object_name)
+        return {"fields": fields}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/salesforce/{connection_id}/objects/{object_name}/query")
+async def query_salesforce_object(
+    connection_id: str,
+    object_name: str,
+    request: Request,
+    fields: Optional[str] = None,
+    limit: int = 100
+):
+    """Query records from a Salesforce object"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = SalesforceConnector(db)
+    
+    try:
+        field_list = fields.split(",") if fields else None
+        result = await connector.query_object(
+            connection_id, user_id, object_name, field_list, limit
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/salesforce/{connection_id}/import")
+async def import_salesforce_object(
+    connection_id: str,
+    data: SalesforceImportRequest,
+    request: Request
+):
+    """Import a Salesforce object as a dataset"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = SalesforceConnector(db)
+    
+    try:
+        result = await connector.import_object_as_dataset(
+            connection_id=connection_id,
+            user_id=user_id,
+            object_name=data.object_name,
+            fields=data.fields,
+            dataset_name=data.dataset_name,
+            org_id=data.org_id
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# =============================================================================
+# HubSpot OAuth Routes
+# =============================================================================
+
+class HubSpotOAuthInitRequest(BaseModel):
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+
+
+class HubSpotOAuthCallbackRequest(BaseModel):
+    code: str
+    state: str
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+
+
+class HubSpotImportRequest(BaseModel):
+    object_type: str
+    properties: Optional[List[str]] = None
+    dataset_name: Optional[str] = None
+    org_id: Optional[str] = None
+
+
+@router.post("/hubspot/oauth/init")
+async def hubspot_oauth_init(
+    data: HubSpotOAuthInitRequest,
+    request: Request
+):
+    """Initialize HubSpot OAuth flow"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = HubSpotConnector(db)
+    
+    result = await connector.get_oauth_url(
+        user_id=user_id,
+        client_id=data.client_id,
+        redirect_uri=data.redirect_uri
+    )
+    
+    return result
+
+
+@router.post("/hubspot/oauth/callback")
+async def hubspot_oauth_callback(
+    data: HubSpotOAuthCallbackRequest,
+    request: Request
+):
+    """Handle HubSpot OAuth callback"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = HubSpotConnector(db)
+    
+    try:
+        result = await connector.handle_oauth_callback(
+            code=data.code,
+            state=data.state,
+            client_id=data.client_id,
+            client_secret=data.client_secret,
+            redirect_uri=data.redirect_uri,
+            user_id=user_id
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/hubspot/{connection_id}/objects")
+async def list_hubspot_objects(
+    connection_id: str,
+    request: Request
+):
+    """List available HubSpot objects"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = HubSpotConnector(db)
+    
+    try:
+        objects = await connector.list_objects(connection_id, user_id)
+        return {"objects": objects}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/hubspot/{connection_id}/objects/{object_type}/properties")
+async def get_hubspot_object_properties(
+    connection_id: str,
+    object_type: str,
+    request: Request
+):
+    """Get properties for a HubSpot object"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = HubSpotConnector(db)
+    
+    try:
+        properties = await connector.get_object_properties(connection_id, user_id, object_type)
+        return {"properties": properties}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/hubspot/{connection_id}/objects/{object_type}/records")
+async def get_hubspot_records(
+    connection_id: str,
+    object_type: str,
+    request: Request,
+    properties: Optional[str] = None,
+    limit: int = 100
+):
+    """Get records from a HubSpot object"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = HubSpotConnector(db)
+    
+    try:
+        prop_list = properties.split(",") if properties else None
+        result = await connector.get_records(
+            connection_id, user_id, object_type, prop_list, limit
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/hubspot/{connection_id}/import")
+async def import_hubspot_object(
+    connection_id: str,
+    data: HubSpotImportRequest,
+    request: Request
+):
+    """Import a HubSpot object as a dataset"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = HubSpotConnector(db)
+    
+    try:
+        result = await connector.import_object_as_dataset(
+            connection_id=connection_id,
+            user_id=user_id,
+            object_type=data.object_type,
+            properties=data.properties,
+            dataset_name=data.dataset_name,
+            org_id=data.org_id
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# =============================================================================
+# Dropbox OAuth Routes
+# =============================================================================
+
+class DropboxOAuthInitRequest(BaseModel):
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+
+
+class DropboxOAuthCallbackRequest(BaseModel):
+    code: str
+    state: str
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+
+
+class DropboxImportRequest(BaseModel):
+    file_path: str
+    dataset_name: Optional[str] = None
+    org_id: Optional[str] = None
+
+
+@router.post("/dropbox/oauth/init")
+async def dropbox_oauth_init(
+    data: DropboxOAuthInitRequest,
+    request: Request
+):
+    """Initialize Dropbox OAuth flow"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = DropboxConnector(db)
+    
+    result = await connector.get_oauth_url(
+        user_id=user_id,
+        client_id=data.client_id,
+        redirect_uri=data.redirect_uri
+    )
+    
+    return result
+
+
+@router.post("/dropbox/oauth/callback")
+async def dropbox_oauth_callback(
+    data: DropboxOAuthCallbackRequest,
+    request: Request
+):
+    """Handle Dropbox OAuth callback"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = DropboxConnector(db)
+    
+    try:
+        result = await connector.handle_oauth_callback(
+            code=data.code,
+            state=data.state,
+            client_id=data.client_id,
+            client_secret=data.client_secret,
+            redirect_uri=data.redirect_uri,
+            user_id=user_id
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/dropbox/{connection_id}/files")
+async def list_dropbox_files(
+    connection_id: str,
+    request: Request,
+    path: str = ""
+):
+    """List files in Dropbox"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = DropboxConnector(db)
+    
+    try:
+        result = await connector.list_files(connection_id, user_id, path)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/dropbox/{connection_id}/preview")
+async def preview_dropbox_file(
+    connection_id: str,
+    request: Request,
+    file_path: str = Query(...)
+):
+    """Preview Dropbox file contents"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = DropboxConnector(db)
+    
+    try:
+        result = await connector.preview_file(connection_id, user_id, file_path)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/dropbox/{connection_id}/import")
+async def import_dropbox_file(
+    connection_id: str,
+    data: DropboxImportRequest,
+    request: Request
+):
+    """Import a Dropbox file as a dataset"""
+    user = await get_current_user(request)
+    user_id = user.get("id")
+    db = request.app.state.db
+    
+    connector = DropboxConnector(db)
+    
+    try:
+        result = await connector.import_file_as_dataset(
+            connection_id=connection_id,
+            user_id=user_id,
+            file_path=data.file_path,
+            dataset_name=data.dataset_name,
+            org_id=data.org_id
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
