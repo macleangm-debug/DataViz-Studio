@@ -528,6 +528,7 @@ export function DataSourcesPage() {
                 value={connectorConfig.name || ''}
                 onChange={(e) => setConnectorConfig({ ...connectorConfig, name: e.target.value })}
                 placeholder="My S3 Connection"
+                data-testid="s3-connection-name-input"
               />
             </div>
             <div>
@@ -536,6 +537,7 @@ export function DataSourcesPage() {
                 value={connectorConfig.access_key_id || ''}
                 onChange={(e) => setConnectorConfig({ ...connectorConfig, access_key_id: e.target.value })}
                 placeholder="AKIAIOSFODNN7EXAMPLE"
+                data-testid="s3-access-key-input"
               />
             </div>
             <div>
@@ -545,6 +547,7 @@ export function DataSourcesPage() {
                 value={connectorConfig.secret_access_key || ''}
                 onChange={(e) => setConnectorConfig({ ...connectorConfig, secret_access_key: e.target.value })}
                 placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                data-testid="s3-secret-key-input"
               />
             </div>
             <div>
@@ -553,7 +556,7 @@ export function DataSourcesPage() {
                 value={connectorConfig.region || 'us-east-1'}
                 onValueChange={(v) => setConnectorConfig({ ...connectorConfig, region: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger data-testid="s3-region-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
