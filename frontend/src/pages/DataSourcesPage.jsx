@@ -626,8 +626,66 @@ export function DataSourcesPage() {
         );
         
       default:
-        // OAuth connectors show info message
+        // OAuth connectors show credential form + info
         if (selectedConnector.oauth) {
+          if (selectedConnector.id === 'google_sheets' || selectedConnector.id === 'google_drive') {
+            return (
+              <div className="space-y-4">
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
+                    <ExternalLink className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Connect with {selectedConnector.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your Google Cloud OAuth credentials to authorize access.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <ExternalLink className="w-4 h-4 inline mr-1" />
+                    <a 
+                      href="https://console.cloud.google.com/apis/credentials" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:no-underline"
+                    >
+                      Get credentials from Google Cloud Console
+                    </a>
+                  </p>
+                </div>
+                
+                <div>
+                  <Label>OAuth Client ID *</Label>
+                  <Input
+                    value={connectorConfig.client_id || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_id: e.target.value })}
+                    placeholder="your-client-id.apps.googleusercontent.com"
+                    data-testid="google-client-id-input"
+                  />
+                </div>
+                
+                <div>
+                  <Label>OAuth Client Secret *</Label>
+                  <Input
+                    type="password"
+                    value={connectorConfig.client_secret || ''}
+                    onChange={(e) => setConnectorConfig({ ...connectorConfig, client_secret: e.target.value })}
+                    placeholder="GOCSPX-..."
+                    data-testid="google-client-secret-input"
+                  />
+                </div>
+                
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    <Key className="w-4 h-4 inline mr-1" />
+                    Make sure to add <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">{window.location.origin}/dashboard/data-sources</code> as an authorized redirect URI in your Google Cloud Console.
+                  </p>
+                </div>
+              </div>
+            );
+          }
+          
           return (
             <div className="text-center py-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
