@@ -179,7 +179,7 @@ Charlie Wilson,charlie@example.com,Marketing,21000,North,2024-01-19`;
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-8" data-testid="upload-page">
+      <div className="space-y-8" data-testid="upload-page">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Upload Data</h1>
           <p className="text-muted-foreground mt-1">
@@ -187,6 +187,7 @@ Charlie Wilson,charlie@example.com,Marketing,21000,North,2024-01-19`;
           </p>
         </div>
 
+        <div className="max-w-3xl">
         {uploadResult?.success ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -326,6 +327,7 @@ Charlie Wilson,charlie@example.com,Marketing,21000,North,2024-01-19`;
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                className="mt-6"
               >
                 <Card>
                   <CardHeader>
@@ -376,9 +378,10 @@ Charlie Wilson,charlie@example.com,Marketing,21000,North,2024-01-19`;
             )}
           </>
         )}
+        </div>
 
         {/* Supported Formats Info */}
-        <Card className="bg-muted/50">
+        <Card className="bg-muted/50 max-w-3xl">
           <CardContent className="p-6">
             <h3 className="font-semibold text-foreground mb-4">Supported File Formats</h3>
             <div className="grid md:grid-cols-3 gap-4">
