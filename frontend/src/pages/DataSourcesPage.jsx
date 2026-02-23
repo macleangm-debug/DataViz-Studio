@@ -199,6 +199,7 @@ export function DataSourcesPage() {
 
   useEffect(() => {
     fetchSources();
+    fetchConnections();
   }, [currentOrg]);
 
   const fetchSources = async () => {
@@ -211,6 +212,16 @@ export function DataSourcesPage() {
       console.error('Error fetching sources:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchConnections = async () => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.get(`${API_URL}/api/connectors`, { headers });
+      setConnections(response.data.connections || []);
+    } catch (error) {
+      console.error('Error fetching connections:', error);
     }
   };
 
