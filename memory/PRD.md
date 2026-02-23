@@ -1070,6 +1070,70 @@ General:
 
 **Test Status:** 100% backend (14/14 tests), 100% frontend - iteration_27.json
 
+## Session 28 (Feb 23, 2026) - Salesforce, HubSpot, Dropbox OAuth Connectors
+
+### New Backend Connectors
+- [x] **`salesforce_connector.py`** - Salesforce CRM OAuth connector
+  - OAuth 2.0 flow with Salesforce Connected App
+  - List Salesforce objects (Contact, Lead, Account, Opportunity, etc.)
+  - Query object fields and records with SOQL
+  - Import objects as datasets
+- [x] **`hubspot_connector.py`** - HubSpot CRM OAuth connector
+  - OAuth 2.0 flow with HubSpot App
+  - List HubSpot objects (Contacts, Companies, Deals, Tickets)
+  - Get object properties and records
+  - Import CRM data as datasets
+- [x] **`dropbox_connector.py`** - Dropbox OAuth connector
+  - OAuth 2.0 flow with Dropbox App
+  - Browse folders and files
+  - Preview and import CSV, JSON, Excel files
+  - Account info display
+
+### API Endpoints Added
+```
+Salesforce:
+  POST /api/connectors/salesforce/oauth/init
+  POST /api/connectors/salesforce/oauth/callback
+  GET  /api/connectors/salesforce/{id}/objects
+  GET  /api/connectors/salesforce/{id}/objects/{name}/fields
+  GET  /api/connectors/salesforce/{id}/objects/{name}/query
+  POST /api/connectors/salesforce/{id}/import
+
+HubSpot:
+  POST /api/connectors/hubspot/oauth/init
+  POST /api/connectors/hubspot/oauth/callback
+  GET  /api/connectors/hubspot/{id}/objects
+  GET  /api/connectors/hubspot/{id}/objects/{type}/properties
+  GET  /api/connectors/hubspot/{id}/objects/{type}/records
+  POST /api/connectors/hubspot/{id}/import
+
+Dropbox:
+  POST /api/connectors/dropbox/oauth/init
+  POST /api/connectors/dropbox/oauth/callback
+  GET  /api/connectors/dropbox/{id}/files
+  GET  /api/connectors/dropbox/{id}/preview
+  POST /api/connectors/dropbox/{id}/import
+```
+
+### Frontend UI Updates
+- [x] Salesforce OAuth dialog with Consumer Key/Secret inputs
+- [x] HubSpot OAuth dialog with App Client ID/Secret inputs
+- [x] Dropbox OAuth dialog with App Key/Secret inputs
+- [x] All dialogs include branded icons, external links to developer portals, and redirect URI instructions
+- [x] Updated OAuth flow to support all 5 providers (Google, Salesforce, HubSpot, Dropbox)
+
+### Files Created
+- `/app/backend/connectors/salesforce_connector.py`
+- `/app/backend/connectors/hubspot_connector.py`
+- `/app/backend/connectors/dropbox_connector.py`
+
+### Files Modified
+- `/app/backend/connectors/__init__.py` - Added new connector exports
+- `/app/backend/routes/connectors_routes.py` - Added 15+ new API endpoints
+- `/app/frontend/src/pages/DataSourcesPage.jsx` - Added OAuth dialogs and multi-provider support
+
+**Test Status:** Backend OAuth init endpoints verified via curl. Frontend UI verified via screenshots.
+
 ## Next Recommended Tasks
 - **Implement Remaining Connectors** - Salesforce, HubSpot, Stripe, Dropbox (OAuth flows)
 - **SSO Integration** - Survey360, FieldForce, DataPulse integration
