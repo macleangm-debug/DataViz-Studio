@@ -2562,7 +2562,7 @@ export function ChartsPage() {
                             key={value}
                             variant="outline"
                             size="sm"
-                            className="h-7 text-xs"
+                            className="h-7 text-xs border-gray-600 text-gray-300 hover:bg-violet-500/10 hover:text-violet-300 hover:border-violet-500/50"
                             onClick={() => handleDrillDown(option.field, value)}
                           >
                             <Filter className="w-3 h-3 mr-1" />
@@ -2570,7 +2570,7 @@ export function ChartsPage() {
                           </Button>
                         ))}
                         {option.values?.length > 5 && (
-                          <Badge variant="secondary" className="h-7">
+                          <Badge variant="secondary" className="h-7 bg-gray-700/50 text-gray-300">
                             +{option.values.length - 5} more
                           </Badge>
                         )}
