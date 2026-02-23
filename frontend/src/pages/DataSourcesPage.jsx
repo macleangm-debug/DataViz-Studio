@@ -209,44 +209,77 @@ export function DataSourcesPage() {
   // OAuth Handlers
   // ============================================================================
 
-  const initiateOAuth = async (connector) => {
+  const initiateOAuth = async (connector, clientId, clientSecret) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(
-        `${API_URL}/api/connectors/${connector.id}/oauth/init`,
+      const redirectUri = `${window.location.origin}/dashboard/data-sources`;
+      
+      const response = await axios.post(
+        `${API_URL}/api/connectors/google/oauth/init`,
+        {
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          connector_type: connector.id
+        },
         { headers }
       );
       
       if (response.data.auth_url) {
-        // Store connector info for callback
+        // Store connector info and credentials for callback
         localStorage.setItem('oauth_connector', connector.id);
+        localStorage.setItem('oauth_client_id', clientId);
+        localStorage.setItem('oauth_client_secret', clientSecret);
+        localStorage.setItem('oauth_redirect_uri', redirectUri);
         window.location.href = response.data.auth_url;
       }
     } catch (error) {
-      toast.error(`OAuth not configured for ${connector.name}. Please contact support.`);
+      console.error('OAuth init error:', error);
+      toast.error(error.response?.data?.detail || `Failed to initiate OAuth for ${connector.name}`);
     }
   };
 
   const handleOAuthCallback = async (code, state) => {
     const connectorId = localStorage.getItem('oauth_connector');
-    if (!connectorId) return;
+    const clientId = localStorage.getItem('oauth_client_id');
+    const clientSecret = localStorage.getItem('oauth_client_secret');
+    const redirectUri = localStorage.getItem('oauth_redirect_uri');
+    
+    if (!connectorId || !clientId || !clientSecret) {
+      toast.error('OAuth session expired. Please try connecting again.');
+      return;
+    }
     
     try {
       const headers = { Authorization: `Bearer ${token}` };
       await axios.post(
-        `${API_URL}/api/connectors/${connectorId}/oauth/callback`,
-        { code, state },
+        `${API_URL}/api/connectors/google/oauth/callback`,
+        { 
+          code, 
+          state,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri
+        },
         { headers }
       );
       
-      toast.success('Successfully connected!');
+      toast.success('Successfully connected to Google!');
+      
+      // Clean up localStorage
       localStorage.removeItem('oauth_connector');
+      localStorage.removeItem('oauth_client_id');
+      localStorage.removeItem('oauth_client_secret');
+      localStorage.removeItem('oauth_redirect_uri');
+      
       fetchSources();
+      fetchConnections();
       
       // Clear URL params
       window.history.replaceState({}, '', window.location.pathname);
     } catch (error) {
-      toast.error('OAuth connection failed');
+      console.error('OAuth callback error:', error);
+      toast.error(error.response?.data?.detail || 'OAuth connection failed');
     }
   };
 
