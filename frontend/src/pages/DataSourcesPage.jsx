@@ -232,18 +232,35 @@ export function DataSourcesPage() {
   const initiateOAuth = async (connector, clientId, clientSecret) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const redirectUri = `${window.location.origin}/dashboard/data-sources`;
+      const redirectUri = `${window.location.origin}/data-sources`;
       
-      const response = await axios.post(
-        `${API_URL}/api/connectors/google/oauth/init`,
-        {
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          connector_type: connector.id
-        },
-        { headers }
-      );
+      // Determine which OAuth init endpoint to use
+      let oauthEndpoint = '';
+      if (connector.id === 'google_sheets' || connector.id === 'google_drive') {
+        oauthEndpoint = `${API_URL}/api/connectors/google/oauth/init`;
+      } else if (connector.id === 'salesforce') {
+        oauthEndpoint = `${API_URL}/api/connectors/salesforce/oauth/init`;
+      } else if (connector.id === 'hubspot') {
+        oauthEndpoint = `${API_URL}/api/connectors/hubspot/oauth/init`;
+      } else if (connector.id === 'dropbox') {
+        oauthEndpoint = `${API_URL}/api/connectors/dropbox/oauth/init`;
+      } else {
+        toast.error(`OAuth not supported for ${connector.name}`);
+        return;
+      }
+      
+      const payload = {
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri
+      };
+      
+      // Google connectors need connector_type
+      if (connector.id === 'google_sheets' || connector.id === 'google_drive') {
+        payload.connector_type = connector.id;
+      }
+      
+      const response = await axios.post(oauthEndpoint, payload, { headers });
       
       if (response.data.auth_url) {
         // Store connector info and credentials for callback
