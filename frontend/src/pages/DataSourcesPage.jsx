@@ -371,51 +371,114 @@ export function DataSourcesPage() {
   };
 
   // S3 specific handlers
-  const loadS3Buckets = async (sourceId) => {
+  const loadS3Buckets = async (connectionId) => {
     setS3Loading(true);
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(
-        `${API_URL}/api/connectors/s3/${sourceId}/buckets`,
+        `${API_URL}/api/connectors/s3/${connectionId}/buckets`,
         { headers }
       );
       setS3Buckets(response.data.buckets || []);
+      setS3CurrentBucket(null);
+      setS3CurrentPrefix('');
+      setS3Files([]);
+      setS3Folders([]);
     } catch (error) {
       console.error('Error loading S3 buckets:', error);
+      toast.error('Failed to load S3 buckets');
     } finally {
       setS3Loading(false);
     }
   };
 
-  const loadS3Files = async (sourceId, bucket, prefix = '') => {
+  const loadS3Files = async (connectionId, bucket, prefix = '') => {
     setS3Loading(true);
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(
-        `${API_URL}/api/connectors/s3/${sourceId}/files?bucket=${bucket}&prefix=${prefix}`,
+        `${API_URL}/api/connectors/s3/${connectionId}/files?bucket=${bucket}&prefix=${prefix}`,
         { headers }
       );
       setS3Files(response.data.files || []);
+      setS3Folders(response.data.folders || []);
+      setS3CurrentBucket(bucket);
+      setS3CurrentPrefix(prefix);
     } catch (error) {
       console.error('Error loading S3 files:', error);
+      toast.error('Failed to load files');
     } finally {
       setS3Loading(false);
     }
   };
 
-  const importS3File = async (sourceId, bucket, key) => {
+  const importS3File = async (connectionId, bucket, key, fileName) => {
+    setS3Importing(true);
     try {
       const headers = { Authorization: `Bearer ${token}` };
       await axios.post(
-        `${API_URL}/api/connectors/s3/${sourceId}/import`,
-        { bucket, key, org_id: currentOrg?.id },
+        `${API_URL}/api/connectors/s3/${connectionId}/import`,
+        { bucket, key, dataset_name: fileName, org_id: currentOrg?.id },
         { headers }
       );
-      toast.success('File imported successfully!');
+      toast.success(`Imported "${fileName}" successfully!`);
       fetchSources();
+      setShowS3Browser(false);
     } catch (error) {
-      toast.error('Failed to import file');
+      toast.error(error.response?.data?.detail || 'Failed to import file');
+    } finally {
+      setS3Importing(false);
     }
+  };
+
+  const openS3Browser = (connection) => {
+    setSelectedS3Connection(connection.id);
+    setShowS3Browser(true);
+    loadS3Buckets(connection.id);
+  };
+  
+  // Google Sheets handlers
+  const loadGoogleSpreadsheets = async (connectionId) => {
+    setGoogleLoading(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.get(
+        `${API_URL}/api/connectors/google/${connectionId}/spreadsheets`,
+        { headers }
+      );
+      setGoogleSpreadsheets(response.data.spreadsheets || []);
+    } catch (error) {
+      console.error('Error loading spreadsheets:', error);
+      toast.error('Failed to load Google Sheets');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const importGoogleSpreadsheet = async (connectionId, spreadsheetId, name) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.post(
+        `${API_URL}/api/connectors/google/${connectionId}/import`,
+        { 
+          spreadsheet_id: spreadsheetId, 
+          dataset_name: name,
+          org_id: currentOrg?.id 
+        },
+        { headers }
+      );
+      toast.success(`Imported "${name}" successfully!`);
+      fetchSources();
+      setShowGoogleBrowser(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to import spreadsheet');
+    }
+  };
+
+  const openGoogleBrowser = (connection) => {
+    setSelectedGoogleConnection(connection.id);
+    setShowGoogleBrowser(true);
+    loadGoogleSpreadsheets(connection.id);
   };
 
   const handleDelete = async (id) => {
