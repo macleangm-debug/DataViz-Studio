@@ -691,7 +691,7 @@ export function DashboardBuilderPage() {
                         <SelectValue placeholder="Count" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Count</SelectItem>
+                        <SelectItem value="count">Count</SelectItem>
                         {getSelectedDataset(newWidget.dataset_id)?.columns
                           ?.filter(c => c.type.includes('int') || c.type.includes('float'))
                           .map((col) => (
