@@ -990,8 +990,89 @@ Enterprise | ~$49.80/mo| $249/mo       | 80%
 
 **Test Status:** 100% frontend (all 4 features verified) - iteration_26.json
 
+## Session 27 (Feb 23, 2026) - Data Source Connectors (Google Sheets & AWS S3)
+
+### Modular Backend Architecture
+- [x] Created `/app/backend/connectors/` module for data source connectors
+- [x] **`google_connector.py`** - Google Sheets/Drive OAuth 2.0 connector
+  - OAuth flow with user-provided client credentials (BYOK approach)
+  - List spreadsheets and files from Google Drive
+  - Import spreadsheets as datasets
+  - Token refresh handling
+- [x] **`s3_connector.py`** - AWS S3 BYOK connector
+  - Credential validation via AWS API
+  - Bucket listing
+  - File/folder browsing with pagination
+  - Preview and import CSV, JSON, Excel, Parquet files
+  - Dataset refresh from S3 source
+- [x] **`/app/backend/routes/connectors_routes.py`** - Unified API routes
+  - 15 API endpoints for connector operations
+
+### API Endpoints Added
+```
+Google OAuth:
+  POST /api/connectors/google/oauth/init - Start OAuth flow
+  POST /api/connectors/google/oauth/callback - Handle OAuth callback
+  GET  /api/connectors/google/{id}/spreadsheets - List user's spreadsheets
+  GET  /api/connectors/google/{id}/spreadsheet/{spreadsheet_id} - Get sheet data
+  POST /api/connectors/google/{id}/import - Import spreadsheet as dataset
+  GET  /api/connectors/google/{id}/drive - Browse Google Drive files
+
+AWS S3 (BYOK):
+  POST /api/connectors/s3/test - Test AWS credentials
+  POST /api/connectors/s3/connect - Create S3 connection
+  GET  /api/connectors/s3/{id}/buckets - List buckets
+  GET  /api/connectors/s3/{id}/files - List files in bucket
+  GET  /api/connectors/s3/{id}/preview - Preview file contents
+  POST /api/connectors/s3/{id}/import - Import file as dataset
+  POST /api/connectors/s3/sources/{id}/refresh - Refresh dataset from S3
+
+General:
+  GET  /api/connectors - List all connections
+  DELETE /api/connectors/{id} - Remove connection
+  POST /api/connectors/connect - Generic connect (routes to specific connector)
+```
+
+### Frontend Features
+- [x] **My Connections Tab** - Shows all active connector connections
+  - S3 connections with "Browse Files" button
+  - Google connections with "View Sheets" button
+  - Connection status badges
+  - Delete connection option
+- [x] **AWS S3 Connection Dialog**
+  - Connection Name, Access Key ID, Secret Access Key, Region inputs
+  - Security note about encrypted credentials
+  - IAM role recommendation
+- [x] **Google Sheets OAuth Dialog**
+  - OAuth Client ID and Client Secret inputs
+  - Link to Google Cloud Console
+  - Redirect URI instructions
+- [x] **S3 File Browser Dialog**
+  - Bucket navigation with breadcrumbs
+  - Folder and file listing
+  - File type icons (CSV, JSON, Excel, etc.)
+  - File size and modified date display
+  - Import button for supported file types
+- [x] **Google Sheets Browser Dialog**
+  - List of user's spreadsheets
+  - Owner and modified date display
+  - Import button
+
+### Files Created
+- `/app/backend/connectors/__init__.py`
+- `/app/backend/connectors/google_connector.py` (400+ lines)
+- `/app/backend/connectors/s3_connector.py` (450+ lines)
+- `/app/backend/routes/connectors_routes.py` (400+ lines)
+
+### Files Modified
+- `/app/backend/server.py` - Added connectors_router import and registration
+- `/app/frontend/src/pages/DataSourcesPage.jsx` - Enhanced with OAuth flows, file browsers, My Connections tab
+
+**Test Status:** 100% backend (14/14 tests), 100% frontend - iteration_27.json
+
 ## Next Recommended Tasks
-- **Phase 3 Features** - Scheduled Email Reports UI
+- **Implement Remaining Connectors** - Salesforce, HubSpot, Stripe, Dropbox (OAuth flows)
+- **SSO Integration** - Survey360, FieldForce, DataPulse integration
+- **Scheduled Report Delivery UI** - Build frontend for report scheduling
 - **Email Integration Activation** - Add RESEND_API_KEY to enable report delivery
-- **Remaining Report Features** - Watermarks, custom fonts, password protection, etc.
 
