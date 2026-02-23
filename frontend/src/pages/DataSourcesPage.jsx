@@ -870,6 +870,10 @@ export function DataSourcesPage() {
               <Plug className="w-4 h-4" />
               Connectors
             </TabsTrigger>
+            <TabsTrigger value="connections" className="gap-2" data-testid="connections-tab">
+              <Cloud className="w-4 h-4" />
+              My Connections ({connections.length})
+            </TabsTrigger>
             <TabsTrigger value="sources" className="gap-2">
               <Database className="w-4 h-4" />
               My Sources ({sources.length})
@@ -918,6 +922,111 @@ export function DataSourcesPage() {
                 </div>
               </div>
             ))}
+          </TabsContent>
+
+          {/* My Connections Tab */}
+          <TabsContent value="connections" className="space-y-4">
+            {connections.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <Cloud className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">No active connections</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Connect to cloud storage or APIs to import your data
+                  </p>
+                  <Button onClick={() => setActiveTab('connectors')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Connection
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {connections.map((conn) => {
+                  const connectorInfo = getConnectorInfo(conn.type);
+                  const ConnectorIcon = connectorInfo.icon;
+                  const isS3 = conn.type === 'aws_s3';
+                  const isGoogle = conn.type === 'google_sheets' || conn.type === 'google_drive';
+                  
+                  return (
+                    <Card key={conn.id} className="hover:shadow-md transition-shadow" data-testid={`connection-${conn.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-xl bg-${connectorInfo.color}-100 dark:bg-${connectorInfo.color}-900/30 flex items-center justify-center`}>
+                            <ConnectorIcon className={`w-6 h-6 text-${connectorInfo.color}-600`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-foreground">{conn.name}</h3>
+                              <Badge variant={conn.status === 'connected' ? 'default' : 'secondary'} className="text-xs">
+                                {conn.status === 'connected' ? (
+                                  <><CheckCircle className="w-3 h-3 mr-1" /> Connected</>
+                                ) : (
+                                  <><AlertCircle className="w-3 h-3 mr-1" /> {conn.status}</>
+                                )}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {conn.type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                              {conn.credentials?.region && ` • ${conn.credentials.region}`}
+                            </p>
+                            {conn.last_used && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Last used: {new Date(conn.last_used).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isS3 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openS3Browser(conn)}
+                                data-testid={`browse-s3-${conn.id}`}
+                              >
+                                <FolderOpen className="w-4 h-4 mr-2" />
+                                Browse Files
+                              </Button>
+                            )}
+                            {isGoogle && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openGoogleBrowser(conn)}
+                                data-testid={`browse-google-${conn.id}`}
+                              >
+                                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                View Sheets
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={async () => {
+                                try {
+                                  const headers = { Authorization: `Bearer ${token}` };
+                                  await axios.delete(`${API_URL}/api/connectors/${conn.id}`, { headers });
+                                  toast.success('Connection removed');
+                                  fetchConnections();
+                                } catch (error) {
+                                  toast.error('Failed to remove connection');
+                                }
+                              }}
+                              className="text-red-500 hover:text-red-600"
+                              title="Remove Connection"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           {/* My Sources Tab */}
