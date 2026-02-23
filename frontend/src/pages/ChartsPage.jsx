@@ -195,31 +195,39 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
   const colors = COLOR_THEMES[theme] || COLOR_THEMES.violet;
   const annotations = config?.annotations || [];
   const annotationConfig = generateAnnotationConfig(annotations, data);
+  const primaryColor = colors[0];
+  const secondaryColor = colors[1];
   
   const baseOptions = {
+    backgroundColor: '#11111b',
     color: colors,
     tooltip: {
       trigger: chartType === 'pie' ? 'item' : 'axis',
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      borderColor: 'transparent',
-      textStyle: { color: '#fff' },
+      backgroundColor: 'rgba(17, 17, 27, 0.95)',
+      borderColor: `${primaryColor}40`,
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: [12, 16],
+      textStyle: { color: '#fff', fontSize: 12 },
+      extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.3);',
     },
     legend: {
       show: config?.showLegend !== false,
-      bottom: 0,
-      textStyle: { color: '#888' },
+      bottom: 10,
+      textStyle: { color: '#9ca3af', fontSize: 11 },
+      itemGap: 16,
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: config?.showLegend !== false ? '15%' : '8%',
-      top: '10%',
+      bottom: config?.showLegend !== false ? '15%' : '10%',
+      top: '12%',
       containLabel: true,
     },
   };
 
   if (!data || data.length === 0) {
-    return { ...baseOptions, title: { text: 'No data available', left: 'center', top: 'center', textStyle: { color: '#888' } } };
+    return { ...baseOptions, title: { text: 'No data available', left: 'center', top: 'center', textStyle: { color: '#6b7280', fontSize: 14 } } };
   }
 
   switch (chartType) {
@@ -229,19 +237,41 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         xAxis: {
           type: 'category',
           data: data.map(d => d.name),
-          axisLabel: { color: '#888', rotate: data.length > 8 ? 45 : 0 },
-          axisLine: { lineStyle: { color: '#333' } },
+          axisLabel: { color: '#9ca3af', rotate: data.length > 8 ? 45 : 0, fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
         },
         series: [{
           type: 'bar',
-          data: data.map(d => d.value),
-          itemStyle: { borderRadius: [4, 4, 0, 0] },
-          emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(139, 92, 246, 0.5)' } },
+          data: data.map((d, i) => ({
+            value: d.value,
+            itemStyle: {
+              borderRadius: [8, 8, 0, 0],
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: secondaryColor },
+                  { offset: 1, color: primaryColor }
+                ]
+              }
+            }
+          })),
+          barMaxWidth: 60,
+          emphasis: { 
+            itemStyle: { 
+              shadowBlur: 15, 
+              shadowColor: `${primaryColor}50`,
+              shadowOffsetY: 5
+            } 
+          },
           markLine: annotationConfig.markLine,
           markPoint: annotationConfig.markPoint,
           markArea: annotationConfig.markArea,
