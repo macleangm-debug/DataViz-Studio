@@ -503,12 +503,14 @@ export function DashboardBuilderPage() {
               className="layout"
               layout={layout}
               cols={12}
-              rowHeight={80}
-              width={1200}
+              rowHeight={50}
+              width={1100}
               onLayoutChange={handleLayoutChange}
               draggableHandle=".drag-handle"
               compactType="vertical"
               preventCollision={false}
+              margin={[12, 12]}
+              containerPadding={[0, 0]}
             >
               {widgets.map(widget => (
                 <div key={widget.id} data-testid={`widget-${widget.id}`}>
