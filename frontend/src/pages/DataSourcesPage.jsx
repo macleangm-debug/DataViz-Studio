@@ -272,8 +272,23 @@ export function DataSourcesPage() {
     
     try {
       const headers = { Authorization: `Bearer ${token}` };
+      
+      // Determine which OAuth endpoint to use
+      let oauthEndpoint = '';
+      if (connectorId === 'google_sheets' || connectorId === 'google_drive') {
+        oauthEndpoint = `${API_URL}/api/connectors/google/oauth/callback`;
+      } else if (connectorId === 'salesforce') {
+        oauthEndpoint = `${API_URL}/api/connectors/salesforce/oauth/callback`;
+      } else if (connectorId === 'hubspot') {
+        oauthEndpoint = `${API_URL}/api/connectors/hubspot/oauth/callback`;
+      } else if (connectorId === 'dropbox') {
+        oauthEndpoint = `${API_URL}/api/connectors/dropbox/oauth/callback`;
+      } else {
+        throw new Error('Unknown connector type');
+      }
+      
       await axios.post(
-        `${API_URL}/api/connectors/google/oauth/callback`,
+        oauthEndpoint,
         { 
           code, 
           state,
@@ -284,7 +299,8 @@ export function DataSourcesPage() {
         { headers }
       );
       
-      toast.success('Successfully connected to Google!');
+      const connectorName = connectorId.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+      toast.success(`Successfully connected to ${connectorName}!`);
       
       // Clean up localStorage
       localStorage.removeItem('oauth_connector');
@@ -316,10 +332,12 @@ export function DataSourcesPage() {
   const handleConnect = async () => {
     if (!selectedConnector) return;
     
-    // For Google OAuth connectors with user-provided credentials
-    if (selectedConnector.oauth && (selectedConnector.id === 'google_sheets' || selectedConnector.id === 'google_drive')) {
+    // OAuth connectors (Google, Salesforce, HubSpot, Dropbox)
+    const oauthConnectors = ['google_sheets', 'google_drive', 'salesforce', 'hubspot', 'dropbox'];
+    
+    if (selectedConnector.oauth && oauthConnectors.includes(selectedConnector.id)) {
       if (!connectorConfig.client_id || !connectorConfig.client_secret) {
-        toast.error('Please enter your Google OAuth credentials');
+        toast.error(`Please enter your ${selectedConnector.name} OAuth credentials`);
         return;
       }
       initiateOAuth(selectedConnector, connectorConfig.client_id, connectorConfig.client_secret);
