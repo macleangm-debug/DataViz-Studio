@@ -294,7 +294,7 @@ async def test_s3_connection(
     request: Request
 ):
     """Test AWS S3 credentials before saving"""
-    user = await get_current_user(request)
+    await get_current_user(request)  # Validate auth
     db = request.app.state.db
     
     connector = S3Connector(db)
