@@ -3578,6 +3578,447 @@ async def export_report_pdf(request: ReportExportRequest):
         logger.error(f"PDF generation error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
+
+@api_router.post("/reports/export/pdf/v2")
+async def export_report_pdf_v2(request: ReportExportRequest):
+    """Export charts as professional PDF using WeasyPrint with proper HTML/CSS layout"""
+    try:
+        charts_to_export = []
+        
+        # Fetch chart info
+        if request.chart_ids:
+            for chart_id in request.chart_ids:
+                chart = await db.charts.find_one({"id": chart_id}, {"_id": 0})
+                if chart:
+                    # Get chart data
+                    data = await db.dataset_data.find(
+                        {"dataset_id": chart.get("dataset_id")},
+                        {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+                    ).to_list(1000)
+                    
+                    chart_data = []
+                    if data:
+                        df = pd.DataFrame(data)
+                        config = chart.get("config", {})
+                        x_field = config.get("x_field")
+                        y_field = config.get("y_field")
+                        
+                        if x_field and x_field in df.columns:
+                            if y_field and y_field in df.columns:
+                                grouped = df.groupby(x_field)[y_field].sum().reset_index()
+                                grouped.columns = ["name", "value"]
+                            else:
+                                grouped = df.groupby(x_field).size().reset_index()
+                                grouped.columns = ["name", "value"]
+                            chart_data = grouped.sort_values('value', ascending=False).head(10).to_dict(orient='records')
+                    
+                    charts_to_export.append({
+                        "name": chart.get("name", "Chart"),
+                        "type": chart.get("type", "bar"),
+                        "data": chart_data
+                    })
+        
+        if not charts_to_export:
+            raise HTTPException(status_code=400, detail="No charts to export")
+        
+        date_str = datetime.now().strftime("%B %d, %Y")
+        
+        # Generate simple bar chart SVGs
+        def generate_bar_svg(data, width=280, height=180):
+            if not data:
+                return f'<svg width="{width}" height="{height}"><text x="{width//2}" y="{height//2}" text-anchor="middle" fill="#999">No data</text></svg>'
+            
+            max_val = max(d["value"] for d in data) or 1
+            bar_width = (width - 60) // len(data)
+            svg_parts = [f'<svg width="{width}" height="{height}" style="background: white;">']
+            
+            # Draw bars
+            for i, d in enumerate(data[:8]):
+                bar_height = int((d["value"] / max_val) * (height - 50))
+                x = 40 + i * bar_width
+                y = height - 30 - bar_height
+                svg_parts.append(f'<rect x="{x}" y="{y}" width="{bar_width - 4}" height="{bar_height}" fill="#3b82f6" rx="3"/>')
+                # Label
+                label = str(d["name"])[:6]
+                svg_parts.append(f'<text x="{x + bar_width//2}" y="{height - 10}" text-anchor="middle" font-size="9" fill="#333">{label}</text>')
+            
+            svg_parts.append('</svg>')
+            return ''.join(svg_parts)
+        
+        def generate_pie_svg(data, width=280, height=180):
+            if not data:
+                return f'<svg width="{width}" height="{height}"><text x="{width//2}" y="{height//2}" text-anchor="middle" fill="#999">No data</text></svg>'
+            
+            total = sum(d["value"] for d in data) or 1
+            colors = ["#3b82f6", "#60a5fa", "#93c5fd", "#22c55e", "#fbbf24", "#f472b6"]
+            cx, cy, r = width // 2, height // 2, min(width, height) // 2 - 20
+            
+            svg_parts = [f'<svg width="{width}" height="{height}" style="background: white;">']
+            start_angle = 0
+            
+            for i, d in enumerate(data[:6]):
+                angle = (d["value"] / total) * 360
+                end_angle = start_angle + angle
+                large_arc = 1 if angle > 180 else 0
+                
+                start_rad = start_angle * 3.14159 / 180
+                end_rad = end_angle * 3.14159 / 180
+                
+                x1 = cx + r * __import__('math').cos(start_rad)
+                y1 = cy + r * __import__('math').sin(start_rad)
+                x2 = cx + r * __import__('math').cos(end_rad)
+                y2 = cy + r * __import__('math').sin(end_rad)
+                
+                path = f'M {cx},{cy} L {x1},{y1} A {r},{r} 0 {large_arc},1 {x2},{y2} Z'
+                svg_parts.append(f'<path d="{path}" fill="{colors[i % len(colors)]}"/>')
+                start_angle = end_angle
+            
+            svg_parts.append('</svg>')
+            return ''.join(svg_parts)
+        
+        def generate_line_svg(data, width=280, height=180):
+            if not data:
+                return f'<svg width="{width}" height="{height}"><text x="{width//2}" y="{height//2}" text-anchor="middle" fill="#999">No data</text></svg>'
+            
+            max_val = max(d["value"] for d in data) or 1
+            points = []
+            step = (width - 60) // max(len(data) - 1, 1)
+            
+            for i, d in enumerate(data[:10]):
+                x = 40 + i * step
+                y = height - 30 - int((d["value"] / max_val) * (height - 50))
+                points.append(f'{x},{y}')
+            
+            svg_parts = [f'<svg width="{width}" height="{height}" style="background: white;">']
+            svg_parts.append(f'<polyline points="{" ".join(points)}" fill="none" stroke="#3b82f6" stroke-width="2"/>')
+            for p in points:
+                x, y = p.split(',')
+                svg_parts.append(f'<circle cx="{x}" cy="{y}" r="4" fill="#3b82f6"/>')
+            svg_parts.append('</svg>')
+            return ''.join(svg_parts)
+        
+        # Generate chart SVGs
+        chart_svgs = []
+        for chart in charts_to_export:
+            if chart["type"] == "pie":
+                svg = generate_pie_svg(chart["data"])
+            elif chart["type"] in ["line", "area"]:
+                svg = generate_line_svg(chart["data"])
+            else:
+                svg = generate_bar_svg(chart["data"])
+            chart_svgs.append({"name": chart["name"], "type": chart["type"], "svg": svg, "data": chart["data"]})
+        
+        # Build HTML
+        charts_html = ""
+        for i, chart in enumerate(chart_svgs):
+            charts_html += f'''
+            <div class="chart-card">
+                <div class="chart-title">{chart["name"]}</div>
+                <div class="chart-container">{chart["svg"]}</div>
+            </div>
+            '''
+        
+        # Build data summary rows
+        summary_rows = ""
+        total_items = 0
+        grand_total = 0
+        for chart in charts_to_export:
+            if chart["data"]:
+                items = len(chart["data"])
+                total = sum(d["value"] for d in chart["data"])
+                max_val = max(d["value"] for d in chart["data"])
+                min_val = min(d["value"] for d in chart["data"])
+                avg_val = int(total / items) if items else 0
+                total_items += items
+                grand_total += total
+                summary_rows += f'''
+                <tr>
+                    <td>{chart["name"]}</td>
+                    <td>{chart["type"]}</td>
+                    <td class="num">{items}</td>
+                    <td class="num">{total:,}</td>
+                    <td class="num">{max_val:,}</td>
+                    <td class="num">{min_val:,}</td>
+                    <td class="num">{avg_val:,}</td>
+                </tr>
+                '''
+        
+        html_content = f'''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                @page {{
+                    size: A4;
+                    margin: 15mm;
+                }}
+                * {{
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                }}
+                body {{
+                    font-family: Georgia, serif;
+                    font-size: 11pt;
+                    color: #1a1a1a;
+                    background: #f5f5f5;
+                }}
+                .page {{
+                    page-break-after: always;
+                    min-height: 260mm;
+                    position: relative;
+                }}
+                .page:last-child {{
+                    page-break-after: avoid;
+                }}
+                .header {{
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 20px;
+                    padding-bottom: 15px;
+                    border-bottom: 2px solid #a855f7;
+                }}
+                .header-left {{
+                    flex: 1;
+                }}
+                .header-date {{
+                    font-size: 10pt;
+                    color: #666;
+                    margin-bottom: 5px;
+                }}
+                .header-title {{
+                    font-size: 22pt;
+                    font-weight: bold;
+                    color: #000;
+                }}
+                .logo {{
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }}
+                .logo-icon {{
+                    width: 32px;
+                    height: 40px;
+                    background: linear-gradient(135deg, #c084fc, #a855f7);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }}
+                .logo-icon svg {{
+                    width: 20px;
+                    height: 20px;
+                }}
+                .logo-text {{
+                    font-size: 14pt;
+                    font-style: italic;
+                    color: #333;
+                }}
+                .chart-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                    margin-bottom: 20px;
+                }}
+                .chart-card {{
+                    background: white;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    border: 1px solid #e0e0e0;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                }}
+                .chart-title {{
+                    font-size: 11pt;
+                    font-weight: bold;
+                    color: #000;
+                    padding: 10px 12px;
+                    background: #fafafa;
+                    border-bottom: 1px solid #eee;
+                }}
+                .chart-container {{
+                    padding: 10px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 180px;
+                }}
+                .summary-table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: white;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    border: 1px solid #e0e0e0;
+                }}
+                .summary-table th {{
+                    background: #f8f8f8;
+                    padding: 12px;
+                    text-align: left;
+                    font-weight: 600;
+                    border-bottom: 2px solid #e0e0e0;
+                    font-size: 10pt;
+                }}
+                .summary-table td {{
+                    padding: 10px 12px;
+                    border-bottom: 1px solid #eee;
+                }}
+                .summary-table .num {{
+                    text-align: right;
+                    font-family: monospace;
+                }}
+                .stats-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                    margin-top: 20px;
+                }}
+                .stat-card {{
+                    background: white;
+                    border-radius: 10px;
+                    padding: 15px;
+                    border: 1px solid #e0e0e0;
+                }}
+                .stat-label {{
+                    font-size: 9pt;
+                    color: #666;
+                    text-transform: uppercase;
+                    margin-bottom: 5px;
+                }}
+                .stat-value {{
+                    font-size: 24pt;
+                    font-weight: bold;
+                    color: #000;
+                }}
+                .footer {{
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-top: 10px;
+                    border-top: 1px solid #ddd;
+                    font-size: 9pt;
+                    color: #666;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="header">
+                    <div class="header-left">
+                        <div class="header-date">{date_str} | DataViz Studio</div>
+                        <div class="header-title">Chart Report</div>
+                    </div>
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 20 20" fill="none">
+                                <path d="M6 4 Q3 10, 10 10 Q17 10, 14 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span class="logo-text">DataViz Studio</span>
+                    </div>
+                </div>
+                
+                <div class="chart-grid">
+                    {charts_html}
+                </div>
+                
+                <div class="footer">
+                    <div class="logo" style="gap: 6px;">
+                        <div class="logo-icon" style="width: 20px; height: 24px;">
+                            <svg viewBox="0 0 20 20" fill="none" style="width: 12px; height: 12px;">
+                                <path d="M6 4 Q3 10, 10 10 Q17 10, 14 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span style="font-size: 9pt; color: #666;">DataViz Studio</span>
+                    </div>
+                    <span>Page 1 of 2</span>
+                </div>
+            </div>
+            
+            <div class="page">
+                <div class="header">
+                    <div class="header-left">
+                        <div class="header-date">{date_str} | DataViz Studio</div>
+                        <div class="header-title">Data Summary</div>
+                    </div>
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 20 20" fill="none">
+                                <path d="M6 4 Q3 10, 10 10 Q17 10, 14 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span class="logo-text">DataViz Studio</span>
+                    </div>
+                </div>
+                
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Chart Name</th>
+                            <th>Type</th>
+                            <th class="num">Items</th>
+                            <th class="num">Total</th>
+                            <th class="num">Max</th>
+                            <th class="num">Min</th>
+                            <th class="num">Avg</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {summary_rows}
+                    </tbody>
+                </table>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Charts</div>
+                        <div class="stat-value">{len(charts_to_export)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Data Points</div>
+                        <div class="stat-value">{total_items}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Grand Total</div>
+                        <div class="stat-value">{grand_total:,}</div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <div class="logo" style="gap: 6px;">
+                        <div class="logo-icon" style="width: 20px; height: 24px;">
+                            <svg viewBox="0 0 20 20" fill="none" style="width: 12px; height: 12px;">
+                                <path d="M6 4 Q3 10, 10 10 Q17 10, 14 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span style="font-size: 9pt; color: #666;">DataViz Studio</span>
+                    </div>
+                    <span>Page 2 of 2</span>
+                </div>
+            </div>
+        </body>
+        </html>
+        '''
+        
+        # Generate PDF with WeasyPrint
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+        
+        return {
+            "status": "success",
+            "pdf_base64": pdf_base64,
+            "filename": f"DataViz_Report_{datetime.now().strftime('%Y%m%d')}.pdf"
+        }
+        
+    except Exception as e:
+        logger.error(f"PDF v2 generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+
 @api_router.get("/reports/export/pdf/{dashboard_id}")
 async def export_dashboard_pdf(
     dashboard_id: str, 
