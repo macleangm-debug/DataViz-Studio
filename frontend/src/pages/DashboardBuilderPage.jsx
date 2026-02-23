@@ -836,6 +836,39 @@ export function DashboardBuilderPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Color Scheme</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {Object.entries(COLOR_SCHEMES).map(([key, scheme]) => (
+                        <button
+                          key={key}
+                          onClick={() => setNewWidget({
+                            ...newWidget,
+                            config: { ...newWidget.config, color_scheme: key }
+                          })}
+                          className={`p-2 rounded-lg border transition-all ${
+                            (newWidget.config.color_scheme || 'purple') === key
+                              ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20 ring-2 ring-violet-500/30'
+                              : 'border-border hover:border-violet-300'
+                          }`}
+                          title={scheme.name}
+                        >
+                          <div className="flex gap-0.5 justify-center">
+                            {scheme.colors.slice(0, 4).map((color, i) => (
+                              <div
+                                key={i}
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1 truncate">{scheme.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
                     <Label>X-Axis Field</Label>
                     <Select
