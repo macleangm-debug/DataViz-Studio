@@ -77,14 +77,70 @@ const WIDGET_TYPES = [
 
 const CHART_TYPES = [
   { value: 'bar', label: 'Bar Chart', icon: BarChart3 },
+  { value: 'horizontal_bar', label: 'Horizontal Bar', icon: BarChart3 },
   { value: 'line', label: 'Line Chart', icon: LineChart },
+  { value: 'area', label: 'Area Chart', icon: LineChart },
   { value: 'pie', label: 'Pie Chart', icon: PieChart },
+  { value: 'donut', label: 'Donut Chart', icon: PieChart },
 ];
+
+const COLOR_SCHEMES = {
+  purple: {
+    name: 'Purple Violet',
+    colors: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#6d28d9'],
+    gradient: ['#a78bfa', '#8b5cf6'],
+    accent: '#8b5cf6'
+  },
+  blue: {
+    name: 'Ocean Blue',
+    colors: ['#3b82f6', '#60a5fa', '#93c5fd', '#2563eb', '#1d4ed8'],
+    gradient: ['#60a5fa', '#3b82f6'],
+    accent: '#3b82f6'
+  },
+  emerald: {
+    name: 'Emerald Green',
+    colors: ['#10b981', '#34d399', '#6ee7b7', '#059669', '#047857'],
+    gradient: ['#34d399', '#10b981'],
+    accent: '#10b981'
+  },
+  orange: {
+    name: 'Sunset Orange',
+    colors: ['#f97316', '#fb923c', '#fdba74', '#ea580c', '#c2410c'],
+    gradient: ['#fb923c', '#f97316'],
+    accent: '#f97316'
+  },
+  pink: {
+    name: 'Rose Pink',
+    colors: ['#ec4899', '#f472b6', '#f9a8d4', '#db2777', '#be185d'],
+    gradient: ['#f472b6', '#ec4899'],
+    accent: '#ec4899'
+  },
+  cyan: {
+    name: 'Cyan Teal',
+    colors: ['#06b6d4', '#22d3ee', '#67e8f9', '#0891b2', '#0e7490'],
+    gradient: ['#22d3ee', '#06b6d4'],
+    accent: '#06b6d4'
+  },
+  rainbow: {
+    name: 'Rainbow Mix',
+    colors: ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'],
+    gradient: ['#8b5cf6', '#ec4899'],
+    accent: '#8b5cf6'
+  },
+  monochrome: {
+    name: 'Monochrome',
+    colors: ['#6b7280', '#9ca3af', '#d1d5db', '#4b5563', '#374151'],
+    gradient: ['#9ca3af', '#6b7280'],
+    accent: '#6b7280'
+  }
+};
 
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
 
 // Widget Component
 function DashboardWidget({ widget, data, onEdit, onDelete }) {
+  const colorScheme = COLOR_SCHEMES[widget.config?.color_scheme] || COLOR_SCHEMES.purple;
+  
   const renderContent = () => {
     if (!data) {
       return (
