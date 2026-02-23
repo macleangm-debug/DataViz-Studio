@@ -335,60 +335,6 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
             </BarChart>
           </ResponsiveContainer>
         );
-        } else {
-          return (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} barCategoryGap="20%">
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#a78bfa" stopOpacity={1}/>
-                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                  </linearGradient>
-                  <linearGradient id="barGradientHover" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#c4b5fd" stopOpacity={1}/>
-                    <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.9}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
-                  stroke="rgba(255,255,255,0.1)"
-                  axisLine={false}
-                  tickLine={false}
-                  dy={10}
-                />
-                <YAxis 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
-                  stroke="rgba(255,255,255,0.1)"
-                  axisLine={false}
-                  tickLine={false}
-                  dx={-10}
-                  tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}
-                />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(139, 92, 246, 0.1)', radius: 4 }}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(17, 17, 27, 0.95)', 
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                    padding: '12px 16px'
-                  }}
-                  labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: '4px' }}
-                  itemStyle={{ color: '#a78bfa' }}
-                  formatter={(value) => [value.toLocaleString(), 'Value']}
-                />
-                <Bar 
-                  dataKey="value" 
-                  fill="url(#barGradient)" 
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={60}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          );
-        }
 
       case 'table':
         if (!Array.isArray(data) || data.length === 0) {
