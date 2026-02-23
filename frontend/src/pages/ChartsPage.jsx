@@ -284,13 +284,16 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         xAxis: {
           type: 'category',
           data: data.map(d => d.name),
-          axisLabel: { color: '#888' },
-          axisLine: { lineStyle: { color: '#333' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
         },
         series: [{
           type: 'line',
@@ -298,8 +301,29 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           smooth: config?.smooth !== false,
           symbol: 'circle',
           symbolSize: 8,
-          lineStyle: { width: 3 },
-          areaStyle: config?.showArea ? { opacity: 0.3 } : undefined,
+          lineStyle: { 
+            width: 3,
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 1, y2: 0,
+              colorStops: [
+                { offset: 0, color: secondaryColor },
+                { offset: 1, color: primaryColor }
+              ]
+            }
+          },
+          itemStyle: { color: primaryColor, borderColor: '#11111b', borderWidth: 2 },
+          areaStyle: config?.showArea ? { 
+            opacity: 0.4,
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: `${primaryColor}60` },
+                { offset: 1, color: `${primaryColor}05` }
+              ]
+            }
+          } : undefined,
           markLine: annotationConfig.markLine,
           markPoint: annotationConfig.markPoint,
           markArea: annotationConfig.markArea,
@@ -312,21 +336,37 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         xAxis: {
           type: 'category',
           data: data.map(d => d.name),
-          axisLabel: { color: '#888' },
-          axisLine: { lineStyle: { color: '#333' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
           boundaryGap: false,
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11, formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
         },
         series: [{
           type: 'line',
           data: data.map(d => d.value),
           smooth: true,
-          areaStyle: { opacity: 0.6 },
-          lineStyle: { width: 2 },
+          lineStyle: { 
+            width: 2,
+            color: primaryColor
+          },
+          areaStyle: { 
+            opacity: 0.6,
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: `${primaryColor}80` },
+                { offset: 1, color: `${primaryColor}10` }
+              ]
+            }
+          },
           markLine: annotationConfig.markLine,
           markPoint: annotationConfig.markPoint,
           markArea: annotationConfig.markArea,
