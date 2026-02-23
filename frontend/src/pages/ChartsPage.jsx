@@ -378,21 +378,34 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         ...baseOptions,
         series: [{
           type: 'pie',
-          radius: config?.donut ? ['40%', '70%'] : '70%',
-          center: ['50%', '45%'],
+          radius: config?.donut ? ['45%', '75%'] : '70%',
+          center: ['50%', '48%'],
           data: data.map((d, i) => ({ 
             name: d.name, 
             value: d.value,
-            itemStyle: { borderRadius: 4, borderColor: '#1a1a2e', borderWidth: 2 }
+            itemStyle: { 
+              borderRadius: 6, 
+              borderColor: '#11111b', 
+              borderWidth: 3,
+              shadowBlur: 10,
+              shadowColor: 'rgba(0,0,0,0.3)'
+            }
           })),
           label: {
             show: config?.showLabels !== false,
-            color: '#888',
+            color: '#9ca3af',
+            fontSize: 11,
             formatter: '{b}: {d}%',
           },
           emphasis: {
-            itemStyle: { shadowBlur: 20, shadowColor: 'rgba(0, 0, 0, 0.5)' },
-            label: { show: true, fontWeight: 'bold' },
+            itemStyle: { 
+              shadowBlur: 25, 
+              shadowColor: 'rgba(0, 0, 0, 0.5)',
+              shadowOffsetY: 5
+            },
+            label: { show: true, fontWeight: 'bold', color: '#fff' },
+            scale: true,
+            scaleSize: 8,
           },
         }],
       };
@@ -402,19 +415,30 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         ...baseOptions,
         xAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
         },
         yAxis: {
           type: 'value',
-          axisLabel: { color: '#888' },
-          splitLine: { lineStyle: { color: '#222' } },
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
         },
         series: [{
           type: 'scatter',
           data: data.map((d, i) => [i, d.value]),
-          symbolSize: 12,
-          itemStyle: { opacity: 0.8 },
+          symbolSize: 14,
+          itemStyle: { 
+            opacity: 0.85,
+            shadowBlur: 10,
+            shadowColor: `${primaryColor}50`
+          },
+          emphasis: {
+            itemStyle: { shadowBlur: 20, shadowColor: primaryColor }
+          }
         }],
       };
 
@@ -426,15 +450,36 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           indicator: data.map(d => ({ name: d.name, max: maxValue * 1.2 })),
           shape: 'polygon',
           splitNumber: 4,
-          axisName: { color: '#888' },
-          splitLine: { lineStyle: { color: '#333' } },
-          splitArea: { areaStyle: { color: ['rgba(139, 92, 246, 0.1)', 'transparent'] } },
+          axisName: { color: '#9ca3af', fontSize: 11 },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+          axisLine: { lineStyle: { color: 'rgba(255,255,255,0.15)' } },
+          splitArea: { 
+            areaStyle: { 
+              color: [`${primaryColor}15`, 'transparent', `${primaryColor}08`, 'transparent'] 
+            } 
+          },
         },
         series: [{
           type: 'radar',
-          data: [{ value: data.map(d => d.value), name: 'Values' }],
-          areaStyle: { opacity: 0.3 },
-          lineStyle: { width: 2 },
+          data: [{ 
+            value: data.map(d => d.value), 
+            name: 'Values',
+            areaStyle: { 
+              opacity: 0.4,
+              color: {
+                type: 'radial',
+                x: 0.5, y: 0.5, r: 0.5,
+                colorStops: [
+                  { offset: 0, color: `${primaryColor}60` },
+                  { offset: 1, color: `${primaryColor}20` }
+                ]
+              }
+            },
+          }],
+          lineStyle: { width: 2, color: primaryColor },
+          symbol: 'circle',
+          symbolSize: 6,
+          itemStyle: { color: primaryColor, borderColor: '#11111b', borderWidth: 2 }
         }],
       };
 
@@ -445,18 +490,40 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
         series: [{
           type: 'funnel',
           left: '10%',
-          top: 60,
-          bottom: 60,
+          top: 50,
+          bottom: 50,
           width: '80%',
           min: 0,
           max: Math.max(...data.map(d => d.value)),
           minSize: '0%',
           maxSize: '100%',
           sort: 'descending',
-          gap: 2,
-          label: { show: true, position: 'inside', color: '#fff' },
-          emphasis: { label: { fontSize: 14 } },
-          data: sortedData.map(d => ({ name: d.name, value: d.value })),
+          gap: 3,
+          label: { show: true, position: 'inside', color: '#fff', fontSize: 12, fontWeight: 500 },
+          emphasis: { 
+            label: { fontSize: 14, fontWeight: 'bold' },
+            itemStyle: { shadowBlur: 15, shadowColor: 'rgba(0,0,0,0.4)' }
+          },
+          itemStyle: {
+            borderColor: '#11111b',
+            borderWidth: 2,
+            shadowBlur: 10,
+            shadowColor: 'rgba(0,0,0,0.2)'
+          },
+          data: sortedData.map((d, i) => ({ 
+            name: d.name, 
+            value: d.value,
+            itemStyle: { 
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 1, y2: 0,
+                colorStops: [
+                  { offset: 0, color: colors[i % colors.length] },
+                  { offset: 1, color: colors[(i + 1) % colors.length] }
+                ]
+              }
+            }
+          })),
         }],
       };
 
