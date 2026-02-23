@@ -540,18 +540,35 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           min: 0,
           max: Math.max(...data.map(d => d.value)) * 1.2,
           splitNumber: 5,
-          itemStyle: { color: colors[0] },
-          progress: { show: true, width: 20 },
-          pointer: { show: true, length: '60%', width: 6 },
-          axisLine: { lineStyle: { width: 20, color: [[1, '#333']] } },
-          axisTick: { distance: -30, lineStyle: { color: '#888' } },
-          splitLine: { distance: -35, lineStyle: { color: '#888' } },
-          axisLabel: { distance: -25, color: '#888', fontSize: 12 },
+          itemStyle: { 
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 1, y2: 0,
+              colorStops: [
+                { offset: 0, color: secondaryColor },
+                { offset: 1, color: primaryColor }
+              ]
+            }
+          },
+          progress: { show: true, width: 22, roundCap: true },
+          pointer: { show: true, length: '55%', width: 6, itemStyle: { color: primaryColor } },
+          axisLine: { 
+            lineStyle: { 
+              width: 22, 
+              color: [[1, 'rgba(255,255,255,0.08)']] 
+            },
+            roundCap: true
+          },
+          axisTick: { show: false },
+          splitLine: { distance: -35, length: 8, lineStyle: { color: '#9ca3af', width: 2 } },
+          axisLabel: { distance: -30, color: '#9ca3af', fontSize: 11 },
           detail: { 
             valueAnimation: true, 
-            color: colors[0],
-            fontSize: 24,
-            offsetCenter: [0, '70%'],
+            color: '#fff',
+            fontSize: 28,
+            fontWeight: 'bold',
+            offsetCenter: [0, '75%'],
+            formatter: (value) => value >= 1000 ? `${(value/1000).toFixed(1)}k` : value
           },
           data: [{ value: Math.round(avg), name: 'Average' }],
         }],
@@ -563,8 +580,20 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
       return {
         ...baseOptions,
         grid: { ...baseOptions.grid, top: '10%' },
-        xAxis: { type: 'category', data: data.slice(0, 5).map(d => d.name), axisLabel: { color: '#888' } },
-        yAxis: { type: 'category', data: ['Row 1', 'Row 2'], axisLabel: { color: '#888' } },
+        xAxis: { 
+          type: 'category', 
+          data: data.slice(0, 5).map(d => d.name), 
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false }
+        },
+        yAxis: { 
+          type: 'category', 
+          data: ['Row 1', 'Row 2'], 
+          axisLabel: { color: '#9ca3af', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false }
+        },
         visualMap: {
           min: 0,
           max: Math.max(...data.map(d => d.value)),
@@ -572,13 +601,14 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
           orient: 'horizontal',
           left: 'center',
           bottom: 0,
-          inRange: { color: ['#1a1a2e', colors[0]] },
-          textStyle: { color: '#888' },
+          inRange: { color: ['#11111b', secondaryColor, primaryColor] },
+          textStyle: { color: '#9ca3af' },
         },
         series: [{
           type: 'heatmap',
           data: heatData,
-          emphasis: { itemStyle: { borderColor: '#fff', borderWidth: 1 } },
+          itemStyle: { borderRadius: 4 },
+          emphasis: { itemStyle: { borderColor: '#fff', borderWidth: 2, shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.4)' } },
         }],
       };
 
@@ -592,17 +622,19 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
             value: d.value,
             itemStyle: { 
               color: colors[i % colors.length],
-              borderColor: '#1a1a2e',
-              borderWidth: 2,
-              borderRadius: 4,
+              borderColor: '#11111b',
+              borderWidth: 3,
+              borderRadius: 6,
+              shadowBlur: 8,
+              shadowColor: 'rgba(0,0,0,0.3)'
             },
           })),
-          label: { show: true, color: '#fff', fontSize: 12 },
+          label: { show: true, color: '#fff', fontSize: 12, fontWeight: 500 },
           breadcrumb: { show: false },
           roam: false,
           nodeClick: false,
           levels: [{
-            itemStyle: { borderColor: '#1a1a2e', borderWidth: 2, gapWidth: 2 },
+            itemStyle: { borderColor: '#11111b', borderWidth: 3, gapWidth: 4 },
           }],
         }],
       };
