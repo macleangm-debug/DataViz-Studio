@@ -296,9 +296,20 @@ export function DataSourcesPage() {
   const handleConnect = async () => {
     if (!selectedConnector) return;
     
-    // For OAuth connectors, initiate OAuth flow
+    // For Google OAuth connectors with user-provided credentials
+    if (selectedConnector.oauth && (selectedConnector.id === 'google_sheets' || selectedConnector.id === 'google_drive')) {
+      if (!connectorConfig.client_id || !connectorConfig.client_secret) {
+        toast.error('Please enter your Google OAuth credentials');
+        return;
+      }
+      initiateOAuth(selectedConnector, connectorConfig.client_id, connectorConfig.client_secret);
+      setShowConnectorDialog(false);
+      return;
+    }
+    
+    // For other OAuth connectors (not implemented yet)
     if (selectedConnector.oauth) {
-      initiateOAuth(selectedConnector);
+      toast.info(`${selectedConnector.name} integration coming soon!`);
       return;
     }
     
@@ -324,10 +335,13 @@ export function DataSourcesPage() {
       setSelectedConnector(null);
       setConnectorConfig({});
       fetchSources();
+      fetchConnections();
       
-      // If S3, load buckets
-      if (selectedConnector.id === 'aws_s3' && response.data.source_id) {
-        loadS3Buckets(response.data.source_id);
+      // If S3, show file browser
+      if (selectedConnector.id === 'aws_s3' && response.data.connection_id) {
+        setSelectedS3Connection(response.data.connection_id);
+        setShowS3Browser(true);
+        loadS3Buckets(response.data.connection_id);
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Connection failed');
