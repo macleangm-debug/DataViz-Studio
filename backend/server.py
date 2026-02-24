@@ -1140,7 +1140,7 @@ async def list_database_tables(conn_id: str):
                 tables = [row[0] for row in result]
             mysql_conn.close()
         else:
-            raise HTTPException(status_code=400, detail=f"Unsupported database type")
+            raise HTTPException(status_code=400, detail="Unsupported database type")
         
         return {"tables": tables, "count": len(tables)}
     except Exception as e:
