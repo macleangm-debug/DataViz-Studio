@@ -2255,6 +2255,212 @@ export function ChartsPage() {
 
   const handleExportPdf = async (chartIds = null) => {
     setExportingPdf(true);
+    toast.info('Preparing charts for export...');
+    
+    try {
+      const chartsToExport = chartIds 
+        ? charts.filter(c => chartIds.includes(c.id))
+        : charts;
+      
+      if (chartsToExport.length === 0) {
+        toast.error('No charts to export');
+        setExportingPdf(false);
+        return;
+      }
+
+      // Render each chart as a PNG image using ECharts
+      const chartExportData = [];
+      
+      for (const chart of chartsToExport) {
+        try {
+          const headers = { Authorization: `Bearer ${token}` };
+          const dataRes = await axios.get(`${API_URL}/api/charts/${chart.id}/data`, { headers });
+          const chartData = dataRes.data.data || [];
+
+          if (chartData.length > 0) {
+            // Create temp container for ECharts
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 280px; height: 200px; background: #ffffff;';
+            document.body.appendChild(tempContainer);
+
+            // Clean chart options for PDF (light theme, professional colors)
+            const pdfChartOptions = {
+              backgroundColor: '#ffffff',
+              color: ['#3b82f6', '#60a5fa', '#93c5fd', '#10b981', '#f59e0b', '#ec4899'],
+              animation: false,
+              grid: { left: 40, right: 20, top: 25, bottom: 35, containLabel: false },
+              tooltip: { show: false },
+              legend: { show: false },
+              xAxis: !['pie', 'radar', 'gauge', 'funnel'].includes(chart.type) ? {
+                type: 'category',
+                data: chartData.slice(0, 10).map(d => String(d.name).slice(0, 8)),
+                axisLabel: { color: '#333', fontSize: 9, rotate: chartData.length > 6 ? 25 : 0 },
+                axisLine: { lineStyle: { color: '#e0e0e0' } },
+                axisTick: { show: false }
+              } : undefined,
+              yAxis: !['pie', 'radar', 'gauge', 'funnel'].includes(chart.type) ? {
+                type: 'value',
+                axisLabel: { color: '#333', fontSize: 9, formatter: v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v },
+                axisLine: { show: false },
+                splitLine: { lineStyle: { color: '#f0f0f0' } }
+              } : undefined,
+              series: [{
+                type: chart.type === 'area' ? 'line' : (chart.type === 'donut' ? 'pie' : chart.type),
+                data: chart.type === 'pie' || chart.type === 'donut'
+                  ? chartData.slice(0, 8).map((d, i) => ({ 
+                      value: d.value, 
+                      name: String(d.name).slice(0, 10),
+                      itemStyle: { color: ['#3b82f6', '#60a5fa', '#93c5fd', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'][i % 8] }
+                    }))
+                  : chart.type === 'funnel'
+                    ? chartData.slice(0, 6).sort((a, b) => b.value - a.value).map((d, i) => ({
+                        value: d.value,
+                        name: String(d.name).slice(0, 10),
+                        itemStyle: { color: ['#3b82f6', '#60a5fa', '#93c5fd', '#10b981', '#f59e0b', '#ec4899'][i % 6] }
+                      }))
+                    : chartData.slice(0, 10).map(d => d.value),
+                itemStyle: { 
+                  color: '#3b82f6', 
+                  borderRadius: chart.type === 'bar' ? [3, 3, 0, 0] : 0 
+                },
+                areaStyle: chart.type === 'area' ? { color: 'rgba(59, 130, 246, 0.25)' } : undefined,
+                smooth: chart.type === 'line' || chart.type === 'area',
+                symbol: chart.type === 'line' ? 'circle' : 'none',
+                symbolSize: 6,
+                lineStyle: chart.type === 'line' || chart.type === 'area' ? { width: 2 } : undefined,
+                radius: chart.type === 'pie' ? '65%' : (chart.type === 'donut' ? ['40%', '65%'] : undefined),
+                center: ['50%', '50%'],
+                label: chart.type === 'pie' || chart.type === 'donut' 
+                  ? { show: true, color: '#333', fontSize: 8, formatter: '{d}%', position: 'outside' } 
+                  : { show: false },
+                ...(chart.type === 'funnel' ? { left: '15%', width: '70%', gap: 2, sort: 'descending', label: { show: true, position: 'inside', fontSize: 9, color: '#fff' } } : {}),
+              }],
+              ...(chart.type === 'radar' ? {
+                radar: {
+                  indicator: chartData.slice(0, 8).map(d => ({ name: String(d.name).slice(0, 8), max: Math.max(...chartData.map(x => x.value)) * 1.2 })),
+                  axisName: { color: '#333', fontSize: 8 },
+                  splitLine: { lineStyle: { color: '#e0e0e0' } },
+                  axisLine: { lineStyle: { color: '#e0e0e0' } }
+                },
+                series: [{
+                  type: 'radar',
+                  data: [{ value: chartData.slice(0, 8).map(d => d.value), areaStyle: { opacity: 0.3 } }],
+                  lineStyle: { width: 2 }
+                }]
+              } : {}),
+              ...(chart.type === 'gauge' ? {
+                series: [{
+                  type: 'gauge',
+                  startAngle: 200,
+                  endAngle: -20,
+                  min: 0,
+                  max: Math.max(...chartData.map(d => d.value)) * 1.2,
+                  progress: { show: true, width: 15 },
+                  pointer: { show: true, length: '55%', width: 5 },
+                  axisLine: { lineStyle: { width: 15, color: [[1, '#e0e0e0']] } },
+                  axisTick: { show: false },
+                  splitLine: { distance: -30, length: 5, lineStyle: { color: '#999', width: 1 } },
+                  axisLabel: { distance: -20, color: '#333', fontSize: 9 },
+                  detail: { fontSize: 16, fontWeight: 'bold', color: '#333', offsetCenter: [0, '70%'] },
+                  data: [{ value: Math.round(chartData.reduce((s, d) => s + d.value, 0) / chartData.length) }]
+                }]
+              } : {})
+            };
+
+            const echarts = await import('echarts');
+            const chartInstance = echarts.init(tempContainer);
+            chartInstance.setOption(pdfChartOptions);
+            
+            // Wait for render
+            await new Promise(r => setTimeout(r, 300));
+
+            // Get chart as PNG base64
+            const imgDataUrl = chartInstance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' });
+            const base64Data = imgDataUrl.replace('data:image/png;base64,', '');
+            
+            chartExportData.push({
+              name: chart.name,
+              type: chart.type,
+              image_base64: base64Data,
+              data: chartData.slice(0, 10)
+            });
+
+            chartInstance.dispose();
+            document.body.removeChild(tempContainer);
+          } else {
+            chartExportData.push({
+              name: chart.name,
+              type: chart.type,
+              image_base64: '',
+              data: []
+            });
+          }
+        } catch (e) {
+          console.error(`Error rendering chart ${chart.name}:`, e);
+          chartExportData.push({
+            name: chart.name,
+            type: chart.type,
+            image_base64: '',
+            data: []
+          });
+        }
+      }
+
+      // Filter out charts with no images
+      const validCharts = chartExportData.filter(c => c.image_base64);
+      
+      if (validCharts.length === 0) {
+        toast.error('No chart data available to export');
+        setExportingPdf(false);
+        return;
+      }
+
+      toast.info(`Generating PDF with ${validCharts.length} charts...`);
+
+      // Call backend to generate professional PDF with WeasyPrint
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.post(
+        `${API_URL}/api/reports/export/professional_pdf`,
+        {
+          charts: validCharts,
+          title: 'Chart Report',
+          company_name: 'DataViz Studio',
+          include_data_summary: true
+        },
+        { headers }
+      );
+
+      if (response.data.status === 'success' && response.data.pdf_base64) {
+        // Convert base64 to blob and download
+        const pdfBlob = new Blob(
+          [Uint8Array.from(atob(response.data.pdf_base64), c => c.charCodeAt(0))],
+          { type: 'application/pdf' }
+        );
+        const downloadUrl = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = response.data.filename || `DataViz_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+
+        toast.success(`PDF exported successfully! (${response.data.pages} pages, ${response.data.charts_exported} charts)`);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to export PDF');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  // Old client-side export kept for reference but not used
+  const handleExportPdfOld = async (chartIds = null) => {
+    setExportingPdf(true);
     toast.info('Generating PDF report...');
     
     try {
@@ -2271,20 +2477,6 @@ export function ChartsPage() {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-
-      // DataViz Logo SVG - Purple oval with swirl
-      const logoSvg = `
-        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="20" cy="20" rx="12" ry="18" fill="url(#grad1)"/>
-          <defs>
-            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:#c084fc;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <path d="M16 12 Q12 20, 20 20 Q28 20, 24 28" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
-        </svg>
-      `;
 
       const renderTemplate = async (htmlContent, width = 794, height = 1123) => {
         const container = document.createElement('div');
