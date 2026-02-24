@@ -23,7 +23,7 @@ from typing import List, Dict
 from collections import defaultdict
 
 # Configuration
-API_URL = "https://connector-hub-8.preview.emergentagent.com"
+API_URL = "https://report-render-lab.preview.emergentagent.com"
 TEST_USER = {"email": "test@dataviz.com", "password": "test123"}
 
 
