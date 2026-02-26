@@ -176,13 +176,22 @@ async def access_public_dashboard(
         if hash_password(access.password) != dashboard.get("password_hash"):
             raise HTTPException(status_code=401, detail="Invalid password")
     
+    # Fetch actual widget data from widgets collection
+    widget_ids = dashboard.get("widgets", [])
+    widgets = []
+    if widget_ids:
+        widgets = await db.widgets.find(
+            {"dashboard_id": dashboard["id"]},
+            {"_id": 0}
+        ).to_list(100)
+    
     # Return dashboard data (excluding sensitive fields)
     return {
         "id": dashboard["id"],
         "name": dashboard.get("name", "Untitled Dashboard"),
         "description": dashboard.get("description"),
         "layout": dashboard.get("layout", []),
-        "widgets": dashboard.get("widgets", []),
+        "widgets": widgets,  # Return full widget objects with chart_id
         "theme": dashboard.get("theme", {}),
         "created_at": dashboard.get("created_at")
     }
