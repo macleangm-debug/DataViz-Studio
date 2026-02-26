@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import * as echarts from 'echarts';
 import {
   Lock,
   Eye,
@@ -8,7 +9,8 @@ import {
   BarChart3,
   AlertCircle,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Share2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -42,43 +44,198 @@ const DataVizLogo = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-// Simple widget renderer for public view
-const PublicWidget = ({ widget }) => {
-  const renderContent = () => {
-    switch (widget.type) {
-      case 'stat':
-        return (
-          <div className="text-center">
-            <p className="text-4xl font-bold text-white">{widget.data?.value || '—'}</p>
-            <p className="text-sm text-gray-400 mt-1">{widget.data?.label || widget.title}</p>
-          </div>
-        );
-      case 'chart':
-        return (
-          <div className="h-40 flex items-center justify-center">
-            <BarChart3 className="w-16 h-16 text-gray-600" />
-            <p className="text-gray-500 ml-3">Chart visualization</p>
-          </div>
-        );
-      case 'table':
-        return (
-          <div className="text-center text-gray-500">
-            <p>Data table</p>
-          </div>
-        );
-      default:
-        return (
-          <div className="text-center text-gray-500">
-            <p>{widget.type} widget</p>
-          </div>
-        );
+// ECharts-based chart renderer for public view
+const PublicChartWidget = ({ chartData, type = 'bar' }) => {
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    if (!chartRef.current || !chartData || chartData.length === 0) return;
+
+    if (chartInstance.current) {
+      chartInstance.current.dispose();
     }
+
+    chartInstance.current = echarts.init(chartRef.current);
+
+    const colors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#10b981', '#f59e0b', '#ec4899'];
+
+    const getChartOption = () => {
+      const baseOption = {
+        backgroundColor: 'transparent',
+        color: colors,
+        animation: true,
+        animationDuration: 800,
+        tooltip: {
+          trigger: type === 'pie' ? 'item' : 'axis',
+          backgroundColor: 'rgba(15, 15, 20, 0.9)',
+          borderColor: 'rgba(139, 92, 246, 0.3)',
+          textStyle: { color: '#fff' }
+        },
+        grid: {
+          left: 50,
+          right: 20,
+          top: 30,
+          bottom: 40,
+          containLabel: false
+        }
+      };
+
+      if (type === 'pie' || type === 'donut') {
+        return {
+          ...baseOption,
+          series: [{
+            type: 'pie',
+            radius: type === 'donut' ? ['40%', '70%'] : '70%',
+            center: ['50%', '50%'],
+            data: chartData.map((d, i) => ({
+              value: d.value,
+              name: d.name,
+              itemStyle: { color: colors[i % colors.length] }
+            })),
+            label: {
+              color: '#fff',
+              fontSize: 11
+            },
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 10,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+              }
+            }
+          }]
+        };
+      }
+
+      if (type === 'radar') {
+        const maxValue = Math.max(...chartData.map(d => d.value)) * 1.2;
+        return {
+          ...baseOption,
+          radar: {
+            indicator: chartData.map(d => ({ name: d.name, max: maxValue })),
+            axisName: { color: '#888', fontSize: 10 },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } }
+          },
+          series: [{
+            type: 'radar',
+            data: [{
+              value: chartData.map(d => d.value),
+              areaStyle: { opacity: 0.3, color: colors[0] },
+              lineStyle: { width: 2, color: colors[0] }
+            }]
+          }]
+        };
+      }
+
+      // Bar, Line, Area charts
+      return {
+        ...baseOption,
+        xAxis: {
+          type: 'category',
+          data: chartData.map(d => d.name),
+          axisLabel: { color: '#888', fontSize: 10, rotate: chartData.length > 6 ? 30 : 0 },
+          axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+          axisTick: { show: false }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: '#888', fontSize: 10 },
+          axisLine: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+        },
+        series: [{
+          type: type === 'area' ? 'line' : type,
+          data: chartData.map(d => d.value),
+          itemStyle: { 
+            color: colors[0],
+            borderRadius: type === 'bar' ? [4, 4, 0, 0] : 0
+          },
+          areaStyle: type === 'area' ? { 
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(139, 92, 246, 0.4)' },
+              { offset: 1, color: 'rgba(139, 92, 246, 0.05)' }
+            ])
+          } : undefined,
+          smooth: type === 'line' || type === 'area',
+          symbol: type === 'line' ? 'circle' : 'none',
+          symbolSize: 6
+        }]
+      };
+    };
+
+    chartInstance.current.setOption(getChartOption());
+
+    const handleResize = () => {
+      chartInstance.current?.resize();
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chartInstance.current?.dispose();
+    };
+  }, [chartData, type]);
+
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="h-48 flex items-center justify-center text-gray-500">
+        <BarChart3 className="w-8 h-8 mr-2 opacity-50" />
+        No data
+      </div>
+    );
+  }
+
+  return <div ref={chartRef} className="w-full h-48" />;
+};
+
+// Widget renderer
+const PublicWidget = ({ widget, chartsData }) => {
+  const chartId = widget.chart_id || widget.chartId || widget.config?.chart_id;
+  const chartInfo = chartsData?.find(c => c.id === chartId);
+
+  const renderContent = () => {
+    if (widget.type === 'stat' || widget.type === 'metric') {
+      return (
+        <div className="text-center py-4">
+          <p className="text-4xl font-bold text-white">{widget.data?.value || widget.config?.value || '—'}</p>
+          <p className="text-sm text-gray-400 mt-1">{widget.data?.label || widget.config?.label || widget.title}</p>
+        </div>
+      );
+    }
+
+    if (widget.type === 'chart' && chartInfo) {
+      return (
+        <PublicChartWidget 
+          chartData={chartInfo.data} 
+          type={chartInfo.type || 'bar'} 
+        />
+      );
+    }
+
+    if (widget.type === 'table') {
+      return (
+        <div className="text-center text-gray-500 py-8">
+          <p>Data table</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-center text-gray-500 py-8">
+        <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+        <p className="text-sm">{widget.type} widget</p>
+      </div>
+    );
   };
 
   return (
-    <Card className="bg-card/50 border-border/50">
+    <Card className="bg-card/50 border-border/50 backdrop-blur-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-gray-300">{widget.title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-gray-300">
+          {chartInfo?.name || widget.title || widget.config?.title || 'Widget'}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {renderContent()}
