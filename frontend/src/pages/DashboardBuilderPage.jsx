@@ -48,6 +48,8 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { useOrgStore, useAuthStore } from '../store';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { ShareDashboardDialog } from '../components/ShareDashboardDialog';
+import SaveAsTemplateButton from '../components/SaveAsTemplateButton';
 import {
   BarChart,
   Bar,
