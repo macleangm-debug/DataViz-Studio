@@ -2374,8 +2374,8 @@ export function ChartsPage() {
             // Wait for render
             await new Promise(r => setTimeout(r, 300));
 
-            // Get chart as PNG base64
-            const imgDataUrl = chartInstance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' });
+            // Get chart as PNG base64 - higher pixelRatio for sharper output
+            const imgDataUrl = chartInstance.getDataURL({ type: 'png', pixelRatio: 3, backgroundColor: '#ffffff' });
             const base64Data = imgDataUrl.replace('data:image/png;base64,', '');
             
             chartExportData.push({
