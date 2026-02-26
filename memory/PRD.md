@@ -1367,4 +1367,34 @@ Created clean, modular backend architecture to replace the 4880-line `server.py`
 
 **Test Status:** Verified via screenshot - Share dialog opens and displays correctly
 
+## Session 36 (Feb 26, 2026) - PDF Export Fixes
+
+### Applied Print-Optimized CSS Fixes
+
+**Backend Changes (`server.py`):**
+1. **Removed forced whitespace**: Deleted `min-height: 267mm` and `position: relative` from `.page`
+2. **Footer via @page margin boxes**: 
+   ```css
+   @page {
+     @bottom-left { content: "DataViz Studio"; }
+     @bottom-right { content: "Page " counter(page) " of " counter(pages); }
+   }
+   ```
+3. **CSS Grid layout**: Replaced `flex` with `display: grid; grid-template-columns: repeat(3, 1fr);`
+4. **Page break protection**: Added `page-break-inside: avoid; break-inside: avoid;` to `.chart-card`
+5. **Responsive chart images**: Changed `.chart-image` from `height: 130px` to `height: auto; max-height: 140px;`
+
+**Frontend Changes (`ChartsPage.jsx`):**
+1. **Higher resolution**: Increased `pixelRatio: 2` → `pixelRatio: 3`
+2. **Larger capture container**: Increased from `280x200` → `420x300` pixels
+
+**Results:**
+- No more giant blank space at bottom of pages
+- Consistent footer on every page with page numbers
+- Sharper, crisper charts in PDF
+- Stable 3-column grid layout
+- Charts won't split across pages
+
+**Test Status:** Verified - PDF exports successfully with 2 pages, 6 charts
+
 
