@@ -3761,7 +3761,19 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
             <style>
                 @page {{
                     size: A4;
-                    margin: 12mm 12mm 18mm 12mm;
+                    margin: 15mm 12mm 20mm 12mm;
+                    
+                    @bottom-left {{
+                        content: "DataViz Studio";
+                        font-size: 9pt;
+                        color: #666;
+                    }}
+                    
+                    @bottom-right {{
+                        content: "Page " counter(page) " of " counter(pages);
+                        font-size: 9pt;
+                        color: #666;
+                    }}
                 }}
                 * {{
                     box-sizing: border-box;
@@ -3772,14 +3784,12 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
                     font-size: 10pt;
                     color: #1a1a1a;
-                    background: #fafafa;
+                    background: #fff;
                     line-height: 1.4;
                 }}
                 .page {{
                     page-break-after: always;
-                    min-height: 267mm;
-                    position: relative;
-                    padding-bottom: 25mm;
+                    padding: 0;
                 }}
                 .page:last-child {{
                     page-break-after: avoid;
@@ -3790,8 +3800,8 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
-                    padding: 0 0 12px 0;
-                    margin-bottom: 15px;
+                    padding: 0 0 10px 0;
+                    margin-bottom: 12px;
                     border-bottom: 2px solid #8b5cf6;
                 }}
                 .header-left {{
@@ -3800,10 +3810,10 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                 .header-date {{
                     font-size: 9pt;
                     color: #666;
-                    margin-bottom: 3px;
+                    margin-bottom: 2px;
                 }}
                 .header-title {{
-                    font-size: 20pt;
+                    font-size: 18pt;
                     font-weight: 700;
                     color: #000;
                     letter-spacing: -0.5px;
@@ -3811,11 +3821,11 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                 .logo {{
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                 }}
                 .logo-icon {{
-                    width: 28px;
-                    height: 34px;
+                    width: 24px;
+                    height: 28px;
                     background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
                     border-radius: 50%;
                     display: flex;
@@ -3823,29 +3833,30 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                     justify-content: center;
                 }}
                 .logo-text {{
-                    font-size: 12pt;
+                    font-size: 11pt;
                     font-weight: 500;
                     color: #333;
                 }}
                 
-                /* Chart Grid */
+                /* Chart Grid - Using CSS Grid for stable 3-column layout */
                 .chart-grid {{
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 12px;
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 10px;
                 }}
                 .chart-card {{
-                    width: calc(33.33% - 8px);
                     background: #fff;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     overflow: hidden;
                     border: 1px solid #e5e5e5;
+                    page-break-inside: avoid;
+                    break-inside: avoid;
                 }}
                 .chart-title {{
-                    font-size: 9pt;
+                    font-size: 8pt;
                     font-weight: 600;
                     color: #000;
-                    padding: 8px 10px;
+                    padding: 6px 8px;
                     background: #f8f9fa;
                     border-bottom: 1px solid #eee;
                     white-space: nowrap;
@@ -3853,16 +3864,20 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                     text-overflow: ellipsis;
                 }}
                 .chart-image {{
-                    height: 130px;
+                    width: 100%;
+                    height: auto;
+                    max-height: 140px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 6px;
+                    padding: 4px;
                     background: #fff;
                 }}
                 .chart-image img {{
                     max-width: 100%;
-                    max-height: 118px;
+                    max-height: 130px;
+                    width: auto;
+                    height: auto;
                     object-fit: contain;
                 }}
                 
@@ -3871,17 +3886,17 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                     width: 100%;
                     border-collapse: collapse;
                     background: #fff;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     overflow: hidden;
                     border: 1px solid #e5e5e5;
-                    margin-bottom: 20px;
+                    margin-bottom: 16px;
                 }}
                 .summary-table th {{
                     background: #f8f9fa;
-                    padding: 10px 12px;
+                    padding: 8px 10px;
                     text-align: left;
                     font-weight: 600;
-                    font-size: 9pt;
+                    font-size: 8pt;
                     color: #333;
                     border-bottom: 2px solid #e5e5e5;
                 }}
@@ -3889,9 +3904,9 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                     text-align: right;
                 }}
                 .summary-table td {{
-                    padding: 8px 12px;
+                    padding: 6px 10px;
                     border-bottom: 1px solid #eee;
-                    font-size: 9pt;
+                    font-size: 8pt;
                 }}
                 .summary-table .cell-name {{
                     font-weight: 500;
@@ -3912,56 +3927,27 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                 
                 /* Stats Row */
                 .stats-row {{
-                    display: flex;
-                    gap: 12px;
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 10px;
                 }}
                 .stat-card {{
-                    flex: 1;
                     background: #fff;
-                    border-radius: 8px;
-                    padding: 14px;
+                    border-radius: 6px;
+                    padding: 12px;
                     border: 1px solid #e5e5e5;
                 }}
                 .stat-label {{
-                    font-size: 8pt;
+                    font-size: 7pt;
                     color: #666;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    margin-bottom: 4px;
+                    margin-bottom: 3px;
                 }}
                 .stat-value {{
-                    font-size: 22pt;
+                    font-size: 20pt;
                     font-weight: 700;
                     color: #000;
-                }}
-                
-                /* Footer */
-                .footer {{
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding-top: 8px;
-                    border-top: 1px solid #ddd;
-                    font-size: 8pt;
-                    color: #666;
-                }}
-                .footer-logo {{
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                }}
-                .footer-logo-icon {{
-                    width: 16px;
-                    height: 20px;
-                    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
                 }}
             </style>
         </head>
