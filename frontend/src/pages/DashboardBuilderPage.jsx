@@ -649,6 +649,14 @@ export function DashboardBuilderPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShareDialogOpen(true)}
+              data-testid="share-dashboard-btn"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Share
+            </Button>
             <SaveAsTemplateButton 
               dashboardId={dashboardId} 
               dashboardName={dashboard.name} 
