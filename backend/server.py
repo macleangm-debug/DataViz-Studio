@@ -1571,6 +1571,7 @@ async def create_dashboard(dashboard: DashboardCreate):
                 "type": widget_data.get("type", "stat"),
                 "title": widget_data.get("title", "Widget"),
                 "dataset_id": widget_data.get("dataset_id"),
+                "chart_id": widget_data.get("chart_id") or widget_data.get("chartId"),  # Support chart linking
                 "config": widget_data.get("config", {}),
                 "position": widget_data.get("position", {"x": 0, "y": 0, "w": 3, "h": 2}),
                 "created_at": datetime.now(timezone.utc).isoformat()
