@@ -1102,6 +1102,15 @@ export function DashboardBuilderPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Share Dashboard Dialog */}
+      <ShareDashboardDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        dashboardId={dashboardId}
+        dashboardName={dashboard?.name}
+        token={token}
+      />
     </DashboardLayout>
   );
 }
