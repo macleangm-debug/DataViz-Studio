@@ -9,25 +9,39 @@ import pandas as pd
 router = APIRouter(prefix="/api/public", tags=["Public Charts"])
 
 
-def extract_chart_ids_from_dashboard(dashboard: Dict[str, Any]) -> Set[str]:
+def extract_chart_ids_from_dashboard(dashboard: Dict[str, Any], db_widgets: List[Dict] = None) -> Set[str]:
     """
     Extract all chart IDs from dashboard widgets.
-    Supports multiple widget formats.
+    Supports multiple widget formats including widgets stored in separate collection.
     """
     ids: Set[str] = set()
-    widgets = dashboard.get("widgets") or []
-    layout = dashboard.get("layout") or []
     
-    # Check widgets array
+    # Check widgets from separate collection (passed as db_widgets)
+    if db_widgets:
+        for w in db_widgets:
+            if not isinstance(w, dict):
+                continue
+            cid = w.get("chart_id") or w.get("chartId")
+            if cid:
+                ids.add(str(cid))
+            # Check config
+            config = w.get("config") or {}
+            if isinstance(config, dict):
+                cid2 = config.get("chart_id") or config.get("chartId")
+                if cid2:
+                    ids.add(str(cid2))
+    
+    # Check inline widgets array
+    widgets = dashboard.get("widgets") or []
     for w in widgets:
+        if isinstance(w, str):
+            # It's a widget ID, already handled above via db_widgets
+            continue
         if not isinstance(w, dict):
             continue
-        # Direct chart_id or chartId
         cid = w.get("chart_id") or w.get("chartId") or w.get("chart")
         if cid:
             ids.add(str(cid))
-            continue
-        # Nested in config
         config = w.get("config") or {}
         if isinstance(config, dict):
             cid2 = config.get("chart_id") or config.get("chartId")
@@ -35,18 +49,17 @@ def extract_chart_ids_from_dashboard(dashboard: Dict[str, Any]) -> Set[str]:
                 ids.add(str(cid2))
     
     # Check layout array (for react-grid-layout style)
+    layout = dashboard.get("layout") or []
     for item in layout:
         if not isinstance(item, dict):
             continue
-        cid = item.get("chart_id") or item.get("chartId") or item.get("i")
-        if cid and cid.startswith("chart_"):
-            ids.add(cid.replace("chart_", ""))
-        elif cid:
-            # Check if it's a valid chart ID format
-            widget_config = item.get("config") or {}
-            chart_id = widget_config.get("chart_id") or widget_config.get("chartId")
-            if chart_id:
-                ids.add(str(chart_id))
+        cid = item.get("chart_id") or item.get("chartId")
+        if cid:
+            ids.add(str(cid))
+        widget_config = item.get("config") or {}
+        chart_id = widget_config.get("chart_id") or widget_config.get("chartId")
+        if chart_id:
+            ids.add(str(chart_id))
     
     return ids
 
