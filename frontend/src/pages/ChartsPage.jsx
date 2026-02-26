@@ -2278,9 +2278,9 @@ export function ChartsPage() {
           const chartData = dataRes.data.data || [];
 
           if (chartData.length > 0) {
-            // Create temp container for ECharts
+            // Create temp container for ECharts - larger size for better quality
             const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 280px; height: 200px; background: #ffffff;';
+            tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 420px; height: 300px; background: #ffffff;';
             document.body.appendChild(tempContainer);
 
             // Clean chart options for PDF (light theme, professional colors)
