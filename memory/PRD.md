@@ -1303,4 +1303,40 @@ Created clean, modular backend architecture to replace the 4880-line `server.py`
 
 **Test Status:** Backend running, health check passes
 
+## Session 34 (Feb 26, 2026) - Public Dashboard Sharing
+
+### Implemented Public Dashboard Sharing Feature
+
+**Backend:**
+- [x] Created `/app/backend/routes/public_charts.py` - Secure public chart data endpoint
+- [x] Updated `/app/backend/routes/dataviz_sharing.py` - Fixed widget fetching in public access
+- [x] Added `chart_id` field to widget creation in `server.py`
+
+**New API Endpoints:**
+- `GET /api/public/dashboards/{public_id}/charts` - Fetch all charts with data for public view
+- `GET /api/public/charts/{chart_id}/data` - Individual chart data (validates dashboard access)
+
+**Frontend:**
+- [x] Enhanced `PublicDashboardPage.jsx` with:
+  - ECharts-based chart rendering (`PublicChartWidget` component)
+  - Chart data fetching from new public endpoints
+  - Support for bar, line, area, pie, radar chart types
+  - "Powered by DataViz Studio" footer (growth lever)
+
+**Security Features:**
+- Token/password validation for protected dashboards
+- Chart-dashboard membership validation (prevents arbitrary chart access)
+- Expiry date checking
+- No sensitive data exposed (dataset IDs, connection strings)
+
+**How to Create a Public Dashboard:**
+1. Create dashboard with chart widgets: `POST /api/dashboards` with `widgets: [{"type": "chart", "chart_id": "..."}]`
+2. Enable sharing: `POST /api/dashboards/{id}/share` with `{"is_public": true}`
+3. Share URL: `/public/dashboard/{public_id}`
+
+**Test Status:** Verified - Public dashboard renders 3 ECharts with real data
+
+**Public Dashboard URL Example:**
+`/public/dashboard/LLPPDPmrOKu-g2jlgkrVNQ`
+
 
