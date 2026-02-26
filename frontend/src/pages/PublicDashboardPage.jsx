@@ -478,7 +478,36 @@ export function PublicDashboardPage() {
         {dashboardData?.widgets?.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {dashboardData.widgets.map((widget, index) => (
-              <PublicWidget key={widget.id || index} widget={widget} />
+              <PublicWidget 
+                key={widget.id || index} 
+                widget={widget} 
+                chartsData={chartsData}
+              />
+            ))}
+          </div>
+        ) : dashboardData?.layout?.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dashboardData.layout.map((item, index) => (
+              <PublicWidget 
+                key={item.i || index} 
+                widget={{ ...item, type: item.type || 'chart', chart_id: item.chartId || item.chart_id }} 
+                chartsData={chartsData}
+              />
+            ))}
+          </div>
+        ) : chartsData.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {chartsData.map((chart, index) => (
+              <Card key={chart.id || index} className="bg-card/50 border-border/50 backdrop-blur-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-300">
+                    {chart.name || 'Chart'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PublicChartWidget chartData={chart.data} type={chart.type || 'bar'} />
+                </CardContent>
+              </Card>
             ))}
           </div>
         ) : (
