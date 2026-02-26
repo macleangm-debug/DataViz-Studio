@@ -248,6 +248,7 @@ export function PublicDashboardPage() {
   const { publicId } = useParams();
   const [dashboardInfo, setDashboardInfo] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
+  const [chartsData, setChartsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
@@ -300,6 +301,9 @@ export function PublicDashboardPage() {
         setDashboardData(data);
         setPasswordRequired(false);
         setError(null);
+        
+        // Fetch chart data for all charts in the dashboard
+        await fetchChartsData(pwd);
       } else if (response.status === 401) {
         toast.error('Invalid password');
       } else if (response.status === 410) {
@@ -311,6 +315,22 @@ export function PublicDashboardPage() {
       toast.error('Failed to access dashboard');
     } finally {
       setAuthenticating(false);
+    }
+  };
+
+  const fetchChartsData = async (pwd = null) => {
+    try {
+      const passwordParam = pwd ? `&password=${encodeURIComponent(pwd)}` : '';
+      const response = await fetch(
+        `${API_URL}/api/public/dashboards/${publicId}/charts?${passwordParam}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setChartsData(data.charts || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch charts data:', err);
     }
   };
 
