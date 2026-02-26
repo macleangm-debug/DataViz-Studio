@@ -12,6 +12,7 @@ from .report import (
 from .ai import AIQueryRequest, HelpAssistantRequest
 from .schedule import ScheduleConfig
 from .theme import CustomChartTheme
+from .database import DatabaseConnectionCreate
 
 __all__ = [
     # Auth
@@ -33,5 +34,7 @@ __all__ = [
     # Schedule
     "ScheduleConfig",
     # Theme
-    "CustomChartTheme"
+    "CustomChartTheme",
+    # Database
+    "DatabaseConnectionCreate"
 ]
