@@ -3685,7 +3685,7 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                     </div>
                     <div class="logo">
                         <div class="logo-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18">
+                            <svg viewBox="0 0 24 24" width="16" height="16">
                                 <path d="M8 5 Q4 12, 12 12 Q20 12, 16 19" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
                             </svg>
                         </div>
@@ -3723,18 +3723,6 @@ async def export_professional_pdf(request: ProfessionalPdfRequest):
                         <div class="stat-label">Grand Total</div>
                         <div class="stat-value">{grand_total:,}</div>
                     </div>
-                </div>
-                
-                <div class="footer">
-                    <div class="footer-logo">
-                        <div class="footer-logo-icon">
-                            <svg viewBox="0 0 24 24" width="12" height="12">
-                                <path d="M8 5 Q4 12, 12 12 Q20 12, 16 19" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <span>DataViz Studio</span>
-                    </div>
-                    <span>Page {total_pages} of {total_pages}</span>
                 </div>
             </div>
             '''
