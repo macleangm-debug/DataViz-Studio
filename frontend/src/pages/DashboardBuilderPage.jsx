@@ -414,6 +414,7 @@ export function DashboardBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [editingWidget, setEditingWidget] = useState(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [newWidget, setNewWidget] = useState({
     type: 'stat',
     title: '',
