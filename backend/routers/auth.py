@@ -1,7 +1,7 @@
 """Authentication router"""
 from fastapi import APIRouter, HTTPException, Request
 
-from models.auth import UserCreate, UserLogin
+from schemas.auth import UserCreate, UserLogin
 from services.auth_service import AuthService
 from core.security import get_user_from_token
 

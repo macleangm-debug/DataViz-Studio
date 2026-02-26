@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 
 from core.database import db
 from core.security import get_password_hash, verify_password, create_access_token
-from models.auth import UserCreate, UserLogin
+from schemas.auth import UserCreate, UserLogin
 
 
 class AuthService:

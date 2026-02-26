@@ -3,8 +3,8 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from typing import Optional, List
 
 from services.export_service import ExportService
-from models.report import ReportExportRequest, ProfessionalPdfRequest
-from models.chart import ChartExportData
+from schemas.report import ReportExportRequest, ProfessionalPdfRequest
+from schemas.chart import ChartExportData
 
 router = APIRouter(tags=["Reports"])
 

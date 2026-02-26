@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
 from core.database import db
-from models.dataset import TransformRequest
+from schemas.dataset import TransformRequest
 
 
 class DatasetService:

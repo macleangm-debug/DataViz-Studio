@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from typing import Optional, List
 
 from services.chart_service import ChartService
-from models.chart import ChartCreate, DrillDownRequest
+from schemas.chart import ChartCreate, DrillDownRequest
 
 router = APIRouter(prefix="/charts", tags=["Charts"])
 

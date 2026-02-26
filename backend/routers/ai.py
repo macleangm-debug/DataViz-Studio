@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Request
 
 from services.ai_service import AIService
-from models.ai import AIQueryRequest, HelpAssistantRequest
+from schemas.ai import AIQueryRequest, HelpAssistantRequest
 from core.security import get_user_from_token
 
 router = APIRouter(prefix="/ai", tags=["AI"])

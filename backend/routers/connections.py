@@ -3,8 +3,8 @@ from fastapi import APIRouter, HTTPException
 from typing import Optional
 
 from services.connection_service import ConnectionService
-from models.database import DatabaseConnectionCreate
-from models.schedule import ScheduleConfig
+from schemas.database import DatabaseConnectionCreate
+from schemas.schedule import ScheduleConfig
 
 router = APIRouter(prefix="/database-connections", tags=["Database Connections"])
 

@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query
 from typing import Optional, List
 
 from services.dataset_service import DatasetService
-from models.dataset import TransformRequest
+from schemas.dataset import TransformRequest
 
 router = APIRouter(prefix="/datasets", tags=["Datasets"])
 

@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from typing import Optional
 
 from services.dashboard_service import DashboardService
-from models.dashboard import DashboardCreate, DashboardLayoutUpdate, WidgetCreate
+from schemas.dashboard import DashboardCreate, DashboardLayoutUpdate, WidgetCreate
 
 router = APIRouter(prefix="/dashboards", tags=["Dashboards"])
 
