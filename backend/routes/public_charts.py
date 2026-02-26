@@ -214,13 +214,23 @@ async def list_public_dashboard_charts(
         if password_hash != dashboard.get("password_hash"):
             raise HTTPException(status_code=401, detail="Invalid password")
     
-    # 2. Get all chart IDs from dashboard
-    chart_ids = extract_chart_ids_from_dashboard(dashboard)
+    # 2. Get widgets from widgets collection if dashboard has widget IDs
+    db_widgets = []
+    widget_ids = dashboard.get("widgets", [])
+    if widget_ids and isinstance(widget_ids[0], str):
+        # Widget IDs stored, fetch from widgets collection
+        db_widgets = await db.widgets.find(
+            {"dashboard_id": dashboard.get("id")},
+            {"_id": 0}
+        ).to_list(100)
+    
+    # 3. Get all chart IDs from dashboard
+    chart_ids = extract_chart_ids_from_dashboard(dashboard, db_widgets)
     
     if not chart_ids:
         return {"charts": []}
     
-    # 3. Fetch all charts with their data
+    # 4. Fetch all charts with their data
     charts_with_data = []
     
     for chart_id in chart_ids:
