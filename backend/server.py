@@ -3594,354 +3594,45 @@ class ProfessionalPdfRequest(BaseModel):
 
 @api_router.post("/reports/export/professional_pdf")
 async def export_professional_pdf(request: ProfessionalPdfRequest):
-    """Generate a professional PDF report with actual chart images using WeasyPrint"""
+    """Generate a professional PDF report with actual chart images using WeasyPrint - Production Grade Template"""
     try:
+        from services.export_service import build_report_html_from_payload
+        from weasyprint import HTML
+        
         if not request.charts:
             raise HTTPException(status_code=400, detail="No charts to export")
         
-        date_str = datetime.now().strftime("%B %d, %Y")
+        # Build payload for production-grade template
+        payload = {
+            "charts": [
+                {
+                    "name": chart.name,
+                    "type": chart.type,
+                    "image_base64": chart.image_base64,
+                    "data": chart.data
+                }
+                for chart in request.charts
+            ],
+            "title": request.title,
+            "company_name": request.company_name,
+            "include_data_summary": request.include_data_summary
+        }
         
-        # Calculate pagination - 6 charts per page
-        charts_per_page = 6
-        total_chart_pages = math.ceil(len(request.charts) / charts_per_page)
-        total_pages = total_chart_pages + (1 if request.include_data_summary else 0)
-        
-        # Build chart cards HTML
-        def build_chart_card(chart: ChartExportData) -> str:
-            return f'''
-            <div class="chart-card">
-                <div class="chart-title">{chart.name}</div>
-                <div class="chart-image">
-                    <img src="data:image/png;base64,{chart.image_base64}" alt="{chart.name}" />
-                </div>
-            </div>
-            '''
-        
-        # Build chart pages
-        chart_pages_html = ""
-        for page_idx in range(total_chart_pages):
-            start_idx = page_idx * charts_per_page
-            end_idx = min(start_idx + charts_per_page, len(request.charts))
-            page_charts = request.charts[start_idx:end_idx]
-            
-            chart_pages_html += f'''
-            <div class="page">
-                <div class="header">
-                    <div class="header-left">
-                        <div class="header-date">{date_str}</div>
-                        <div class="header-title">{'Chart Report' if page_idx == 0 else 'Charts (continued)'}</div>
-                    </div>
-                    <div class="logo">
-                        <div class="logo-icon">
-                            <svg viewBox="0 0 24 24" width="16" height="16">
-                                <path d="M8 5 Q4 12, 12 12 Q20 12, 16 19" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <span class="logo-text">DataViz Studio</span>
-                    </div>
-                </div>
-                
-                <div class="chart-grid">
-                    {''.join(build_chart_card(c) for c in page_charts)}
-                </div>
-            </div>
-            '''
-        
-        # Build data summary page
-        summary_page_html = ""
-        if request.include_data_summary:
-            summary_rows = ""
-            total_items = 0
-            grand_total = 0
-            
-            for chart in request.charts:
-                if chart.data:
-                    items = len(chart.data)
-                    total = sum(d.get("value", 0) for d in chart.data)
-                    max_val = max((d.get("value", 0) for d in chart.data), default=0)
-                    min_val = min((d.get("value", 0) for d in chart.data), default=0)
-                    avg_val = int(total / items) if items else 0
-                    total_items += items
-                    grand_total += total
-                    
-                    summary_rows += f'''
-                    <tr>
-                        <td class="cell-name">{chart.name}</td>
-                        <td class="cell-type">{chart.type}</td>
-                        <td class="cell-num">{items}</td>
-                        <td class="cell-num">{total:,}</td>
-                        <td class="cell-num">{max_val:,}</td>
-                        <td class="cell-num">{min_val:,}</td>
-                        <td class="cell-num">{avg_val:,}</td>
-                    </tr>
-                    '''
-            
-            summary_page_html = f'''
-            <div class="page">
-                <div class="header">
-                    <div class="header-left">
-                        <div class="header-date">{date_str}</div>
-                        <div class="header-title">Data Summary</div>
-                    </div>
-                    <div class="logo">
-                        <div class="logo-icon">
-                            <svg viewBox="0 0 24 24" width="16" height="16">
-                                <path d="M8 5 Q4 12, 12 12 Q20 12, 16 19" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <span class="logo-text">DataViz Studio</span>
-                    </div>
-                </div>
-                
-                <table class="summary-table">
-                    <thead>
-                        <tr>
-                            <th>Chart Name</th>
-                            <th>Type</th>
-                            <th class="th-num">Items</th>
-                            <th class="th-num">Total</th>
-                            <th class="th-num">Max</th>
-                            <th class="th-num">Min</th>
-                            <th class="th-num">Avg</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {summary_rows}
-                    </tbody>
-                </table>
-                
-                <div class="stats-row">
-                    <div class="stat-card">
-                        <div class="stat-label">Total Charts</div>
-                        <div class="stat-value">{len(request.charts)}</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Data Points</div>
-                        <div class="stat-value">{total_items}</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Grand Total</div>
-                        <div class="stat-value">{grand_total:,}</div>
-                    </div>
-                </div>
-            </div>
-            '''
-        
-        # Complete HTML document
-        html_content = f'''
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                @page {{
-                    size: A4;
-                    margin: 15mm 12mm 20mm 12mm;
-                    
-                    @bottom-left {{
-                        content: "DataViz Studio";
-                        font-size: 9pt;
-                        color: #666;
-                    }}
-                    
-                    @bottom-right {{
-                        content: "Page " counter(page) " of " counter(pages);
-                        font-size: 9pt;
-                        color: #666;
-                    }}
-                }}
-                * {{
-                    box-sizing: border-box;
-                    margin: 0;
-                    padding: 0;
-                }}
-                body {{
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                    font-size: 10pt;
-                    color: #1a1a1a;
-                    background: #fff;
-                    line-height: 1.4;
-                }}
-                .page {{
-                    page-break-after: always;
-                    padding: 0;
-                }}
-                .page:last-child {{
-                    page-break-after: avoid;
-                }}
-                
-                /* Header */
-                .header {{
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    padding: 0 0 10px 0;
-                    margin-bottom: 12px;
-                    border-bottom: 2px solid #8b5cf6;
-                }}
-                .header-left {{
-                    flex: 1;
-                }}
-                .header-date {{
-                    font-size: 9pt;
-                    color: #666;
-                    margin-bottom: 2px;
-                }}
-                .header-title {{
-                    font-size: 18pt;
-                    font-weight: 700;
-                    color: #000;
-                    letter-spacing: -0.5px;
-                }}
-                .logo {{
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }}
-                .logo-icon {{
-                    width: 24px;
-                    height: 28px;
-                    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }}
-                .logo-text {{
-                    font-size: 11pt;
-                    font-weight: 500;
-                    color: #333;
-                }}
-                
-                /* Chart Grid - Using CSS Grid for stable 3-column layout */
-                .chart-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 10px;
-                }}
-                .chart-card {{
-                    background: #fff;
-                    border-radius: 6px;
-                    overflow: hidden;
-                    border: 1px solid #e5e5e5;
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                }}
-                .chart-title {{
-                    font-size: 8pt;
-                    font-weight: 600;
-                    color: #000;
-                    padding: 6px 8px;
-                    background: #f8f9fa;
-                    border-bottom: 1px solid #eee;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }}
-                .chart-image {{
-                    width: 100%;
-                    height: auto;
-                    max-height: 140px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 4px;
-                    background: #fff;
-                }}
-                .chart-image img {{
-                    max-width: 100%;
-                    max-height: 130px;
-                    width: auto;
-                    height: auto;
-                    object-fit: contain;
-                }}
-                
-                /* Summary Table */
-                .summary-table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                    background: #fff;
-                    border-radius: 6px;
-                    overflow: hidden;
-                    border: 1px solid #e5e5e5;
-                    margin-bottom: 16px;
-                }}
-                .summary-table th {{
-                    background: #f8f9fa;
-                    padding: 8px 10px;
-                    text-align: left;
-                    font-weight: 600;
-                    font-size: 8pt;
-                    color: #333;
-                    border-bottom: 2px solid #e5e5e5;
-                }}
-                .summary-table .th-num {{
-                    text-align: right;
-                }}
-                .summary-table td {{
-                    padding: 6px 10px;
-                    border-bottom: 1px solid #eee;
-                    font-size: 8pt;
-                }}
-                .summary-table .cell-name {{
-                    font-weight: 500;
-                    color: #000;
-                }}
-                .summary-table .cell-type {{
-                    color: #666;
-                    text-transform: capitalize;
-                }}
-                .summary-table .cell-num {{
-                    text-align: right;
-                    font-family: 'SF Mono', Monaco, monospace;
-                    color: #000;
-                }}
-                .summary-table tbody tr:last-child td {{
-                    border-bottom: none;
-                }}
-                
-                /* Stats Row */
-                .stats-row {{
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 10px;
-                }}
-                .stat-card {{
-                    background: #fff;
-                    border-radius: 6px;
-                    padding: 12px;
-                    border: 1px solid #e5e5e5;
-                }}
-                .stat-label {{
-                    font-size: 7pt;
-                    color: #666;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 3px;
-                }}
-                .stat-value {{
-                    font-size: 20pt;
-                    font-weight: 700;
-                    color: #000;
-                }}
-            </style>
-        </head>
-        <body>
-            {chart_pages_html}
-            {summary_page_html}
-        </body>
-        </html>
-        '''
+        # Generate HTML from production-grade template
+        html_content = build_report_html_from_payload(payload)
         
         # Generate PDF with WeasyPrint
-        pdf_bytes = HTML(string=html_content).write_pdf()
+        pdf_bytes = HTML(
+            string=html_content,
+            base_url="/app"
+        ).write_pdf(presentational_hints=True)
+        
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
         return {
             "status": "success",
             "pdf_base64": pdf_base64,
             "filename": f"DataViz_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
-            "pages": total_pages,
             "charts_exported": len(request.charts)
         }
         
