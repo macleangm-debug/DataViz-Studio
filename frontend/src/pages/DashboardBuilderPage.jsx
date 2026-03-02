@@ -18,7 +18,13 @@ import {
   GripVertical,
   X,
   Database,
-  Share2
+  Share2,
+  ScatterChart as ScatterIcon,
+  Radar as RadarIcon,
+  LayoutGrid,
+  Filter,
+  Gauge,
+  Layers
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -62,7 +68,22 @@ import {
   Pie,
   Cell,
   LineChart as ReLineChart,
-  Line
+  Line,
+  AreaChart,
+  Area,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Treemap,
+  FunnelChart,
+  Funnel,
+  LabelList,
+  Legend
 } from 'recharts';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -79,10 +100,16 @@ const WIDGET_TYPES = [
 const CHART_TYPES = [
   { value: 'bar', label: 'Bar Chart', icon: BarChart3 },
   { value: 'horizontal_bar', label: 'Horizontal Bar', icon: BarChart3 },
+  { value: 'stacked_bar', label: 'Stacked Bar', icon: Layers },
   { value: 'line', label: 'Line Chart', icon: LineChart },
   { value: 'area', label: 'Area Chart', icon: LineChart },
   { value: 'pie', label: 'Pie Chart', icon: PieChart },
   { value: 'donut', label: 'Donut Chart', icon: PieChart },
+  { value: 'scatter', label: 'Scatter Plot', icon: ScatterIcon },
+  { value: 'radar', label: 'Radar Chart', icon: RadarIcon },
+  { value: 'treemap', label: 'Treemap', icon: LayoutGrid },
+  { value: 'funnel', label: 'Funnel Chart', icon: Filter },
+  { value: 'gauge', label: 'Gauge/KPI', icon: Gauge },
 ];
 
 const COLOR_SCHEMES = {
@@ -315,6 +342,226 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
                 <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 6, 6, 0]} maxBarSize={35} />
               </BarChart>
             </ResponsiveContainer>
+          );
+        }
+
+        // Stacked Bar Chart
+        if (chartType === 'stacked_bar') {
+          // For stacked bar, we need data with multiple value keys
+          // We'll check if data has value2, value3 etc. or use value as default
+          const hasMultipleValues = data[0] && (data[0].value2 !== undefined || data[0].series);
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <Tooltip {...tooltipStyle} />
+                <Bar dataKey="value" stackId="stack" fill={colorScheme.colors[0]} radius={[0, 0, 0, 0]} />
+                {hasMultipleValues && data[0].value2 !== undefined && (
+                  <Bar dataKey="value2" stackId="stack" fill={colorScheme.colors[1]} radius={[0, 0, 0, 0]} />
+                )}
+                {hasMultipleValues && data[0].value3 !== undefined && (
+                  <Bar dataKey="value3" stackId="stack" fill={colorScheme.colors[2]} radius={[8, 8, 0, 0]} />
+                )}
+                {!hasMultipleValues && (
+                  <Bar dataKey="value" fill={colorScheme.colors[0]} radius={[8, 8, 0, 0]} />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          );
+        }
+
+        // Scatter Plot
+        if (chartType === 'scatter') {
+          // Scatter expects data with x and y values, or we map from name/value
+          const scatterData = data.map((d, i) => ({
+            x: d.x !== undefined ? d.x : i + 1,
+            y: d.y !== undefined ? d.y : d.value,
+            name: d.name,
+            z: d.z || d.value || 100
+          }));
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis type="number" dataKey="x" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <YAxis type="number" dataKey="y" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <ZAxis type="number" dataKey="z" range={[60, 400]} />
+                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
+                <Scatter data={scatterData} fill={colorScheme.accent}>
+                  {scatterData.map((_, index) => (
+                    <Cell key={index} fill={colorScheme.colors[index % colorScheme.colors.length]} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          );
+        }
+
+        // Radar Chart
+        if (chartType === 'radar') {
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={data} margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
+                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                <PolarRadiusAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} />
+                <Radar
+                  dataKey="value"
+                  stroke={colorScheme.accent}
+                  fill={colorScheme.accent}
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                />
+                <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
+              </RadarChart>
+            </ResponsiveContainer>
+          );
+        }
+
+        // Treemap Chart
+        if (chartType === 'treemap') {
+          const treemapData = data.map((d, i) => ({
+            name: d.name,
+            size: d.value,
+            fill: colorScheme.colors[i % colorScheme.colors.length]
+          }));
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <Treemap
+                data={treemapData}
+                dataKey="size"
+                aspectRatio={4/3}
+                stroke="rgba(0,0,0,0.3)"
+                content={({ x, y, width, height, name, fill }) => (
+                  <g>
+                    <rect
+                      x={x}
+                      y={y}
+                      width={width}
+                      height={height}
+                      fill={fill}
+                      rx={4}
+                      style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+                    />
+                    {width > 40 && height > 25 && (
+                      <text
+                        x={x + width / 2}
+                        y={y + height / 2}
+                        fill="#fff"
+                        fontSize={11}
+                        fontWeight={600}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        {name}
+                      </text>
+                    )}
+                  </g>
+                )}
+              />
+            </ResponsiveContainer>
+          );
+        }
+
+        // Funnel Chart
+        if (chartType === 'funnel') {
+          const funnelData = data.map((d, i) => ({
+            name: d.name,
+            value: d.value,
+            fill: colorScheme.colors[i % colorScheme.colors.length]
+          }));
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <FunnelChart margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
+                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
+                <Funnel
+                  data={funnelData}
+                  dataKey="value"
+                  nameKey="name"
+                  isAnimationActive
+                >
+                  <LabelList
+                    position="center"
+                    fill="#fff"
+                    fontSize={11}
+                    fontWeight={600}
+                    formatter={(value) => value.toLocaleString()}
+                  />
+                  {funnelData.map((entry, index) => (
+                    <Cell key={index} fill={entry.fill} />
+                  ))}
+                </Funnel>
+              </FunnelChart>
+            </ResponsiveContainer>
+          );
+        }
+
+        // Gauge/KPI Chart (Custom SVG implementation)
+        if (chartType === 'gauge') {
+          const total = data.reduce((sum, d) => sum + (d.value || 0), 0);
+          const maxValue = Math.max(...data.map(d => d.value || 0));
+          const percentage = total > 0 ? Math.min((maxValue / total) * 100, 100) : 0;
+          const value = data[0]?.value || 0;
+          
+          // SVG gauge parameters
+          const size = 200;
+          const strokeWidth = 20;
+          const radius = (size - strokeWidth) / 2;
+          const circumference = radius * Math.PI; // Half circle
+          const offset = circumference - (percentage / 100) * circumference;
+          
+          return (
+            <div className="h-full flex flex-col items-center justify-center">
+              <svg width={size} height={size / 2 + 30} viewBox={`0 0 ${size} ${size / 2 + 30}`}>
+                <defs>
+                  <linearGradient id={`gaugeGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor={colorScheme.gradient[0]} />
+                    <stop offset="100%" stopColor={colorScheme.gradient[1]} />
+                  </linearGradient>
+                </defs>
+                {/* Background arc */}
+                <path
+                  d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+                  fill="none"
+                  stroke="rgba(255,255,255,0.1)"
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                />
+                {/* Value arc */}
+                <path
+                  d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+                  fill="none"
+                  stroke={`url(#gaugeGradient-${widgetId})`}
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={offset}
+                  style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                />
+                {/* Center value */}
+                <text
+                  x={size / 2}
+                  y={size / 2 - 5}
+                  textAnchor="middle"
+                  fill="hsl(var(--foreground))"
+                  fontSize="28"
+                  fontWeight="700"
+                >
+                  {value.toLocaleString()}
+                </text>
+                <text
+                  x={size / 2}
+                  y={size / 2 + 20}
+                  textAnchor="middle"
+                  fill="hsl(var(--muted-foreground))"
+                  fontSize="12"
+                >
+                  {data[0]?.name || 'Value'}
+                </text>
+              </svg>
+            </div>
           );
         }
         

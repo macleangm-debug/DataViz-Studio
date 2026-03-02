@@ -7,6 +7,7 @@ from .ai import router as ai_router
 from .reports import router as reports_router
 from .connections import router as connections_router
 from .health import router as health_router
+from .public import router as public_router
 
 __all__ = [
     "auth_router",
@@ -16,5 +17,6 @@ __all__ = [
     "ai_router",
     "reports_router",
     "connections_router",
-    "health_router"
+    "health_router",
+    "public_router"
 ]

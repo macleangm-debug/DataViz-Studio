@@ -76,13 +76,13 @@ DataViz Studio is a full-featured data visualization application built with Reac
 ## Pending Tasks
 
 ### P0 - Critical
-- [ ] **Backend Refactoring**: Migrate logic from monolithic `server.py` (4500+ lines) into modular structure
-  - Move endpoints to `routers/`
-  - Move business logic to `services/`
+- [x] **Backend Refactoring**: Base modular structure created, routers enhanced
+  - Move remaining endpoints from `server.py` (still ~4500 lines)
   - Order: auth → datasets → charts → dashboards → reports
 
 ### P1 - High Priority
-- [ ] Complete new chart types & color scheme selector
+- [x] Complete new chart types (Added 6 new: Stacked Bar, Scatter, Radar, Treemap, Funnel, Gauge)
+- [ ] Color scheme selector enhancement (custom color picker)
 - [ ] Implement SSO Integration (Survey360, FieldForce, DataPulse)
 - [ ] Activate Scheduled Report Delivery UI (backend resend integration exists)
 
@@ -103,6 +103,28 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - **resend**: Email delivery for scheduled reports (requires user API key)
 
 ## Recent Changes
+
+### March 2, 2026 - New Chart Types & Backend Refactoring
+
+#### New Chart Types Added (6 new types)
+- **Stacked Bar Chart** - For part-to-whole comparisons
+- **Scatter Plot** - For correlation analysis with bubble sizes
+- **Radar Chart** - For multi-variable comparisons
+- **Treemap** - For hierarchical data visualization
+- **Funnel Chart** - For conversion/sales funnels
+- **Gauge/KPI** - Custom SVG gauge for single metric displays
+
+Total chart types now: 12 (was 6)
+
+#### Backend Refactoring Progress
+- Enhanced `/app/backend/routers/dashboards.py` with:
+  - Widget update/delete endpoints
+  - Public sharing endpoints (`GET/POST /dashboards/{id}/share`)
+- Created `/app/backend/routers/public.py` for public dashboard access:
+  - `GET /api/public/dashboards/{public_id}` - View shared dashboard
+  - `GET /api/public/charts/{chart_id}/data` - Get chart data for public view
+- Updated `routers/__init__.py` and `main.py` to include public router
+- Modular architecture fully scaffolded and working
 
 ### March 2, 2026 - Left-Aligned Settings Pages
 - Fixed Settings page layout (`SettingsPage.jsx`)

@@ -38,7 +38,8 @@ from routers import (
     ai_router,
     reports_router,
     connections_router,
-    health_router
+    health_router,
+    public_router
 )
 
 # Configure logging
@@ -81,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(ai_router, prefix="/api")
     app.include_router(reports_router, prefix="/api")
     app.include_router(connections_router, prefix="/api")
+    app.include_router(public_router, prefix="/api")
     
     # Startup event
     @app.on_event("startup")
