@@ -129,7 +129,7 @@ export function ApiKeysPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6" data-testid="api-keys-page">
+      <div className="space-y-6" data-testid="api-keys-page">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

@@ -102,5 +102,18 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - **emergentintegrations**: AI features (Emergent LLM Key)
 - **resend**: Email delivery for scheduled reports (requires user API key)
 
+## Recent Changes
+
+### March 2, 2026 - Left-Aligned Settings Pages
+- Fixed Settings page layout (`SettingsPage.jsx`)
+- Fixed API Keys page layout (`ApiKeysPage.jsx`)  
+- Fixed Team page create org view (`TeamPage.jsx`)
+- Removed `mx-auto` centering from all settings module pages
+- Content now aligns to the left after sidebar
+
+### March 1, 2026 - PDF Export Production Template Implementation
+- Integrated production-grade HTML/CSS template using Jinja2
+- Features: inline SVG logo, 3-column grid, @page footers, Data Summary tables
+
 ## Last Updated
-March 1, 2026 - PDF Export Production Template Implementation
+March 2, 2026

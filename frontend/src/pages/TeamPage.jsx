@@ -411,7 +411,7 @@ export function CreateOrganizationPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-xl mx-auto" data-testid="create-org-page">
+      <div className="max-w-xl" data-testid="create-org-page">
         <Card className="bg-card border border-border">
           <CardHeader>
             <div className="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center mb-4">
