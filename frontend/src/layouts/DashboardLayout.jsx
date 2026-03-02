@@ -52,6 +52,9 @@ import {
 } from '../components/ui/tooltip';
 import { useAuthStore, useOrgStore } from '../store';
 import { cn } from '../lib/utils';
+import { NotificationCenter } from '../components/NotificationCenter';
+import { ThemeToggle } from '../components/ThemeProvider';
+import { KeyboardShortcuts, ShortcutsTrigger } from '../components/KeyboardShortcuts';
 
 // Navigation structure for DataViz Studio
 const NAVIGATION = [
@@ -409,10 +412,10 @@ export function DashboardLayout({ children }) {
             </div>
 
             {/* Right side actions */}
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground relative">
-                <Bell className="w-5 h-5" />
-              </button>
+            <div className="flex items-center gap-1">
+              <ShortcutsTrigger />
+              <ThemeToggle />
+              <NotificationCenter />
 
               {/* Desktop Profile */}
               <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-border">
@@ -420,6 +423,9 @@ export function DashboardLayout({ children }) {
               </div>
             </div>
           </header>
+
+          {/* Keyboard Shortcuts Handler */}
+          <KeyboardShortcuts />
 
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto bg-background">

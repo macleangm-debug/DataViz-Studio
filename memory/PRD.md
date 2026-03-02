@@ -8,48 +8,25 @@ DataViz Studio is a full-featured data visualization application built with Reac
 ### Completed Features
 - **User Authentication**: JWT-based auth with email/password
 - **Dashboard Builder**: Create and customize dashboards with multiple chart types
-- **Chart Types**: Bar, Line, Area, Pie, and more
+- **Chart Types**: 12 types (Bar, Horizontal Bar, Stacked Bar, Line, Area, Pie, Donut, Scatter, Radar, Treemap, Funnel, Gauge)
 - **Data Import**: Upload CSV/Excel files or connect to external databases
 - **Export to PDF**: Production-grade PDF generation using WeasyPrint
 - **Public Dashboard Sharing**: Share dashboards via secure public links with optional password protection and expiry
 - **AI-Powered Insights**: Uses Emergent LLM Key for AI features
-
-### Export to PDF (Production-Grade) - COMPLETED Mar 1, 2026
-- Implemented server-side PDF generation using WeasyPrint
-- Uses Jinja2 templates for clean, maintainable HTML generation
-- Features:
-  - Professional header with inline SVG logo
-  - 3-column grid layout for charts
-  - Clean typography and spacing
-  - @page CSS for proper footers (company name + page numbers)
-  - Data Summary page with sample tables (8 rows per chart)
-  - page-break-inside: avoid for clean pagination
-
-### Public Dashboard Sharing - COMPLETED
-- Secure public links with unique public_id
-- Optional password protection (hashed)
-- Optional expiry dates
-- Share dialog UI in Dashboard Builder
+- **Custom Color Picker**: Full color picker with hex/RGB input, save custom palettes, brand color extraction from images
+- **User Profile**: Profile editing, avatar upload, password change
+- **User Management (Admin)**: Invite users, bulk CSV import, suspend/activate/deactivate, role management
+- **Notification Center**: Real-time notifications with categories and read/unread status
+- **Theme Toggle**: Dark/Light/System theme support
+- **Keyboard Shortcuts**: Global shortcuts with command palette (⌘K)
+- **Dashboard Templates**: Pre-built templates for various use cases
 
 ## Tech Stack
-- **Frontend**: React 18, Recharts, ECharts, TailwindCSS, Shadcn/UI
+- **Frontend**: React 18, Recharts, ECharts, TailwindCSS, Shadcn/UI, react-colorful
 - **Backend**: FastAPI, Python 3.11
 - **Database**: MongoDB
 - **PDF Generation**: WeasyPrint + Jinja2 templates
 - **Chart Capture**: html2canvas (frontend)
-
-## API Endpoints
-
-### PDF Export
-- `POST /api/reports/export/professional_pdf` - Generate production-grade PDF report
-  - Payload: `{ charts, title, company_name, include_data_summary }`
-  - Returns: `{ status, pdf_base64, filename, charts_exported }`
-
-### Public Sharing
-- `GET /api/public/dashboards/{public_id}` - Fetch public dashboard layout
-- `GET /api/public/charts/{chart_id}/data` - Fetch chart data for public view
-- `GET /api/dashboards/{id}/share` - Get sharing status
-- `POST /api/dashboards/{id}/share` - Enable/update sharing
 
 ## Architecture
 
@@ -59,37 +36,105 @@ DataViz Studio is a full-featured data visualization application built with Reac
 │   ├── core/           # Config, database, security
 │   ├── schemas/        # Pydantic models
 │   ├── services/       # Business logic
-│   │   └── export_service.py  # PDF generation (production-grade template)
-│   ├── routers/        # API endpoints (in progress)
-│   └── server.py       # Legacy monolithic file (4500+ lines)
+│   │   └── export_service.py  # PDF generation
+│   ├── routers/        # API endpoints
+│   │   ├── auth.py
+│   │   ├── charts.py
+│   │   ├── dashboards.py
+│   │   ├── datasets.py
+│   │   ├── public.py
+│   │   ├── reports.py
+│   │   └── users.py    # User management & profile
+│   └── server.py       # Legacy monolithic file
 ├── frontend/
 │   └── src/
+│       ├── components/
+│       │   ├── ColorPicker.jsx         # Custom color picker
+│       │   ├── NotificationCenter.jsx  # Notifications
+│       │   ├── ThemeProvider.jsx       # Theme toggle
+│       │   ├── KeyboardShortcuts.jsx   # Shortcuts
+│       │   └── DashboardTemplates.jsx  # Templates library
 │       ├── pages/
-│       │   ├── ChartsPage.jsx
-│       │   ├── DashboardBuilderPage.jsx
-│       │   └── PublicDashboardPage.jsx
-│       └── components/
-│           └── dialogs/
-│               └── ShareDashboardDialog.jsx
+│       │   ├── ProfilePage.jsx         # User profile
+│       │   ├── UserManagementPage.jsx  # Admin user management
+│       │   └── ...
+│       └── layouts/
+│           └── DashboardLayout.jsx     # Main layout
 ```
+
+## Recent Changes
+
+### March 2, 2026 - Major Feature Release
+
+#### Custom Color Picker
+- Full color picker with hex/RGB input (react-colorful)
+- Save and manage custom palettes
+- Brand color extraction from uploaded images using canvas
+
+#### User Management
+- Profile page with tabs: Profile, Security, Activity Log, Notifications
+- Avatar upload, name/email editing
+- Password change functionality
+- Admin user management page
+- Bulk CSV user import with progress
+- User suspend/activate/deactivate
+- Role management (admin, manager, analyst, viewer)
+
+#### Frontend Features
+- **Notification Center**: Badge count, categories (All, Unread, System, Team), mark as read
+- **Theme Toggle**: Dark/Light/System with localStorage persistence
+- **Keyboard Shortcuts**: Global shortcuts with help dialog (⌘/)
+- **Command Palette**: Quick navigation (⌘K)
+- **Dashboard Templates**: 9 industry templates (Sales, Marketing, Customer, Finance, HR, Operations, E-commerce, Healthcare, Logistics)
+
+#### New Chart Types (6 new)
+- Stacked Bar, Scatter Plot, Radar Chart, Treemap, Funnel Chart, Gauge/KPI
+- Total: 12 chart types
+
+### March 2, 2026 - Left-Aligned Settings Pages
+- Fixed Settings, API Keys, Team pages layout
+
+### March 1, 2026 - PDF Export Production Template
+- Integrated production-grade HTML/CSS template using Jinja2
+- Features: inline SVG logo, 3-column grid, @page footers, Data Summary tables
+
+## API Endpoints
+
+### User Management
+- `GET /api/user/profile` - Get current user profile
+- `PUT /api/user/profile` - Update profile
+- `POST /api/user/change-password` - Change password
+- `DELETE /api/user/delete-account` - Delete account
+- `GET /api/user/activity-log` - Get activity log
+
+### Admin (User Management)
+- `GET /api/admin/users` - List all users
+- `POST /api/admin/users/invite` - Invite user
+- `POST /api/admin/users/{id}/suspend` - Suspend user
+- `POST /api/admin/users/{id}/activate` - Activate user
+- `DELETE /api/admin/users/{id}` - Delete user
+- `PUT /api/admin/users/{id}/role` - Update role
+
+### PDF Export
+- `POST /api/reports/export/professional_pdf` - Generate PDF
+
+### Public Sharing
+- `GET /api/public/dashboards/{public_id}` - View shared dashboard
+- `GET /api/public/charts/{chart_id}/data` - Get chart data
 
 ## Pending Tasks
 
-### P0 - Critical
-- [x] **Backend Refactoring**: Base modular structure created, routers enhanced
-  - Move remaining endpoints from `server.py` (still ~4500 lines)
-  - Order: auth → datasets → charts → dashboards → reports
-
 ### P1 - High Priority
-- [x] Complete new chart types (Added 6 new: Stacked Bar, Scatter, Radar, Treemap, Funnel, Gauge)
-- [ ] Color scheme selector enhancement (custom color picker)
-- [ ] Implement SSO Integration (Survey360, FieldForce, DataPulse)
-- [ ] Activate Scheduled Report Delivery UI (backend resend integration exists)
+- [ ] Real-time collaboration (WebSocket for multi-user editing)
+- [ ] SSO Integration (Survey360, FieldForce, DataPulse)
+- [ ] Scheduled Report Delivery UI
+- [ ] Mobile responsive improvements
 
 ### P2 - Medium Priority
-- [ ] Advanced Data Connectors (Lineage, Row-Level Security, Alerts)
-- [ ] Team Collaboration (roles, permissions)
+- [ ] Advanced Data Connectors
+- [ ] Team Collaboration (permissions system)
 - [ ] Load Testing with locustfile.py
+- [ ] Complete backend refactoring (migrate remaining server.py endpoints)
 
 ## Test Credentials
 - **Email**: `test@dataviz.com`
@@ -98,44 +143,10 @@ DataViz Studio is a full-featured data visualization application built with Reac
 ## Third-Party Integrations
 - **WeasyPrint**: Server-side PDF generation
 - **html2canvas**: Frontend chart image capture
+- **react-colorful**: Color picker component
 - **echarts & recharts**: Charting libraries
 - **emergentintegrations**: AI features (Emergent LLM Key)
-- **resend**: Email delivery for scheduled reports (requires user API key)
-
-## Recent Changes
-
-### March 2, 2026 - New Chart Types & Backend Refactoring
-
-#### New Chart Types Added (6 new types)
-- **Stacked Bar Chart** - For part-to-whole comparisons
-- **Scatter Plot** - For correlation analysis with bubble sizes
-- **Radar Chart** - For multi-variable comparisons
-- **Treemap** - For hierarchical data visualization
-- **Funnel Chart** - For conversion/sales funnels
-- **Gauge/KPI** - Custom SVG gauge for single metric displays
-
-Total chart types now: 12 (was 6)
-
-#### Backend Refactoring Progress
-- Enhanced `/app/backend/routers/dashboards.py` with:
-  - Widget update/delete endpoints
-  - Public sharing endpoints (`GET/POST /dashboards/{id}/share`)
-- Created `/app/backend/routers/public.py` for public dashboard access:
-  - `GET /api/public/dashboards/{public_id}` - View shared dashboard
-  - `GET /api/public/charts/{chart_id}/data` - Get chart data for public view
-- Updated `routers/__init__.py` and `main.py` to include public router
-- Modular architecture fully scaffolded and working
-
-### March 2, 2026 - Left-Aligned Settings Pages
-- Fixed Settings page layout (`SettingsPage.jsx`)
-- Fixed API Keys page layout (`ApiKeysPage.jsx`)  
-- Fixed Team page create org view (`TeamPage.jsx`)
-- Removed `mx-auto` centering from all settings module pages
-- Content now aligns to the left after sidebar
-
-### March 1, 2026 - PDF Export Production Template Implementation
-- Integrated production-grade HTML/CSS template using Jinja2
-- Features: inline SVG logo, 3-column grid, @page footers, Data Summary tables
+- **resend**: Email delivery (requires user API key)
 
 ## Last Updated
 March 2, 2026

@@ -8,6 +8,7 @@ from .reports import router as reports_router
 from .connections import router as connections_router
 from .health import router as health_router
 from .public import router as public_router
+from .users import router as users_router
 
 __all__ = [
     "auth_router",
@@ -18,5 +19,6 @@ __all__ = [
     "reports_router",
     "connections_router",
     "health_router",
-    "public_router"
+    "public_router",
+    "users_router"
 ]

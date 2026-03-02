@@ -21,6 +21,8 @@ import LandingPage from './pages/LandingPage';
 import InteractiveDemoPage from './pages/InteractiveDemoPage';
 import PricingPage from './pages/PricingPage';
 import ApiKeysPage from './pages/ApiKeysPage';
+import ProfilePage from './pages/ProfilePage';
+import UserManagementPage from './pages/UserManagementPage';
 import { DataTransformPage } from './pages/DataTransformPage';
 import { StatisticsPage } from './pages/StatisticsPage';
 import { OrganizationsPage } from './pages/OrganizationsPage';
@@ -192,6 +194,16 @@ function App() {
           <Route path="/keys" element={
             <ProtectedRoute>
               <ApiKeysPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/users" element={
+            <ProtectedRoute>
+              <UserManagementPage />
             </ProtectedRoute>
           } />
           
