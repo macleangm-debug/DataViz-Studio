@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import GridLayout from 'react-grid-layout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,7 +27,11 @@ import {
   Layers,
   Loader2,
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  Maximize2,
+  Download,
+  Eye,
+  Star
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -187,7 +191,12 @@ function DashboardWidget({
   onDrillNavigate,
   onDrillReset,
   canDrill,
-  isDrilled
+  isDrilled,
+  onViewExpand,
+  onExport,
+  onAIInsights,
+  onToggleFavorite,
+  isFavorite
 }) {
   const colorScheme = COLOR_SCHEMES[widget.config?.color_scheme] || COLOR_SCHEMES.purple;
   
@@ -706,7 +715,7 @@ function DashboardWidget({
 
   return (
     <div className={`h-full rounded-2xl border border-white/10 bg-[#0B1730] overflow-hidden group ${isFiltered ? 'ring-1 ring-violet-500/30' : ''} ${isDrilled ? 'ring-1 ring-cyan-500/30' : ''}`}>
-      {/* Compact Header */}
+      {/* Compact Header with Hover Actions */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <GripVertical className="w-3.5 h-3.5 text-muted-foreground/50 cursor-move drag-handle hover:text-muted-foreground transition-colors flex-shrink-0" />
@@ -727,11 +736,74 @@ function DashboardWidget({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(widget)}>
+        
+        {/* Hover Actions - Feature Parity with ChartsPage */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Favorite Star */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(widget); }}
+            title="Favorite"
+          >
+            <Star className={`w-3 h-3 ${isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
+          </Button>
+          
+          {/* View/Expand */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={(e) => { e.stopPropagation(); onViewExpand && onViewExpand(widget, data); }}
+            title="View Expanded"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </Button>
+          
+          {/* AI Insights */}
+          {widget.type === 'chart' && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-violet-400 hover:text-violet-300" 
+              onClick={(e) => { e.stopPropagation(); onAIInsights && onAIInsights(widget, data); }}
+              title="AI Insights"
+            >
+              <Sparkles className="w-3 h-3" />
+            </Button>
+          )}
+          
+          {/* Export */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={(e) => { e.stopPropagation(); onExport && onExport(widget, data); }}
+            title="Export"
+          >
+            <Download className="w-3 h-3" />
+          </Button>
+          
+          {/* Edit */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={(e) => { e.stopPropagation(); onEdit(widget); }}
+            title="Edit"
+          >
             <Settings className="w-3 h-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(widget.id)}>
+          
+          {/* Delete */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 text-destructive hover:text-red-400" 
+            onClick={(e) => { e.stopPropagation(); onDelete(widget.id); }}
+            title="Delete"
+          >
             <Trash2 className="w-3 h-3" />
           </Button>
         </div>
@@ -780,6 +852,9 @@ function DashboardBuilderInner() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [showNLChart, setShowNLChart] = useState(false);
   const [selectedWidgetForInsights, setSelectedWidgetForInsights] = useState(null);
+  const [expandedWidget, setExpandedWidget] = useState(null);
+  const [expandedWidgetData, setExpandedWidgetData] = useState(null);
+  const [widgetFavorites, setWidgetFavorites] = useState({});
   const [newWidget, setNewWidget] = useState({
     type: 'stat',
     title: '',
@@ -996,6 +1071,55 @@ function DashboardBuilderInner() {
     } finally {
       setWidgetLoading(widgetId, false);
     }
+  };
+
+  // Handler: View/Expand widget in full screen modal
+  const handleViewExpand = (widget, data) => {
+    setExpandedWidget(widget);
+    setExpandedWidgetData(data);
+  };
+
+  // Handler: Export widget as PNG
+  const handleExportWidget = async (widget, data) => {
+    try {
+      // Create a simple text-based export for now
+      // In production, you'd capture the chart as an image
+      const exportData = {
+        title: widget.title,
+        type: widget.type,
+        data: data,
+        exported_at: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${widget.title.replace(/\s+/g, '_')}_export.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported "${widget.title}"`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export widget');
+    }
+  };
+
+  // Handler: Open AI Insights panel for widget
+  const handleAIInsights = (widget, data) => {
+    setSelectedWidgetForInsights({ widget, data });
+  };
+
+  // Handler: Toggle widget favorite
+  const handleToggleWidgetFavorite = (widget) => {
+    setWidgetFavorites(prev => ({
+      ...prev,
+      [widget.id]: !prev[widget.id]
+    }));
+    toast.success(widgetFavorites[widget.id] ? 'Removed from favorites' : 'Added to favorites', { duration: 1500 });
   };
 
   const handleLayoutChange = async (newLayout) => {
@@ -1269,6 +1393,103 @@ function DashboardBuilderInner() {
           )}
         </AnimatePresence>
 
+        {/* Expanded Widget View Modal */}
+        <AnimatePresence>
+          {expandedWidget && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-8"
+              onClick={() => setExpandedWidget(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-4xl h-[80vh] bg-[#0B1730] rounded-2xl border border-white/10 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-xl font-semibold text-white">{expandedWidget.title}</h2>
+                    {expandedWidget.type === 'chart' && (
+                      <Badge className="bg-violet-600/80">{expandedWidget.config?.chart_type || 'chart'}</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportWidget(expandedWidget, expandedWidgetData)}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                    {expandedWidget.type === 'chart' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-violet-500/30 hover:bg-violet-500/10"
+                        onClick={() => {
+                          handleAIInsights(expandedWidget, expandedWidgetData);
+                          setExpandedWidget(null);
+                        }}
+                      >
+                        <Sparkles className="w-4 h-4 mr-2 text-violet-400" />
+                        AI Insights
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => setExpandedWidget(null)}>
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="p-6 h-[calc(100%-72px)]">
+                  <DashboardWidget
+                    widget={expandedWidget}
+                    data={expandedWidgetData}
+                    onEdit={() => {}}
+                    onDelete={() => {}}
+                    onDataClick={() => {}}
+                    isFiltered={false}
+                    isLoading={false}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Insights Panel */}
+        <AnimatePresence>
+          {selectedWidgetForInsights && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              onClick={() => setSelectedWidgetForInsights(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="w-full max-w-lg mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AIInsightsPanel
+                  widgetId={selectedWidgetForInsights.widget.id}
+                  widgetData={selectedWidgetForInsights.data}
+                  widgetConfig={selectedWidgetForInsights.widget.config}
+                  token={token}
+                  onClose={() => setSelectedWidgetForInsights(null)}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Active Filters Bar */}
         <ActiveFiltersBar />
 
@@ -1321,6 +1542,11 @@ function DashboardBuilderInner() {
                       drillState={drillState}
                       canDrill={canDrill}
                       isDrilled={isDrilled}
+                      onViewExpand={handleViewExpand}
+                      onExport={handleExportWidget}
+                      onAIInsights={handleAIInsights}
+                      onToggleFavorite={handleToggleWidgetFavorite}
+                      isFavorite={widgetFavorites[widget.id]}
                     />
                   </div>
                 );
