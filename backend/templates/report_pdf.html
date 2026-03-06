@@ -8,18 +8,25 @@
         /* ========== PAGE SETUP ========== */
         @page {
             size: A4;
-            margin: 15mm 12mm 20mm 12mm;
+            margin: 20mm 15mm 25mm 15mm;
             
-            @bottom-center {
-                content: counter(page) " of " counter(pages);
+            @bottom-left {
+                content: "DataViz Studio";
                 font-family: 'Inter', Arial, sans-serif;
                 font-size: 9pt;
-                color: #64748b;
+                color: #6b7280;
+            }
+            
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Inter', Arial, sans-serif;
+                font-size: 9pt;
+                color: #6b7280;
             }
         }
         
         @page :first {
-            margin-top: 0;
+            margin-top: 15mm;
         }
         
         /* ========== BASE STYLES ========== */
@@ -37,46 +44,115 @@
             background: white;
         }
         
+        /* ========== REPORT HEADER / BRAND ========== */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid {{ config.primary_color }};
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .brand-logo svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .brand-title {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #111827;
+        }
+        
+        .brand-subtitle {
+            font-size: 10pt;
+            color: #6b7280;
+        }
+        
+        .report-meta {
+            text-align: right;
+            font-size: 10pt;
+            color: #6b7280;
+        }
+        
+        .report-meta .date {
+            font-weight: 600;
+            color: #374151;
+        }
+        
         /* ========== COVER SECTION ========== */
         .cover-section {
             background: linear-gradient(135deg, {{ config.primary_color }} 0%, {{ config.accent_color }} 100%);
             color: white;
-            padding: 40px 30px;
-            margin: -15mm -12mm 20px -12mm;
-            width: calc(100% + 24mm);
+            padding: 50px 40px;
+            margin: -20mm -15mm 30px -15mm;
+            width: calc(100% + 30mm);
+            page-break-after: avoid;
         }
         
-        .cover-logo {
-            font-size: 12pt;
+        .cover-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .cover-brand-logo {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 6px;
+        }
+        
+        .cover-brand-logo svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .cover-brand-text {
+            font-size: 14pt;
             font-weight: 700;
-            margin-bottom: 20px;
-            opacity: 0.9;
+            opacity: 0.95;
         }
         
         .cover-title {
-            font-size: 28pt;
+            font-size: 32pt;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             line-height: 1.2;
         }
         
         .cover-subtitle {
-            font-size: 14pt;
+            font-size: 16pt;
             opacity: 0.9;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
         
         .cover-meta {
-            font-size: 10pt;
-            opacity: 0.8;
+            font-size: 11pt;
+            opacity: 0.85;
             display: flex;
-            gap: 20px;
+            gap: 24px;
+            flex-wrap: wrap;
         }
         
-        .cover-meta span {
+        .cover-meta-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         
         /* ========== SECTION CONTAINER ========== */
@@ -86,8 +162,8 @@
         
         .section-row {
             display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 20px;
+            margin-bottom: 24px;
             page-break-inside: avoid;
         }
         
@@ -100,9 +176,10 @@
         /* ========== SECTION BASE ========== */
         .section {
             background: #f8fafc;
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
             page-break-inside: avoid;
+            margin-bottom: 20px;
         }
         
         .section.width-100 {
@@ -110,8 +187,12 @@
         }
         
         .section.width-50 {
-            width: calc(50% - 8px);
+            width: calc(50% - 10px);
             float: left;
+        }
+        
+        .section.width-50:nth-child(even) {
+            margin-left: 20px;
         }
         
         .section.width-75 {
@@ -123,36 +204,40 @@
         }
         
         .section-header {
-            background: {{ config.primary_color }}15;
-            padding: 10px 16px;
+            background: {{ config.primary_color }}10;
+            padding: 12px 18px;
             border-left: 4px solid {{ config.primary_color }};
         }
         
         .section-title {
-            font-size: 11pt;
+            font-size: 12pt;
             font-weight: 600;
             color: {{ config.primary_color }};
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            font-size: 14pt;
         }
         
         .section-content {
-            padding: 16px;
+            padding: 18px;
         }
         
         /* ========== STAT CARDS ========== */
         .stat-cards-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            gap: 14px;
         }
         
         .stat-card {
             background: linear-gradient(135deg, {{ config.primary_color }} 0%, {{ config.accent_color }} 100%);
             color: white;
-            padding: 16px;
-            border-radius: 8px;
+            padding: 18px 14px;
+            border-radius: 10px;
             text-align: center;
         }
         
@@ -169,57 +254,60 @@
         }
         
         .stat-icon {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             background: rgba(255,255,255,0.2);
             border-radius: 50%;
-            margin: 0 auto 8px;
+            margin: 0 auto 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 14pt;
         }
         
         .stat-value {
-            font-size: 24pt;
+            font-size: 26pt;
             font-weight: 700;
             line-height: 1.1;
         }
         
         .stat-label {
-            font-size: 8pt;
+            font-size: 9pt;
             opacity: 0.9;
-            margin-top: 6px;
+            margin-top: 8px;
             line-height: 1.3;
         }
         
         /* ========== CHARTS ========== */
         .chart-container {
             text-align: center;
-            padding: 10px 0;
+            padding: 12px 0;
         }
         
         .chart-image {
             max-width: 100%;
             height: auto;
-            max-height: 200px;
+            max-height: 220px;
+            border-radius: 6px;
         }
         
         .chart-placeholder {
-            background: #e2e8f0;
+            background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
             height: 180px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #64748b;
-            font-size: 10pt;
-            border-radius: 4px;
+            font-size: 11pt;
+            border-radius: 8px;
+            border: 2px dashed #cbd5e1;
         }
         
         /* ========== DATA TABLE ========== */
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 10pt;
         }
         
         .data-table thead {
@@ -228,18 +316,22 @@
         }
         
         .data-table th {
-            padding: 10px 12px;
+            padding: 12px 14px;
             text-align: left;
             font-weight: 600;
         }
         
         .data-table td {
-            padding: 10px 12px;
+            padding: 12px 14px;
             border-bottom: 1px solid #e2e8f0;
         }
         
         .data-table tbody tr:nth-child(even) {
             background: #f8fafc;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f1f5f9;
         }
         
         .data-table .share-value {
@@ -249,13 +341,13 @@
         
         /* ========== TEXT SECTIONS ========== */
         .text-content {
-            font-size: 10pt;
-            line-height: 1.6;
+            font-size: 11pt;
+            line-height: 1.7;
             color: #475569;
         }
         
         .text-content p {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         /* ========== WATERMARK ========== */
@@ -264,31 +356,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 60pt;
-            color: rgba(0,0,0,0.05);
+            font-size: 72pt;
+            color: rgba(0,0,0,0.04);
             font-weight: 700;
             white-space: nowrap;
             z-index: -1;
             pointer-events: none;
-        }
-        
-        /* ========== FOOTER ========== */
-        .page-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: {{ config.primary_color }};
-            color: white;
-            padding: 8px 20px;
-            font-size: 8pt;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .footer-logo {
-            font-weight: 700;
         }
         
         /* ========== PAGE BREAKS ========== */
@@ -313,18 +386,32 @@
     <div class="watermark">{{ config.watermark_text }}</div>
     {% endif %}
 
-    <!-- Cover Section -->
+    <!-- Cover Section with Brand -->
     <div class="cover-section">
-        <div class="cover-logo">DataViz Studio</div>
+        <div class="cover-brand">
+            <div class="cover-brand-logo">
+                {{ logo_svg | safe }}
+            </div>
+            <div class="cover-brand-text">DataViz Studio</div>
+        </div>
         <h1 class="cover-title">{{ config.title }}</h1>
         {% if config.subtitle %}
         <p class="cover-subtitle">{{ config.subtitle }}</p>
         {% endif %}
         <div class="cover-meta">
-            <span>📅 {{ config.report_date }}</span>
-            <span>📊 {{ sections|length }} Sections</span>
+            <div class="cover-meta-item">
+                <span>📅</span>
+                <span>{{ config.report_date }}</span>
+            </div>
+            <div class="cover-meta-item">
+                <span>📊</span>
+                <span>{{ sections|length }} Sections</span>
+            </div>
             {% if config.company_name %}
-            <span>🏢 {{ config.company_name }}</span>
+            <div class="cover-meta-item">
+                <span>🏢</span>
+                <span>{{ config.company_name }}</span>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -337,14 +424,17 @@
         <!-- Stat Cards Section -->
         <div class="section width-{{ section.width }} avoid-break">
             <div class="section-header">
-                <div class="section-title">📊 {{ section.title }}</div>
+                <div class="section-title">
+                    <span class="section-icon">📊</span>
+                    {{ section.title }}
+                </div>
             </div>
             <div class="section-content">
                 <div class="stat-cards-grid">
                     {% for stat in section.stats %}
                     <div class="stat-card">
                         <div class="stat-icon">
-                            {% if stat.iconType == 'percent' %}%{% elif stat.iconType == 'trending' %}📈{% elif stat.iconType == 'users' %}👥{% elif stat.iconType == 'cart' %}🛒{% else %}📊{% endif %}
+                            {% if stat.iconType == 'percent' %}%{% elif stat.iconType == 'trending' %}📈{% elif stat.iconType == 'users' %}👥{% elif stat.iconType == 'cart' %}🛒{% elif stat.iconType == 'dollar' %}${% else %}📊{% endif %}
                         </div>
                         <div class="stat-value">{{ stat.value }}</div>
                         <div class="stat-label">{{ stat.label }}</div>
@@ -357,10 +447,10 @@
         
         {% elif section.type in ['bar_chart', 'line_chart', 'pie_chart'] %}
         <!-- Chart Section -->
-        <div class="section width-{{ section.width }} avoid-break" style="{% if section.width == 50 %}float: left; margin-right: 8px; margin-bottom: 16px;{% endif %}">
+        <div class="section width-{{ section.width }} avoid-break" style="{% if section.width == 50 %}float: left; margin-right: 10px; margin-bottom: 20px;{% endif %}">
             <div class="section-header">
                 <div class="section-title">
-                    {% if section.type == 'bar_chart' %}📊{% elif section.type == 'line_chart' %}📈{% else %}🥧{% endif %}
+                    <span class="section-icon">{% if section.type == 'bar_chart' %}📊{% elif section.type == 'line_chart' %}📈{% else %}🥧{% endif %}</span>
                     {{ section.title }}
                 </div>
             </div>
@@ -369,7 +459,9 @@
                     {% if section.chart_image %}
                     <img src="{{ section.chart_image }}" alt="{{ section.title }}" class="chart-image">
                     {% else %}
-                    <div class="chart-placeholder">Chart: {{ section.title }}</div>
+                    <div class="chart-placeholder">
+                        <span>📉 Chart visualization will appear here</span>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -377,9 +469,12 @@
         
         {% elif section.type == 'data_table' %}
         <!-- Data Table Section -->
-        <div class="section width-{{ section.width }} avoid-break" style="{% if section.width == 50 %}float: left; margin-right: 8px; margin-bottom: 16px;{% endif %}">
+        <div class="section width-{{ section.width }} avoid-break" style="{% if section.width == 50 %}float: left; margin-right: 10px; margin-bottom: 20px;{% endif %}">
             <div class="section-header">
-                <div class="section-title">📋 {{ section.title }}</div>
+                <div class="section-title">
+                    <span class="section-icon">📋</span>
+                    {{ section.title }}
+                </div>
             </div>
             <div class="section-content">
                 <table class="data-table">
@@ -400,32 +495,29 @@
                         </tr>
                         {% endfor %}
                         {% else %}
-                        <tr><td>North Region</td><td>245,000</td><td class="share-value">32%</td></tr>
-                        <tr><td>South Region</td><td>189,000</td><td class="share-value">24%</td></tr>
-                        <tr><td>East Region</td><td>156,000</td><td class="share-value">21%</td></tr>
-                        <tr><td>West Region</td><td>178,000</td><td class="share-value">23%</td></tr>
+                        <tr><td colspan="3" style="text-align: center; color: #9ca3af;">No data available</td></tr>
                         {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
         
-        {% elif section.type in ['intro', 'text_block', 'conclusion'] %}
+        {% elif section.type in ['intro', 'text_block', 'conclusion', 'executive_summary'] %}
         <!-- Text Section -->
         <div class="section width-{{ section.width }} avoid-break">
             <div class="clearfix"></div>
             <div class="section-header">
                 <div class="section-title">
-                    {% if section.type == 'intro' %}📝{% elif section.type == 'conclusion' %}✅{% else %}📄{% endif %}
+                    <span class="section-icon">{% if section.type == 'intro' %}📝{% elif section.type == 'conclusion' %}✅{% elif section.type == 'executive_summary' %}📋{% else %}📄{% endif %}</span>
                     {{ section.title }}
                 </div>
             </div>
             <div class="section-content">
                 <div class="text-content">
                     {% if section.content %}
-                    {{ section.content | safe }}
+                    <p>{{ section.content }}</p>
                     {% else %}
-                    <p>This report provides a comprehensive analysis of the data collected, highlighting key trends and insights.</p>
+                    <p style="color: #9ca3af; font-style: italic;">No content provided for this section.</p>
                     {% endif %}
                 </div>
             </div>

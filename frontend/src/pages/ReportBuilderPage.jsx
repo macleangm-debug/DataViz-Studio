@@ -524,7 +524,7 @@ const ReportBuilderPage = () => {
     try {
       toast.info('Preparing PDF export...', { duration: 2000 });
       
-      // Step 1: Capture chart images from the DOM
+      // Step 1: Capture chart images from the DOM (high resolution)
       const sectionsWithImages = await Promise.all(
         sections.map(async (section) => {
           let chartImage = null;
@@ -536,12 +536,13 @@ const ReportBuilderPage = () => {
               const chartElement = document.querySelector(`[data-section-id="${section.id}"] .recharts-wrapper`);
               if (chartElement) {
                 const canvas = await html2canvas(chartElement, {
-                  scale: 2,
+                  scale: 3, // High resolution for crisp charts
                   backgroundColor: '#ffffff',
                   logging: false,
                   useCORS: true,
+                  allowTaint: true,
                 });
-                chartImage = canvas.toDataURL('image/png', 0.9);
+                chartImage = canvas.toDataURL('image/png', 0.95);
               }
             } catch (err) {
               console.warn(`Could not capture chart image for ${section.id}:`, err);

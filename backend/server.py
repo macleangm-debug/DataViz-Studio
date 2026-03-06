@@ -3130,6 +3130,26 @@ async def export_report_builder_pdf(request: ReportBuilderPdfRequest):
         
         template = Template(template_str)
         
+        # Load the DataViz Studio logo SVG
+        def load_logo_svg():
+            logo_paths = [
+                Path("/app/frontend/public/icons/icon-192x192.svg"),
+                Path("/app/frontend/src/assets/logo.svg"),
+            ]
+            for logo_path in logo_paths:
+                if logo_path.exists():
+                    svg = logo_path.read_text(encoding="utf-8")
+                    # Add class to SVG if not present
+                    if "<svg" in svg and 'class="' not in svg.split("<svg", 1)[1][:200]:
+                        svg = svg.replace("<svg", '<svg style="width:100%;height:100%"', 1)
+                    return svg
+            # Fallback: simple chart icon SVG
+            return '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:100%;height:100%;color:#3b82f6">
+                <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            </svg>'''
+        
+        logo_svg = load_logo_svg()
+        
         # Prepare config for template
         config = request.config
         template_config = {
@@ -3164,10 +3184,11 @@ async def export_report_builder_pdf(request: ReportBuilderPdfRequest):
             }
             template_sections.append(sec_data)
         
-        # Render HTML
+        # Render HTML with logo
         html_content = template.render(
             config=template_config,
-            sections=template_sections
+            sections=template_sections,
+            logo_svg=logo_svg
         )
         
         # Generate PDF with WeasyPrint
