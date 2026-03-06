@@ -89,6 +89,23 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - Header: Compact with drag handle, title, and hover actions
 - Chart area: `h-[calc(100%-44px)] p-3` for proper spacing
 
+### March 6, 2026 - Feature Parity for Dashboard Widgets (P1)
+
+#### Hover Action Buttons
+- **Star (Favorite)**: Toggle favorite status with toast notification, amber fill when active
+- **Maximize (View Expand)**: Opens fullscreen modal with chart, Export and AI Insights buttons
+- **Sparkles (AI Insights)**: Opens AI analysis panel (charts only, not stat cards)
+- **Download (Export)**: Downloads widget data as JSON file
+- **Settings (Edit)**: Opens widget edit dialog with all configuration options
+- **Trash (Delete)**: Deletes widget with red hover color
+
+#### Implementation Details
+- Buttons appear via CSS opacity transition (`opacity-0 group-hover:opacity-100`)
+- Event propagation stopped on all button clicks
+- AI Insights conditionally rendered only for `widget.type === 'chart'`
+- Expanded modal includes chart preview, Export button, and AI Insights access
+- Favorites stored in client-side state (not persisted to backend)
+
 ### March 6, 2026 - Chart Studio Phase 1B (Thumbnails, Tags, Analytics)
 
 #### Chart Preview Thumbnails
