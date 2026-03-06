@@ -23,9 +23,10 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - **Perfect Square Widget Layout**: Dashboard widgets now use rowHeight=80, w=4, h=4 for professional square cards
 - **Cross-Filtering**: Click chart data points to filter all widgets on dashboard
 - **Drill-Down**: Navigate hierarchical data within charts (Region → State → City)
+- **Data Explorer**: Tableau-style drag & drop interface for creating visualizations
 
 ## Tech Stack
-- **Frontend**: React 18, Recharts, ECharts, TailwindCSS, Shadcn/UI, react-colorful, react-grid-layout
+- **Frontend**: React 18, Recharts, ECharts, TailwindCSS, Shadcn/UI, react-colorful, react-grid-layout, react-dnd
 - **Backend**: FastAPI, Python 3.11
 - **Database**: MongoDB
 - **PDF Generation**: WeasyPrint + Jinja2 templates
@@ -105,6 +106,21 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - AI Insights conditionally rendered only for `widget.type === 'chart'`
 - Expanded modal includes chart preview, Export button, and AI Insights access
 - Favorites stored in client-side state (not persisted to backend)
+
+### March 6, 2026 - Data Explorer Page (Tableau-Style Interface)
+
+#### Features
+- **Fields Panel**: Left sidebar showing datasets with expandable columns
+- **Drop Zones**: Rows (X-Axis) and Values (Y-Axis) areas for drag & drop
+- **Chart Preview**: Auto-generated charts with 5 types (Bar, Line, Area, Pie, Scatter)
+- **Aggregation**: 5 methods (Sum, Average, Count, Min, Max)
+- **Save Chart**: Saves generated chart to Charts page
+
+#### Technical Implementation
+- **Drag & Drop**: `react-dnd` with `HTML5Backend`
+- **Field Types**: Dimensions (string/text) and Measures (number/integer/float)
+- **Route**: `/data-explorer` under Visualize menu
+- **API Integration**: Fetches datasets from `/api/datasets`, data from `/api/datasets/{id}/data`
 
 ### March 6, 2026 - Chart Studio Phase 1B (Thumbnails, Tags, Analytics)
 
