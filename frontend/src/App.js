@@ -27,6 +27,7 @@ import { DataTransformPage } from './pages/DataTransformPage';
 import { StatisticsPage } from './pages/StatisticsPage';
 import { OrganizationsPage } from './pages/OrganizationsPage';
 import { PublicDashboardPage } from './pages/PublicDashboardPage';
+import { DataExplorerPage } from './pages/DataExplorerPage';
 import '@/App.css';
 
 // Protected Route wrapper
@@ -138,6 +139,11 @@ function App() {
           <Route path="/charts/new" element={
             <ProtectedRoute>
               <ChartsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/data-explorer" element={
+            <ProtectedRoute>
+              <DataExplorerPage />
             </ProtectedRoute>
           } />
           

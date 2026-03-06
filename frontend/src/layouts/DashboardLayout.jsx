@@ -33,7 +33,8 @@ import {
   Share2,
   Plug,
   HelpCircle,
-  BookOpen
+  BookOpen,
+  Layers
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
@@ -83,6 +84,7 @@ const NAVIGATION = [
     items: [
       { label: 'Dashboards', path: '/dashboards', icon: LayoutDashboard },
       { label: 'Charts', path: '/charts', icon: PieChart },
+      { label: 'Data Explorer', path: '/data-explorer', icon: Layers },
     ]
   },
   {
