@@ -1,9 +1,11 @@
 """Charts router"""
 from fastapi import APIRouter, HTTPException
 from typing import Optional, List
+from datetime import datetime, timezone
 
 from services.chart_service import ChartService
 from schemas.chart import ChartCreate, DrillDownRequest
+from core.database import db
 
 router = APIRouter(prefix="/charts", tags=["Charts"])
 
@@ -96,3 +98,20 @@ async def get_drill_options(chart_id: str):
         return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{chart_id}/view")
+async def track_chart_view(chart_id: str):
+    """Track a chart view"""
+    try:
+        # Increment view count
+        await db.charts.update_one(
+            {"id": chart_id},
+            {
+                "$inc": {"views": 1},
+                "$set": {"last_viewed": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+        return {"success": True}
+    except Exception:
+        return {"success": False}

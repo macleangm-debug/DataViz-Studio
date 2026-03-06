@@ -64,6 +64,22 @@ DataViz Studio is a full-featured data visualization application built with Reac
 
 ## Recent Changes
 
+### March 6, 2026 - Chart Studio Phase 1A (BI Platform Upgrade)
+
+#### Enhanced Charts Page
+- **Hover Quick Actions**: View, Duplicate, Export, Add to Dashboard, Delete - all on hover
+- **Chart Tags & Filters**: Filter by tags (e.g., #sales, #marketing)
+- **Favorites System**: Star charts, filter to show only favorites
+- **Sorting Options**: Sort by Recent, Name, Most Viewed, Favorites First
+- **View Modes**: Grid view (cards) and List view
+- **Improved Card Design**:
+  - Chart type badges with icons
+  - Field info display (X → Y)
+  - Timestamp footer
+  - Hover animations
+- **Add to Dashboard Dialog**: Select dashboard to add chart
+- **View Tracking**: Track chart views with counter
+
 ### March 2, 2026 - Major Feature Release
 
 #### Custom Color Picker

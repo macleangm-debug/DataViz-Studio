@@ -39,7 +39,16 @@ import {
   AlertCircle,
   Paintbrush,
   Crown,
-  Lock
+  Lock,
+  Star,
+  Edit,
+  MoreHorizontal,
+  LayoutDashboard,
+  Tag,
+  Clock,
+  ArrowUpDown,
+  Grid3X3,
+  List
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -2150,9 +2159,27 @@ export function ChartsPage() {
   const [drillBreadcrumb, setDrillBreadcrumb] = useState([]);
   const [drillOptions, setDrillOptions] = useState([]);
   const [exportingPdf, setExportingPdf] = useState(false);
+  
+  // New Phase 1A states
+  const [sortBy, setSortBy] = useState('recent'); // recent, name, views, favorites
+  const [filterTag, setFilterTag] = useState('all');
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // grid, list
+  const [duplicatingChart, setDuplicatingChart] = useState(null);
+  const [addToDashboardChart, setAddToDashboardChart] = useState(null);
+  const [dashboards, setDashboards] = useState([]);
 
   // Check if we're in studio mode (creating new chart)
   const isStudioMode = location.pathname === '/charts/new';
+
+  // Get all unique tags from charts
+  const allTags = useMemo(() => {
+    const tags = new Set();
+    charts.forEach(chart => {
+      (chart.tags || []).forEach(tag => tags.add(tag));
+    });
+    return ['all', ...Array.from(tags)];
+  }, [charts]);
 
   useEffect(() => {
     fetchData();
@@ -2163,13 +2190,15 @@ export function ChartsPage() {
       const headers = { Authorization: `Bearer ${token}` };
       const orgParam = currentOrg?.id ? `?org_id=${currentOrg.id}` : '';
       
-      const [chartsRes, datasetsRes] = await Promise.all([
+      const [chartsRes, datasetsRes, dashboardsRes] = await Promise.all([
         axios.get(`${API_URL}/api/charts${orgParam}`, { headers }),
-        axios.get(`${API_URL}/api/datasets${orgParam}`, { headers })
+        axios.get(`${API_URL}/api/datasets${orgParam}`, { headers }),
+        axios.get(`${API_URL}/api/dashboards${orgParam}`, { headers }).catch(() => ({ data: { dashboards: [] } }))
       ]);
       
       setCharts(chartsRes.data.charts || []);
       setDatasets(datasetsRes.data.datasets || []);
+      setDashboards(dashboardsRes.data.dashboards || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -2202,6 +2231,79 @@ export function ChartsPage() {
       fetchData();
     } catch (error) {
       toast.error('Failed to delete chart');
+    }
+  };
+
+  // Duplicate chart
+  const handleDuplicate = async (chart) => {
+    try {
+      setDuplicatingChart(chart.id);
+      const headers = { Authorization: `Bearer ${token}` };
+      const newChart = {
+        ...chart,
+        name: `${chart.name} (Copy)`,
+        org_id: currentOrg?.id
+      };
+      delete newChart.id;
+      delete newChart._id;
+      delete newChart.created_at;
+      delete newChart.updated_at;
+      
+      await axios.post(`${API_URL}/api/charts`, newChart, { headers });
+      toast.success('Chart duplicated');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to duplicate chart');
+    } finally {
+      setDuplicatingChart(null);
+    }
+  };
+
+  // Toggle favorite
+  const handleToggleFavorite = async (chart) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const newFavorite = !chart.is_favorite;
+      await axios.put(`${API_URL}/api/charts/${chart.id}`, {
+        ...chart,
+        is_favorite: newFavorite
+      }, { headers });
+      
+      setCharts(charts.map(c => 
+        c.id === chart.id ? { ...c, is_favorite: newFavorite } : c
+      ));
+      toast.success(newFavorite ? 'Added to favorites' : 'Removed from favorites');
+    } catch (error) {
+      // Optimistic update even if API fails
+      setCharts(charts.map(c => 
+        c.id === chart.id ? { ...c, is_favorite: !c.is_favorite } : c
+      ));
+    }
+  };
+
+  // Add to dashboard
+  const handleAddToDashboard = async (chart, dashboardId) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.post(`${API_URL}/api/dashboards/${dashboardId}/widgets`, {
+        type: 'chart',
+        config: { chart_id: chart.id, chart_type: chart.type },
+        position: { x: 0, y: 0, w: 6, h: 4 }
+      }, { headers });
+      toast.success('Chart added to dashboard');
+      setAddToDashboardChart(null);
+    } catch (error) {
+      toast.error('Failed to add chart to dashboard');
+    }
+  };
+
+  // Track chart view
+  const trackChartView = async (chartId) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.post(`${API_URL}/api/charts/${chartId}/view`, {}, { headers }).catch(() => {});
+    } catch (error) {
+      // Silently fail
     }
   };
 
@@ -2463,9 +2565,53 @@ export function ChartsPage() {
     return chartType?.icon || BarChart3;
   };
 
-  const filteredCharts = charts.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Enhanced filtering and sorting
+  const filteredCharts = useMemo(() => {
+    let result = charts.filter(c =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    // Filter by tag
+    if (filterTag !== 'all') {
+      result = result.filter(c => (c.tags || []).includes(filterTag));
+    }
+    
+    // Filter favorites
+    if (showFavorites) {
+      result = result.filter(c => c.is_favorite);
+    }
+    
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'views':
+          return (b.views || 0) - (a.views || 0);
+        case 'favorites':
+          return (b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0);
+        case 'recent':
+        default:
+          return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+      }
+    });
+    
+    return result;
+  }, [charts, searchQuery, filterTag, showFavorites, sortBy]);
+
+  // Format relative time
+  const formatRelativeTime = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+    return date.toLocaleDateString();
+  };
 
   // Studio Mode
   if (isStudioMode) {
@@ -2543,17 +2689,84 @@ export function ChartsPage() {
           </Card>
         )}
 
-        {/* Search */}
+        {/* Enhanced Filter Bar */}
         {charts.length > 0 && (
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search charts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-              data-testid="search-charts-input"
-            />
+          <div className="space-y-4">
+            {/* Search and Actions Row */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search charts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="search-charts-input"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Sort Dropdown */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-9 px-3 py-1 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="recent">Recent</option>
+                  <option value="name">Name</option>
+                  <option value="views">Most Viewed</option>
+                  <option value="favorites">Favorites First</option>
+                </select>
+                
+                {/* Favorites Toggle */}
+                <Button
+                  variant={showFavorites ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFavorites(!showFavorites)}
+                  className={showFavorites ? "bg-amber-500 hover:bg-amber-600" : ""}
+                >
+                  <Star className={`w-4 h-4 ${showFavorites ? "fill-current" : ""}`} />
+                </Button>
+                
+                {/* View Mode Toggle */}
+                <div className="flex border rounded-md overflow-hidden">
+                  <Button
+                    variant={viewMode === 'grid' ? "secondary" : "ghost"}
+                    size="sm"
+                    className="rounded-none px-2"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? "secondary" : "ghost"}
+                    size="sm"
+                    className="rounded-none px-2"
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Tags Filter */}
+            {allTags.length > 1 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                {allTags.map(tag => (
+                  <Button
+                    key={tag}
+                    variant={filterTag === tag ? "default" : "outline"}
+                    size="sm"
+                    className={`h-7 text-xs capitalize ${filterTag === tag ? "bg-violet-600 hover:bg-violet-700" : ""}`}
+                    onClick={() => setFilterTag(tag)}
+                  >
+                    {tag === 'all' ? 'All Charts' : `#${tag}`}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -2571,51 +2784,222 @@ export function ChartsPage() {
             ))}
           </div>
         ) : filteredCharts.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={viewMode === 'grid' 
+            ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" 
+            : "space-y-3"
+          }>
             {filteredCharts.map((chart, index) => {
               const Icon = getChartIcon(chart.type);
+              
+              // Grid View Card
+              if (viewMode === 'grid') {
+                return (
+                  <motion.div
+                    key={chart.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="group"
+                  >
+                    <Card 
+                      className="overflow-hidden hover:shadow-xl hover:border-violet-500/50 transition-all cursor-pointer relative"
+                      data-testid={`chart-card-${chart.id}`}
+                    >
+                      {/* Chart Preview / Thumbnail */}
+                      <div 
+                        className="aspect-[4/3] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6 relative overflow-hidden"
+                        onClick={() => { handleViewChart(chart); trackChartView(chart.id); }}
+                      >
+                        {chart.preview_image ? (
+                          <img 
+                            src={chart.preview_image} 
+                            alt={chart.name}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <>
+                            <Icon className="w-20 h-20 text-violet-400/20" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent" />
+                          </>
+                        )}
+                        
+                        {/* Overlay Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        
+                        {/* Type Badge */}
+                        <Badge className="absolute top-3 right-3 bg-violet-600/90 text-xs">
+                          <Icon className="w-3 h-3 mr-1" />
+                          {chart.type}
+                        </Badge>
+                        
+                        {/* Favorite Star */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleToggleFavorite(chart); }}
+                          className={`absolute top-3 left-3 p-1.5 rounded-full transition-all ${
+                            chart.is_favorite 
+                              ? "bg-amber-500 text-white" 
+                              : "bg-black/40 text-white/60 opacity-0 group-hover:opacity-100 hover:bg-black/60"
+                          }`}
+                        >
+                          <Star className={`w-4 h-4 ${chart.is_favorite ? "fill-current" : ""}`} />
+                        </button>
+                        
+                        {/* Hover Quick Actions */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="flex-1 h-8 bg-white/90 hover:bg-white text-slate-900 text-xs"
+                            onClick={(e) => { e.stopPropagation(); handleViewChart(chart); }}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 bg-white/90 hover:bg-white text-slate-900"
+                            onClick={(e) => { e.stopPropagation(); handleDuplicate(chart); }}
+                            disabled={duplicatingChart === chart.id}
+                          >
+                            {duplicatingChart === chart.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 bg-white/90 hover:bg-white text-slate-900"
+                            onClick={(e) => { e.stopPropagation(); setAddToDashboardChart(chart); }}
+                          >
+                            <LayoutDashboard className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 bg-red-500/90 hover:bg-red-500 text-white"
+                            onClick={(e) => { e.stopPropagation(); setDeleteDialog(chart); }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Card Content */}
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-foreground truncate">{chart.name}</h3>
+                            <p className="text-xs text-muted-foreground mt-1 truncate">
+                              {chart.config?.x_field && `${chart.config.x_field}`}
+                              {chart.config?.y_field && ` → ${chart.config.y_field}`}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Tags */}
+                        {chart.tags && chart.tags.length > 0 && (
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            {chart.tags.slice(0, 3).map(tag => (
+                              <Badge 
+                                key={tag} 
+                                variant="outline" 
+                                className="text-[10px] h-5 px-1.5 bg-violet-500/10 border-violet-500/30 text-violet-400"
+                              >
+                                #{tag}
+                              </Badge>
+                            ))}
+                            {chart.tags.length > 3 && (
+                              <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                                +{chart.tags.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Footer Metadata */}
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatRelativeTime(chart.updated_at || chart.created_at)}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {chart.views > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {chart.views}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              }
+              
+              // List View Card
               return (
                 <motion.div
                   key={chart.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.02 }}
                 >
-                  <Card 
-                    className="overflow-hidden hover:shadow-lg hover:border-violet-200 dark:hover:border-violet-800 transition-all group cursor-pointer"
-                    onClick={() => handleViewChart(chart)}
-                    data-testid={`chart-card-${chart.id}`}
-                  >
-                    {/* Chart Preview */}
-                    <div className="aspect-[4/3] bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4 relative">
-                      <Icon className="w-16 h-16 text-violet-400/30" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      <Badge 
-                        className="absolute top-3 right-3 bg-violet-600/90"
+                  <Card className="hover:shadow-md hover:border-violet-500/30 transition-all group">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      {/* Icon/Preview */}
+                      <div 
+                        className="w-16 h-16 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shrink-0 cursor-pointer"
+                        onClick={() => handleViewChart(chart)}
                       >
-                        {chart.type}
-                      </Badge>
-                    </div>
-                    
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-foreground truncate">{chart.name}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {chart.config?.x_field && `${chart.config.x_field}`}
-                            {chart.config?.y_field && ` vs ${chart.config.y_field}`}
-                          </p>
+                        {chart.preview_image ? (
+                          <img src={chart.preview_image} alt="" className="w-full h-full object-cover rounded-lg" />
+                        ) : (
+                          <Icon className="w-8 h-8 text-violet-400/50" />
+                        )}
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold truncate">{chart.name}</h3>
+                          {chart.is_favorite && <Star className="w-4 h-4 text-amber-500 fill-amber-500" />}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteDialog(chart);
-                          }}
-                          data-testid={`delete-chart-${chart.id}`}
-                        >
+                        <p className="text-sm text-muted-foreground truncate">
+                          {chart.type} • {chart.config?.x_field} → {chart.config?.y_field}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {formatRelativeTime(chart.updated_at || chart.created_at)}
+                          {chart.views > 0 && (
+                            <>
+                              <span>•</span>
+                              <Eye className="w-3 h-3" />
+                              {chart.views} views
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="sm" variant="ghost" onClick={() => handleViewChart(chart)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleToggleFavorite(chart)}>
+                          <Star className={`w-4 h-4 ${chart.is_favorite ? "fill-amber-500 text-amber-500" : ""}`} />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDuplicate(chart)}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setAddToDashboardChart(chart)}>
+                          <LayoutDashboard className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteDialog(chart)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -2783,6 +3167,52 @@ export function ChartsPage() {
               >
                 Delete
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add to Dashboard Dialog */}
+        <Dialog open={!!addToDashboardChart} onOpenChange={() => setAddToDashboardChart(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <LayoutDashboard className="w-5 h-5" />
+                Add to Dashboard
+              </DialogTitle>
+              <DialogDescription>
+                Select a dashboard to add "{addToDashboardChart?.name}"
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {dashboards.length > 0 ? (
+                dashboards.map(dashboard => (
+                  <button
+                    key={dashboard.id}
+                    onClick={() => handleAddToDashboard(addToDashboardChart, dashboard.id)}
+                    className="w-full p-3 rounded-lg border border-border hover:border-violet-500/50 hover:bg-violet-500/5 text-left transition-all flex items-center gap-3"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                      <LayoutDashboard className="w-5 h-5 text-violet-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{dashboard.name}</p>
+                      <p className="text-sm text-muted-foreground">{dashboard.description || 'No description'}</p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <LayoutDashboard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No dashboards found</p>
+                  <Button 
+                    variant="link" 
+                    className="mt-2"
+                    onClick={() => { setAddToDashboardChart(null); navigate('/dashboards/new'); }}
+                  >
+                    Create a dashboard first
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
