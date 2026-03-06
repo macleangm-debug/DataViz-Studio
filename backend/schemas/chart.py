@@ -8,6 +8,9 @@ class ChartCreate(BaseModel):
     type: str  # bar, line, pie, area, scatter, radar, funnel, gauge, heatmap
     dataset_id: str
     config: dict = {}
+    tags: List[str] = []
+    preview_image: Optional[str] = None  # Base64 encoded preview thumbnail
+    is_favorite: bool = False
 
 
 class DrillDownRequest(BaseModel):

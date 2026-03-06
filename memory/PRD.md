@@ -64,6 +64,26 @@ DataViz Studio is a full-featured data visualization application built with Reac
 
 ## Recent Changes
 
+### March 6, 2026 - Chart Studio Phase 1B (Thumbnails, Tags, Analytics)
+
+#### Chart Preview Thumbnails
+- ECharts `getDataURL()` capture on save
+- Base64 PNG preview stored with chart
+- ChartPreview component exposes ref for capture
+- Preview displayed in chart cards instead of icons
+
+#### Chart Tags System
+- Tags input in Chart Studio (up to 5 tags per chart)
+- Tag badges displayed on chart cards
+- Filter charts by tag in the filter bar
+- Backend schema updated to support tags
+
+#### Chart Analytics
+- View tracking with `POST /api/charts/{id}/view` endpoint
+- Views counter displayed on card footer
+- Exports and shares fields added to schema
+- Backend tracks views automatically
+
 ### March 6, 2026 - Chart Studio Phase 1A (BI Platform Upgrade)
 
 #### Enhanced Charts Page

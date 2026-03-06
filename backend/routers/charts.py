@@ -17,7 +17,10 @@ async def create_chart(chart: ChartCreate):
         name=chart.name,
         chart_type=chart.type,
         dataset_id=chart.dataset_id,
-        config=chart.config
+        config=chart.config,
+        tags=chart.tags,
+        preview_image=chart.preview_image,
+        is_favorite=chart.is_favorite
     )
     return result
 
@@ -49,7 +52,10 @@ async def update_chart(chart_id: str, chart: ChartCreate):
         name=chart.name,
         chart_type=chart.type,
         dataset_id=chart.dataset_id,
-        config=chart.config
+        config=chart.config,
+        tags=chart.tags,
+        preview_image=chart.preview_image,
+        is_favorite=chart.is_favorite
     )
     if not result:
         raise HTTPException(status_code=404, detail="Chart not found")

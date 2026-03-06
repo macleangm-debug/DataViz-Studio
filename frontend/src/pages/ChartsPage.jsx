@@ -828,11 +828,27 @@ const generateChartOptions = (chartType, data, config, theme = 'violet') => {
 };
 
 // Chart Preview Component
-const ChartPreview = ({ chartType, data, config, theme, fullscreen, onClose }) => {
+const ChartPreview = React.forwardRef(({ chartType, data, config, theme, fullscreen, onClose }, ref) => {
+  const chartRef = useRef(null);
   const options = useMemo(() => 
     generateChartOptions(chartType, data, config, theme),
     [chartType, data, config, theme]
   );
+
+  // Expose getDataURL method via ref
+  React.useImperativeHandle(ref, () => ({
+    getDataURL: (opts = {}) => {
+      if (chartRef.current) {
+        const echartInstance = chartRef.current.getEchartsInstance();
+        return echartInstance.getDataURL({
+          type: opts.type || 'png',
+          pixelRatio: opts.pixelRatio || 2,
+          backgroundColor: opts.backgroundColor || '#1a1a2e'
+        });
+      }
+      return null;
+    }
+  }));
 
   if (fullscreen) {
     return (
@@ -843,6 +859,7 @@ const ChartPreview = ({ chartType, data, config, theme, fullscreen, onClose }) =
           </DialogHeader>
           <div className="flex-1 h-full min-h-[500px]">
             <ReactECharts
+              ref={chartRef}
               option={options}
               style={{ height: '100%', width: '100%' }}
               opts={{ renderer: 'canvas' }}
@@ -855,12 +872,13 @@ const ChartPreview = ({ chartType, data, config, theme, fullscreen, onClose }) =
 
   return (
     <ReactECharts
+      ref={chartRef}
       option={options}
       style={{ height: '100%', width: '100%' }}
       opts={{ renderer: 'canvas' }}
     />
   );
-};
+});
 
 // Chart Studio Mode - Full editor
 const ChartStudio = ({ 
@@ -872,6 +890,7 @@ const ChartStudio = ({
   token,
   orgId 
 }) => {
+  const chartPreviewRef = useRef(null);
   const [activeTab, setActiveTab] = useState('data');
   const [selectedDataset, setSelectedDataset] = useState(initialChart?.dataset_id || '');
   const [chartName, setChartName] = useState(initialChart?.name || '');
@@ -893,6 +912,10 @@ const ChartStudio = ({
   const [tierRestricted, setTierRestricted] = useState(false);
   const [tierMessage, setTierMessage] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  // Tags state
+  const [chartTags, setChartTags] = useState(initialChart?.tags || []);
+  const [tagInput, setTagInput] = useState('');
   
   // Custom themes state
   const [customThemes, setCustomThemes] = useState([]);
@@ -1194,7 +1217,7 @@ const ChartStudio = ({
     toast.success('Applied AI suggestion');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!chartName.trim()) {
       toast.error('Please enter a chart name');
       return;
@@ -1208,10 +1231,26 @@ const ChartStudio = ({
       return;
     }
 
+    // Capture chart preview image
+    let previewImage = null;
+    try {
+      if (chartPreviewRef.current && previewData.length > 0) {
+        previewImage = chartPreviewRef.current.getDataURL({
+          type: 'png',
+          pixelRatio: 2,
+          backgroundColor: '#1a1a2e'
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to capture chart preview:', err);
+    }
+
     onSave({
       name: chartName,
       type: chartType,
       dataset_id: selectedDataset,
+      tags: chartTags,
+      preview_image: previewImage,
       config: {
         x_field: xField,
         y_field: yField,
@@ -1225,6 +1264,20 @@ const ChartStudio = ({
         annotations,
       }
     });
+  };
+  
+  // Add tag
+  const handleAddTag = () => {
+    const tag = tagInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (tag && !chartTags.includes(tag) && chartTags.length < 5) {
+      setChartTags([...chartTags, tag]);
+      setTagInput('');
+    }
+  };
+
+  // Remove tag
+  const handleRemoveTag = (tagToRemove) => {
+    setChartTags(chartTags.filter(t => t !== tagToRemove));
   };
   
   // Add new annotation
@@ -1291,6 +1344,50 @@ const ChartStudio = ({
                   placeholder="Enter chart name..."
                   data-testid="chart-name-input"
                 />
+              </div>
+
+              {/* Tags Input */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Tag className="w-4 h-4" />
+                  Tags <span className="text-xs text-muted-foreground">(up to 5)</span>
+                </Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {chartTags.map(tag => (
+                    <Badge 
+                      key={tag} 
+                      variant="secondary"
+                      className="bg-violet-500/20 text-violet-300 border-violet-500/30 flex items-center gap-1 pr-1"
+                    >
+                      #{tag}
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-1 p-0.5 rounded hover:bg-violet-500/30"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                {chartTags.length < 5 && (
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                      placeholder="Type a tag and press Enter..."
+                      className="flex-1"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={handleAddTag}
+                      disabled={!tagInput.trim()}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Dataset Selection */}
@@ -2107,6 +2204,7 @@ const ChartStudio = ({
               </div>
             ) : previewData.length > 0 ? (
               <ChartPreview
+                ref={chartPreviewRef}
                 chartType={chartType}
                 data={previewData}
                 config={config}

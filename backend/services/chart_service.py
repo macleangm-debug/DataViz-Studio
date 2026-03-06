@@ -15,7 +15,10 @@ class ChartService:
         name: str,
         chart_type: str,
         dataset_id: str,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        tags: List[str] = None,
+        preview_image: str = None,
+        is_favorite: bool = False
     ) -> Dict[str, Any]:
         """Create a new chart"""
         chart = {
@@ -24,6 +27,12 @@ class ChartService:
             "type": chart_type,
             "dataset_id": dataset_id,
             "config": config,
+            "tags": tags or [],
+            "preview_image": preview_image,
+            "is_favorite": is_favorite,
+            "views": 0,
+            "exports": 0,
+            "shares": 0,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.charts.insert_one(chart)
@@ -33,7 +42,11 @@ class ChartService:
             "name": chart["name"],
             "type": chart["type"],
             "dataset_id": chart["dataset_id"],
-            "config": chart["config"]
+            "config": chart["config"],
+            "tags": chart["tags"],
+            "preview_image": chart["preview_image"],
+            "is_favorite": chart["is_favorite"],
+            "views": chart["views"]
         }
     
     @staticmethod
@@ -60,18 +73,31 @@ class ChartService:
         name: str,
         chart_type: str,
         dataset_id: str,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        tags: List[str] = None,
+        preview_image: str = None,
+        is_favorite: bool = None
     ) -> Optional[Dict[str, Any]]:
         """Update chart"""
+        update_data = {
+            "name": name,
+            "type": chart_type,
+            "dataset_id": dataset_id,
+            "config": config,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Only update optional fields if provided
+        if tags is not None:
+            update_data["tags"] = tags
+        if preview_image is not None:
+            update_data["preview_image"] = preview_image
+        if is_favorite is not None:
+            update_data["is_favorite"] = is_favorite
+            
         result = await db.charts.update_one(
             {"id": chart_id},
-            {"$set": {
-                "name": name,
-                "type": chart_type,
-                "dataset_id": dataset_id,
-                "config": config,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
+            {"$set": update_data}
         )
         
         if result.modified_count > 0:
