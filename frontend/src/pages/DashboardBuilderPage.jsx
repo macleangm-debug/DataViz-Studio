@@ -232,15 +232,13 @@ function DashboardWidget({
 
     switch (widget.type) {
       case 'stat':
-        // Compact stat card
+        // Stat card - centered content filling the square
         return (
-          <div className="h-full flex items-center justify-center py-1">
-            <div className="text-center">
-              <p className="text-xl font-bold text-foreground leading-tight">
-                {typeof data.value === 'number' ? data.value.toLocaleString() : data.value}
-              </p>
-              <p className="text-[10px] text-muted-foreground capitalize mt-0.5">{data.aggregation}</p>
+          <div className="flex h-full flex-col items-center justify-center">
+            <div className="text-4xl font-bold tracking-tight text-foreground">
+              {typeof data.value === 'number' ? data.value.toLocaleString() : data.value}
             </div>
+            <div className="mt-1 text-sm text-muted-foreground capitalize">{data.aggregation}</div>
           </div>
         );
 
@@ -251,27 +249,24 @@ function DashboardWidget({
           return <div className="h-full flex items-center justify-center text-muted-foreground text-xs">No data</div>;
         }
         
-        // Compact tooltip style
+        // Tooltip style
         const tooltipStyle = {
           contentStyle: { 
             backgroundColor: 'rgba(17, 17, 27, 0.95)', 
             border: `1px solid ${colorScheme.accent}40`,
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            padding: '6px 10px',
-            fontSize: '11px'
+            padding: '8px 12px',
+            fontSize: '12px'
           },
-          labelStyle: { color: '#fff', fontWeight: 600, marginBottom: '2px', fontSize: '10px' },
+          labelStyle: { color: '#fff', fontWeight: 600, marginBottom: '4px', fontSize: '11px' },
           itemStyle: { color: colorScheme.colors[1] }
         };
         
-        // Compact chart container height
-        const chartHeight = 130;
-        
-        // Pie Chart - compact with smaller radius
+        // Pie Chart - properly sized for square card
         if (chartType === 'pie') {
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <RePieChart>
                   <Pie
@@ -279,8 +274,8 @@ function DashboardWidget({
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
-                    cy="50%"
-                    outerRadius="55%"
+                    cy="55%"
+                    outerRadius="68%"
                     innerRadius="0%"
                     paddingAngle={2}
                     strokeWidth={0}
@@ -301,10 +296,10 @@ function DashboardWidget({
           );
         }
         
-        // Donut Chart - compact
+        // Donut Chart - centered in square card
         if (chartType === 'donut') {
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <RePieChart>
                   <Pie
@@ -312,9 +307,9 @@ function DashboardWidget({
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
-                    cy="50%"
-                    innerRadius="35%"
-                    outerRadius="55%"
+                    cy="55%"
+                    innerRadius="42%"
+                    outerRadius="68%"
                     paddingAngle={3}
                     strokeWidth={0}
                     onClick={handleChartClick}
@@ -334,12 +329,12 @@ function DashboardWidget({
           );
         }
         
-        // Line Chart - compact with tighter margins
+        // Line Chart - fills square card
         if (chartType === 'line') {
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ReLineChart data={data} margin={{ top: 10, right: 15, left: 5, bottom: 15 }} onClick={(e) => e?.activePayload && handleChartClick(e.activePayload[0]?.payload)}>
+                <ReLineChart data={data} margin={{ top: 16, right: 16, left: 8, bottom: 28 }} onClick={(e) => e?.activePayload && handleChartClick(e.activePayload[0]?.payload)}>
                 <defs>
                   <linearGradient id={`lineGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor={colorScheme.gradient[0]}/>
@@ -347,16 +342,16 @@ function DashboardWidget({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
-                <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={30} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={8} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={36} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
                 <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
                   stroke={`url(#lineGradient-${widgetId})`}
-                  strokeWidth={2} 
-                  dot={{ fill: colorScheme.accent, strokeWidth: 0, r: 2, cursor: 'pointer' }}
-                  activeDot={{ fill: colorScheme.colors[1], strokeWidth: 0, r: 4, cursor: 'pointer' }}
+                  strokeWidth={2.5} 
+                  dot={{ fill: colorScheme.accent, strokeWidth: 0, r: 3, cursor: 'pointer' }}
+                  activeDot={{ fill: colorScheme.colors[1], strokeWidth: 0, r: 5, cursor: 'pointer' }}
                 />
               </ReLineChart>
             </ResponsiveContainer>
@@ -364,12 +359,12 @@ function DashboardWidget({
           );
         }
         
-        // Area Chart - compact
+        // Area Chart - fills square card
         if (chartType === 'area') {
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ReLineChart data={data} margin={{ top: 10, right: 15, left: 5, bottom: 15 }}>
+                <AreaChart data={data} margin={{ top: 16, right: 16, left: 8, bottom: 28 }}>
                 <defs>
                   <linearGradient id={`areaGradient-${widgetId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colorScheme.accent} stopOpacity={0.4}/>
@@ -377,29 +372,28 @@ function DashboardWidget({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
-                <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={30} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={8} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={36} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
                 <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
-                <Line 
+                <Area 
                   type="monotone" 
                   dataKey="value" 
                   stroke={colorScheme.accent}
                   strokeWidth={2} 
                   fill={`url(#areaGradient-${widgetId})`}
-                  dot={false}
                 />
-              </ReLineChart>
+              </AreaChart>
             </ResponsiveContainer>
             </div>
           );
         }
         
-        // Horizontal Bar Chart - compact
+        // Horizontal Bar Chart - fills square card
         if (chartType === 'horizontal_bar') {
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} layout="vertical" margin={{ top: 5, right: 15, left: 40, bottom: 5 }} barCategoryGap="20%">
+                <BarChart data={data} layout="vertical" margin={{ top: 16, right: 16, left: 50, bottom: 16 }} barCategoryGap="25%">
                   <defs>
                     <linearGradient id={`hbarGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
                       <stop offset="0%" stopColor={colorScheme.gradient[1]} stopOpacity={0.8}/>
@@ -407,36 +401,36 @@ function DashboardWidget({
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={35} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={45} />
                   <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15` }} formatter={(value) => [value.toLocaleString(), 'Value']} />
-                  <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 4, 4, 0]} maxBarSize={18} onClick={handleChartClick} cursor="pointer" />
+                  <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 6, 6, 0]} maxBarSize={28} onClick={handleChartClick} cursor="pointer" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           );
         }
 
-        // Stacked Bar Chart - compact
+        // Stacked Bar Chart - fills square card
         if (chartType === 'stacked_bar') {
           const hasMultipleValues = data[0] && (data[0].value2 !== undefined || data[0].series);
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 10, right: 15, left: 5, bottom: 15 }} barCategoryGap="20%">
+                <BarChart data={data} margin={{ top: 16, right: 16, left: 8, bottom: 28 }} barCategoryGap="25%">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
-                  <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={30} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={8} />
+                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={36} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
                   <Tooltip {...tooltipStyle} />
                   <Bar dataKey="value" stackId="stack" fill={colorScheme.colors[0]} radius={[0, 0, 0, 0]} />
                   {hasMultipleValues && data[0].value2 !== undefined && (
                   <Bar dataKey="value2" stackId="stack" fill={colorScheme.colors[1]} radius={[0, 0, 0, 0]} />
                 )}
                 {hasMultipleValues && data[0].value3 !== undefined && (
-                  <Bar dataKey="value3" stackId="stack" fill={colorScheme.colors[2]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value3" stackId="stack" fill={colorScheme.colors[2]} radius={[6, 6, 0, 0]} />
                 )}
                 {!hasMultipleValues && (
-                  <Bar dataKey="value" fill={colorScheme.colors[0]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value" fill={colorScheme.colors[0]} radius={[6, 6, 0, 0]} />
                 )}
               </BarChart>
             </ResponsiveContainer>
@@ -444,7 +438,7 @@ function DashboardWidget({
           );
         }
 
-        // Scatter Plot - compact
+        // Scatter Plot - fills square card
         if (chartType === 'scatter') {
           const scatterData = data.map((d, i) => ({
             x: d.x !== undefined ? d.x : i + 1,
@@ -453,13 +447,13 @@ function DashboardWidget({
             z: d.z || d.value || 100
           }));
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 10, right: 15, left: 5, bottom: 10 }}>
+                <ScatterChart margin={{ top: 16, right: 16, left: 8, bottom: 28 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                  <XAxis type="number" dataKey="x" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                  <YAxis type="number" dataKey="y" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={30} />
-                  <ZAxis type="number" dataKey="z" range={[40, 200]} />
+                  <XAxis type="number" dataKey="x" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                  <YAxis type="number" dataKey="y" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={36} />
+                  <ZAxis type="number" dataKey="z" range={[60, 300]} />
                   <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
                   <Scatter data={scatterData} fill={colorScheme.accent}>
                     {scatterData.map((_, index) => (
@@ -472,21 +466,21 @@ function DashboardWidget({
           );
         }
 
-        // Radar Chart - compact
+        // Radar Chart - fills square card
         if (chartType === 'radar') {
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={data} margin={{ top: 15, right: 20, left: 20, bottom: 15 }}>
+                <RadarChart data={data} margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
                 <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="name" tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} />
-                <PolarRadiusAxis tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} />
+                <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                <PolarRadiusAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} />
                 <Radar
                   dataKey="value"
                   stroke={colorScheme.accent}
                   fill={colorScheme.accent}
-                  fillOpacity={0.3}
-                  strokeWidth={1.5}
+                  fillOpacity={0.35}
+                  strokeWidth={2}
                 />
                 <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
               </RadarChart>
@@ -495,7 +489,7 @@ function DashboardWidget({
           );
         }
 
-        // Treemap Chart - compact
+        // Treemap Chart - fills square card
         if (chartType === 'treemap') {
           const treemapData = data.map((d, i) => ({
             name: d.name,
@@ -503,7 +497,7 @@ function DashboardWidget({
             fill: colorScheme.colors[i % colorScheme.colors.length]
           }));
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <Treemap
                   data={treemapData}
@@ -518,14 +512,14 @@ function DashboardWidget({
                         width={width}
                         height={height}
                         fill={fill}
-                        rx={3}
+                        rx={4}
                       />
-                      {width > 30 && height > 18 && (
+                      {width > 40 && height > 24 && (
                         <text
                           x={x + width / 2}
                           y={y + height / 2}
                           fill="#fff"
-                          fontSize={9}
+                          fontSize={11}
                           fontWeight={600}
                           textAnchor="middle"
                           dominantBaseline="middle"
@@ -541,7 +535,7 @@ function DashboardWidget({
           );
         }
 
-        // Funnel Chart - compact
+        // Funnel Chart - fills square card
         if (chartType === 'funnel') {
           const funnelData = data.map((d, i) => ({
             name: d.name,
@@ -549,9 +543,9 @@ function DashboardWidget({
             fill: colorScheme.colors[i % colorScheme.colors.length]
           }));
           return (
-            <div style={{ width: '100%', height: chartHeight }}>
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <FunnelChart margin={{ top: 10, right: 15, left: 15, bottom: 10 }}>
+                <FunnelChart margin={{ top: 16, right: 20, left: 20, bottom: 16 }}>
                   <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
                 <Funnel
                   data={funnelData}
@@ -562,7 +556,7 @@ function DashboardWidget({
                   <LabelList
                     position="center"
                     fill="#fff"
-                    fontSize={9}
+                    fontSize={11}
                     fontWeight={600}
                     formatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value.toLocaleString()}
                   />
@@ -576,23 +570,23 @@ function DashboardWidget({
           );
         }
 
-        // Gauge/KPI Chart - compact
+        // Gauge/KPI Chart - fills square card
         if (chartType === 'gauge') {
           const total = data.reduce((sum, d) => sum + (d.value || 0), 0);
           const maxValue = Math.max(...data.map(d => d.value || 0));
           const percentage = total > 0 ? Math.min((maxValue / total) * 100, 100) : 0;
           const value = data[0]?.value || 0;
           
-          // Compact SVG gauge
-          const size = 120;
-          const strokeWidth = 12;
+          // SVG gauge for square card
+          const size = 180;
+          const strokeWidth = 16;
           const radius = (size - strokeWidth) / 2;
           const circumference = radius * Math.PI;
           const offset = circumference - (percentage / 100) * circumference;
           
           return (
-            <div className="h-full flex flex-col items-center justify-center py-1">
-              <svg width={size} height={size / 2 + 20} viewBox={`0 0 ${size} ${size / 2 + 20}`}>
+            <div className="h-full flex flex-col items-center justify-center">
+              <svg width={size} height={size / 2 + 30} viewBox={`0 0 ${size} ${size / 2 + 30}`}>
                 <defs>
                   <linearGradient id={`gaugeGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor={colorScheme.gradient[0]} />
@@ -618,20 +612,20 @@ function DashboardWidget({
                 />
                 <text
                   x={size / 2}
-                  y={size / 2 - 2}
+                  y={size / 2 - 5}
                   textAnchor="middle"
                   fill="hsl(var(--foreground))"
-                  fontSize="16"
+                  fontSize="24"
                   fontWeight="700"
                 >
                   {value >= 1000 ? `${(value/1000).toFixed(0)}k` : value.toLocaleString()}
                 </text>
                 <text
                   x={size / 2}
-                  y={size / 2 + 12}
+                  y={size / 2 + 18}
                   textAnchor="middle"
                   fill="hsl(var(--muted-foreground))"
-                  fontSize="9"
+                  fontSize="12"
                 >
                   {data[0]?.name || 'Value'}
                 </text>
@@ -640,11 +634,11 @@ function DashboardWidget({
           );
         }
         
-        // Default: Vertical Bar Chart - compact
+        // Default: Vertical Bar Chart - fills square card with proper grid spacing
         return (
-          <div style={{ width: '100%', height: chartHeight }}>
+          <div className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 15 }} barCategoryGap="25%">
+              <BarChart data={data} margin={{ top: 16, right: 10, left: 8, bottom: 28 }} barCategoryGap="25%">
                 <defs>
                   <linearGradient id={`barGradient-${widgetId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={colorScheme.gradient[0]} stopOpacity={1}/>
@@ -652,14 +646,14 @@ function DashboardWidget({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
-                <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={28} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
-                <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15`, radius: 3 }} formatter={(value) => [value.toLocaleString(), 'Value']} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={8} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={36} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15`, radius: 4 }} formatter={(value) => [value.toLocaleString(), 'Value']} />
                 <Bar 
                   dataKey="value" 
                   fill={`url(#barGradient-${widgetId})`} 
-                  radius={[4, 4, 0, 0]} 
-                  maxBarSize={35}
+                  radius={[6, 6, 0, 0]} 
+                  maxBarSize={50}
                   onClick={handleChartClick}
                   cursor="pointer"
                 />
@@ -711,43 +705,41 @@ function DashboardWidget({
   const hasDrillHierarchy = widget.config?.drilldown && widget.config.drilldown.length > 1;
 
   return (
-    <Card className={`h-full flex flex-col overflow-hidden group bg-card/50 backdrop-blur-sm border-border/50 ${isFiltered ? 'ring-1 ring-violet-500/30' : ''} ${isDrilled ? 'ring-1 ring-cyan-500/30' : ''}`}>
-      <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/30 bg-muted/20">
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <GripVertical className="w-3 h-3 text-muted-foreground/50 cursor-move drag-handle hover:text-muted-foreground transition-colors flex-shrink-0" />
-          <span className="font-medium text-xs text-foreground/90 truncate">{widget.title}</span>
+    <div className={`h-full rounded-2xl border border-white/10 bg-[#0B1730] overflow-hidden group ${isFiltered ? 'ring-1 ring-violet-500/30' : ''} ${isDrilled ? 'ring-1 ring-cyan-500/30' : ''}`}>
+      {/* Compact Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <GripVertical className="w-3.5 h-3.5 text-muted-foreground/50 cursor-move drag-handle hover:text-muted-foreground transition-colors flex-shrink-0" />
+          <h3 className="text-sm font-semibold text-white truncate">{widget.title}</h3>
           {hasDrillHierarchy && !isDrilled && (
-            <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-[9px] px-1 py-0 h-3.5 flex-shrink-0">
-              <Layers className="w-2 h-2 mr-0.5" />
+            <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] text-cyan-300 flex-shrink-0">
               Drill
-            </Badge>
+            </span>
           )}
           {isDrilled && (
-            <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300 text-[9px] px-1 py-0 h-3.5 flex-shrink-0">
-              <Layers className="w-2 h-2 mr-0.5" />
+            <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] text-cyan-300 flex-shrink-0">
               Drilled
-            </Badge>
+            </span>
           )}
           {isFiltered && (
-            <Badge variant="secondary" className="bg-violet-500/20 text-violet-300 text-[9px] px-1 py-0 h-3.5 flex-shrink-0">
-              <Filter className="w-2 h-2 mr-0.5" />
+            <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] text-violet-300 flex-shrink-0">
               Filtered
-            </Badge>
+            </span>
           )}
         </div>
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => onEdit(widget)}>
-            <Settings className="w-2.5 h-2.5" />
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(widget)}>
+            <Settings className="w-3 h-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => onDelete(widget.id)}>
-            <Trash2 className="w-2.5 h-2.5" />
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(widget.id)}>
+            <Trash2 className="w-3 h-3" />
           </Button>
         </div>
       </div>
       
       {/* Drill Breadcrumb */}
       {isDrilled && drillState && (
-        <div className="px-2 py-1 border-b border-border/20">
+        <div className="px-3 py-1.5 border-b border-white/5">
           <DrillBreadcrumb
             path={drillState.path}
             hierarchy={drillState.hierarchy}
@@ -757,10 +749,11 @@ function DashboardWidget({
         </div>
       )}
       
-      <div className="flex-1 p-1.5 overflow-hidden">
+      {/* Chart Container - fills remaining space */}
+      <div className="h-[calc(100%-44px)] p-3">
         {renderContent()}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -1034,7 +1027,7 @@ function DashboardBuilderInner() {
         x: w.position?.x || 0,
         y: w.position?.y || 0,
         w: w.position?.w || 4,
-        h: w.position?.h || 3
+        h: w.position?.h || 4  // Default to square
       }));
       
       await axios.put(`${API_URL}/api/dashboards/${dashboardId}/layout`, {
@@ -1068,7 +1061,7 @@ function DashboardBuilderInner() {
         title: newWidget.title,
         dataset_id: newWidget.dataset_id || null,
         config: newWidget.config,
-        position: { x: 0, y: maxY, w: 4, h: 3 }
+        position: { x: 0, y: maxY, w: 4, h: 4 }  // Square widget: w=4, h=4
       };
       
       const response = await axios.post(`${API_URL}/api/widgets`, widgetData, { headers });
@@ -1163,17 +1156,15 @@ function DashboardBuilderInner() {
     );
   }
 
-  // Layout: 3 widgets per row (w=4 for each in a 12-col grid)
-  // Compact heights: charts h=3, stats h=2
+  // Layout: Perfect square widgets (w=4, h=4 in a 12-col grid with rowHeight=80)
+  // This creates 3 equal square cards per row
   const layout = widgets.map((w, index) => {
-    const isStatWidget = w.type === 'stat';
-    const defaultH = isStatWidget ? 2 : 3;
     return {
       i: w.id,
       x: w.position?.x ?? ((index % 3) * 4),  // 0, 4, 8 for 3 per row
-      y: w.position?.y ?? (Math.floor(index / 3) * 3),
+      y: w.position?.y ?? (Math.floor(index / 3) * 4),
       w: w.position?.w || 4,  // 4 columns = 3 widgets per row
-      h: w.position?.h || defaultH,  // Compact: 3 for charts, 2 for stats
+      h: w.position?.h || 4,  // h=4 with rowHeight=80 = perfect square
       minW: 2,
       minH: 2
     };
@@ -1281,8 +1272,8 @@ function DashboardBuilderInner() {
         {/* Active Filters Bar */}
         <ActiveFiltersBar />
 
-        {/* Grid Layout - 3 widgets per row */}
-        <div className="bg-muted/30 rounded-xl p-2 min-h-[400px]">
+        {/* Grid Layout - Perfect square widgets */}
+        <div className="bg-muted/30 rounded-xl p-4 min-h-[400px]">
           {widgets.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[500px] text-center">
               <LayoutDashboard className="w-16 h-16 text-muted-foreground mb-4" />
@@ -1298,13 +1289,13 @@ function DashboardBuilderInner() {
               className="layout"
               layout={layout}
               cols={12}
-              rowHeight={26}
+              rowHeight={80}
               width={1150}
               onLayoutChange={handleLayoutChange}
               draggableHandle=".drag-handle"
               compactType="vertical"
               preventCollision={false}
-              margin={[6, 6]}
+              margin={[16, 16]}
               containerPadding={[0, 0]}
             >
               {widgets.map(widget => {
