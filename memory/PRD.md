@@ -84,6 +84,26 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - Exports and shares fields added to schema
 - Backend tracks views automatically
 
+### March 6, 2026 - Cross-Filtering (Phase 2A) Implementation
+
+#### Cross-Filtering MVP Features
+- **Click-to-Filter**: Click any bar/pie chart data point to apply cross-filter
+- **Active Filters Bar**: Violet-themed filter bar with removable chips
+- **Filter Chips**: Display format "field: value" with X to remove
+- **Clear All**: One-click to remove all active filters
+- **Filtered Badge**: Visual indicator on widgets affected by filters
+- **Multi-Widget Update**: All non-source widgets refresh with filtered data
+- **Toast Notifications**: Feedback when filter is applied
+
+#### New Components Created
+- `/contexts/DashboardFilterContext.jsx` - Shared filter state management
+- `/components/ActiveFiltersBar.jsx` - Filter chips UI component
+
+#### Backend Endpoints Added
+- `POST /api/widgets/{id}/data` - Returns filtered widget data
+  - Request: `{ filters: { field: "value" } }`
+  - Response: `{ data: [...], filtered: true, widget: {...} }`
+
 ### March 6, 2026 - Dashboards Page Phase 1B Enhancement
 
 #### Enhanced Dashboards Page (Matching Charts Page)
@@ -183,8 +203,7 @@ DataViz Studio is a full-featured data visualization application built with Reac
 
 ## Pending Tasks
 
-### P0 - Immediate Priority (Phase 2)
-- [ ] Cross Filtering - Click data point in one chart to filter all others
+### P0 - Immediate Priority (Phase 2 - Remaining)
 - [ ] Drill Down - Hierarchical data exploration (Region → Country → City)
 - [ ] AI Insights Panel - AI-powered textual analysis of charts
 - [ ] Natural Language to Chart - Generate charts by typing commands
@@ -216,6 +235,8 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - [ ] `/embed-manager` - Embed Code Manager
 - [ ] `/favorites` - Favorites Hub
 - [ ] `/recent` - Recently Viewed
+
+## Completed Features (March 2026)
 
 ## Test Credentials
 - **Email**: `test@dataviz.com`
