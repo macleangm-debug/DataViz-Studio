@@ -2362,6 +2362,198 @@ If asked about statistics, provide clear explanations."""
         logger.error(f"AI query error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
 
+
+class AIInsightsRequest(BaseModel):
+    widget_id: Optional[str] = None
+    data: List[Dict[str, Any]]
+    config: Dict[str, Any] = {}
+
+
+@api_router.post("/ai/insights")
+async def generate_ai_insights(request: AIInsightsRequest):
+    """Generate AI insights from widget data"""
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        # Return basic statistical insights if AI is not configured
+        return {"insights": generate_basic_insights(request.data)}
+    
+    try:
+        # Prepare data summary for AI
+        data = request.data
+        if not data or len(data) == 0:
+            return {"insights": [{"type": "insight", "title": "No Data", "description": "Add data to generate insights."}]}
+        
+        data_summary = json.dumps(data[:20], default=str)  # Limit data sent to AI
+        chart_type = request.config.get("chart_type", "chart")
+        x_field = request.config.get("x_field", "category")
+        y_field = request.config.get("y_field", "value")
+        
+        system_message = """You are a data analyst AI. Analyze the provided data and generate 3-5 concise insights.
+Return a JSON array with objects containing:
+- type: one of "trend_up", "trend_down", "outlier", "target", "insight"
+- title: short title (2-4 words)
+- description: brief insight (1-2 sentences max)
+
+Focus on: trends, top/bottom performers, outliers, notable patterns.
+Keep insights brief and actionable. Return ONLY valid JSON array, no markdown."""
+        
+        prompt = f"""Analyze this {chart_type} data (X: {x_field}, Y: {y_field}):
+{data_summary}
+
+Generate insights as JSON array."""
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"insights-{uuid.uuid4()}",
+            system_message=system_message
+        ).with_model("openai", "gpt-5.2")
+        
+        user_message = UserMessage(text=prompt)
+        response = await chat.send_message(user_message)
+        
+        # Parse AI response
+        try:
+            # Clean response (remove markdown if present)
+            clean_response = response.strip()
+            if clean_response.startswith("```"):
+                clean_response = clean_response.split("```")[1]
+                if clean_response.startswith("json"):
+                    clean_response = clean_response[4:]
+            insights = json.loads(clean_response)
+            return {"insights": insights}
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse AI insights response: {response}")
+            return {"insights": generate_basic_insights(data)}
+            
+    except Exception as e:
+        logger.error(f"AI insights error: {str(e)}")
+        return {"insights": generate_basic_insights(request.data)}
+
+
+def generate_basic_insights(data: List[Dict]) -> List[Dict]:
+    """Generate basic statistical insights without AI"""
+    if not data or len(data) == 0:
+        return [{"type": "insight", "title": "No Data", "description": "Add data to generate insights."}]
+    
+    insights = []
+    values = [d.get("value", 0) for d in data if isinstance(d.get("value"), (int, float))]
+    
+    if not values:
+        return [{"type": "insight", "title": "No Numeric Data", "description": "Data doesn't contain numeric values for analysis."}]
+    
+    total = sum(values)
+    avg = total / len(values)
+    max_val = max(values)
+    min_val = min(values)
+    
+    max_item = next((d for d in data if d.get("value") == max_val), None)
+    min_item = next((d for d in data if d.get("value") == min_val), None)
+    
+    insights.append({
+        "type": "insight",
+        "title": "Summary",
+        "description": f"Total: {total:,.0f}, Average: {avg:,.0f}"
+    })
+    
+    if max_item:
+        pct = (max_val / total * 100) if total > 0 else 0
+        insights.append({
+            "type": "trend_up",
+            "title": "Top Performer",
+            "description": f"{max_item.get('name', 'Unknown')} leads with {max_val:,.0f} ({pct:.1f}% of total)"
+        })
+    
+    if min_item and min_item != max_item:
+        pct = (min_val / total * 100) if total > 0 else 0
+        insights.append({
+            "type": "trend_down",
+            "title": "Lowest",
+            "description": f"{min_item.get('name', 'Unknown')} has {min_val:,.0f} ({pct:.1f}% of total)"
+        })
+    
+    # Check for outliers
+    if len(values) > 2:
+        std_dev = (sum((v - avg) ** 2 for v in values) / len(values)) ** 0.5
+        outliers = [d for d in data if isinstance(d.get("value"), (int, float)) and abs(d["value"] - avg) > 2 * std_dev]
+        if outliers:
+            names = ", ".join(d.get("name", "?") for d in outliers[:2])
+            insights.append({
+                "type": "outlier",
+                "title": "Outlier Detected",
+                "description": f"{names} shows unusual values compared to average"
+            })
+    
+    return insights
+
+
+class GenerateChartRequest(BaseModel):
+    query: str
+    available_datasets: List[Dict[str, Any]]
+
+
+@api_router.post("/ai/generate-chart")
+async def generate_chart_from_natural_language(request: GenerateChartRequest):
+    """Generate chart configuration from natural language query"""
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    
+    if not request.available_datasets:
+        raise HTTPException(status_code=400, detail="No datasets available")
+    
+    try:
+        datasets_info = json.dumps(request.available_datasets, default=str)
+        
+        system_message = """You are a chart configuration AI. Based on user's natural language query and available datasets,
+generate a chart configuration as JSON.
+
+Return ONLY a valid JSON object with these fields:
+- chart_type: one of "bar", "pie", "line", "donut", "horizontal_bar", "area"
+- title: descriptive chart title
+- dataset_id: ID of the most relevant dataset
+- dataset_name: name of the selected dataset
+- x_field: column name for X-axis/categories
+- y_field: column name for Y-axis/values (or null for count)
+- aggregation: "sum", "count", "avg", "max", "min"
+- explanation: brief explanation of why this configuration was chosen
+
+Pick the most appropriate chart type for the data and query.
+Return ONLY valid JSON, no markdown or explanation outside JSON."""
+        
+        prompt = f"""User query: "{request.query}"
+
+Available datasets:
+{datasets_info}
+
+Generate chart configuration JSON:"""
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"chartgen-{uuid.uuid4()}",
+            system_message=system_message
+        ).with_model("openai", "gpt-5.2")
+        
+        user_message = UserMessage(text=prompt)
+        response = await chat.send_message(user_message)
+        
+        # Parse AI response
+        clean_response = response.strip()
+        if clean_response.startswith("```"):
+            clean_response = clean_response.split("```")[1]
+            if clean_response.startswith("json"):
+                clean_response = clean_response[4:]
+        
+        chart_config = json.loads(clean_response)
+        return chart_config
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse chart generation response: {response}")
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+    except Exception as e:
+        logger.error(f"Chart generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+
+
 @api_router.post("/ai/suggest-charts")
 async def suggest_charts(dataset_id: str, request: Request):
     """Get AI suggestions for charts based on dataset - requires Pro or Enterprise tier"""

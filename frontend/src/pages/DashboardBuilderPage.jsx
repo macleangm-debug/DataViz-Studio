@@ -25,7 +25,9 @@ import {
   Filter,
   Gauge,
   Layers,
-  Loader2
+  Loader2,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -60,6 +62,8 @@ import SaveAsTemplateButton from '../components/SaveAsTemplateButton';
 import { DashboardFilterProvider, useDashboardFilters } from '../contexts/DashboardFilterContext';
 import ActiveFiltersBar from '../components/ActiveFiltersBar';
 import DrillBreadcrumb from '../components/DrillBreadcrumb';
+import AIInsightsPanel from '../components/AIInsightsPanel';
+import NaturalLanguageChart from '../components/NaturalLanguageChart';
 import {
   BarChart,
   Bar,
@@ -760,6 +764,8 @@ function DashboardBuilderInner() {
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [editingWidget, setEditingWidget] = useState(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [showNLChart, setShowNLChart] = useState(false);
+  const [selectedWidgetForInsights, setSelectedWidgetForInsights] = useState(null);
   const [newWidget, setNewWidget] = useState({
     type: 'stat',
     title: '',
@@ -1137,14 +1143,15 @@ function DashboardBuilderInner() {
   }
 
   // Layout: 3 widgets per row (w=4 for each in a 12-col grid)
+  // Reduced height (h=4) for more compact dashboard view
   const layout = widgets.map((w, index) => ({
     i: w.id,
     x: w.position?.x ?? ((index % 3) * 4),  // 0, 4, 8 for 3 per row
-    y: w.position?.y ?? (Math.floor(index / 3) * 5),
+    y: w.position?.y ?? (Math.floor(index / 3) * 4),
     w: w.position?.w || 4,  // 4 columns = 3 widgets per row
-    h: w.position?.h || 5,
+    h: w.position?.h || 4,  // Compact height
     minW: 2,
-    minH: 3
+    minH: 2
   }));
 
   return (
@@ -1176,6 +1183,15 @@ function DashboardBuilderInner() {
               dashboardName={dashboard.name} 
               token={token}
             />
+            <Button 
+              variant="outline" 
+              onClick={() => setShowNLChart(true)} 
+              className="border-violet-500/30 hover:bg-violet-500/10"
+              data-testid="ai-chart-btn"
+            >
+              <Sparkles className="w-4 h-4 mr-2 text-violet-400" />
+              AI Chart
+            </Button>
             <Button variant="outline" onClick={() => setShowAddWidget(true)} data-testid="add-widget-btn">
               <Plus className="w-4 h-4 mr-2" />
               Add Widget
@@ -1186,6 +1202,56 @@ function DashboardBuilderInner() {
             </Button>
           </div>
         </div>
+
+        {/* Natural Language Chart Dialog */}
+        <AnimatePresence>
+          {showNLChart && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowNLChart(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-lg mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <NaturalLanguageChart
+                  datasets={datasets}
+                  token={token}
+                  onChartGenerated={async (chartConfig) => {
+                    try {
+                      const headers = { Authorization: `Bearer ${token}` };
+                      await axios.post(`${API_URL}/api/widgets`, {
+                        dashboard_id: dashboardId,
+                        type: 'chart',
+                        title: chartConfig.title,
+                        dataset_id: chartConfig.dataset_id,
+                        config: {
+                          chart_type: chartConfig.chart_type,
+                          x_field: chartConfig.x_field,
+                          y_field: chartConfig.y_field,
+                          color_scheme: 'purple'
+                        },
+                        position: { x: 0, y: 0, w: 4, h: 4 }
+                      }, { headers });
+                      
+                      fetchDashboardData();
+                      setShowNLChart(false);
+                    } catch (error) {
+                      toast.error('Failed to create chart');
+                    }
+                  }}
+                  onClose={() => setShowNLChart(false)}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Active Filters Bar */}
         <ActiveFiltersBar />
@@ -1207,13 +1273,13 @@ function DashboardBuilderInner() {
               className="layout"
               layout={layout}
               cols={12}
-              rowHeight={35}
+              rowHeight={32}
               width={1150}
               onLayoutChange={handleLayoutChange}
               draggableHandle=".drag-handle"
               compactType="vertical"
               preventCollision={false}
-              margin={[8, 8]}
+              margin={[6, 6]}
               containerPadding={[0, 0]}
             >
               {widgets.map(widget => {
