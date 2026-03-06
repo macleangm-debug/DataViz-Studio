@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -22,13 +22,24 @@ import {
   Headphones,
   X,
   Edit2,
-  Save
+  Save,
+  Star,
+  Copy,
+  Share2,
+  Tag,
+  Clock,
+  ArrowUpDown,
+  Grid3X3,
+  List,
+  MoreHorizontal,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import { Badge } from '../components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -87,6 +98,13 @@ export function DashboardsPage() {
     description: ''
   });
   
+  // New enhanced state
+  const [sortBy, setSortBy] = useState('recent');
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [viewMode, setViewMode] = useState('grid');
+  const [filterTag, setFilterTag] = useState('all');
+  const [duplicatingDashboard, setDuplicatingDashboard] = useState(null);
+  
   // Template state
   const [templateTab, setTemplateTab] = useState('preset');
   const [templateCategory, setTemplateCategory] = useState('all');
@@ -95,6 +113,63 @@ export function DashboardsPage() {
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [editTemplateName, setEditTemplateName] = useState('');
+
+  // Get all unique tags from dashboards
+  const allTags = useMemo(() => {
+    const tags = new Set(['all']);
+    dashboards.forEach(d => {
+      (d.tags || []).forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags);
+  }, [dashboards]);
+
+  // Filter and sort dashboards
+  const filteredDashboards = useMemo(() => {
+    let result = dashboards.filter(d =>
+      d.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    // Filter by tag
+    if (filterTag !== 'all') {
+      result = result.filter(d => (d.tags || []).includes(filterTag));
+    }
+    
+    // Filter favorites
+    if (showFavorites) {
+      result = result.filter(d => d.is_favorite);
+    }
+    
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'views':
+          return (b.views || 0) - (a.views || 0);
+        case 'favorites':
+          return (b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0);
+        case 'recent':
+        default:
+          return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+      }
+    });
+    
+    return result;
+  }, [dashboards, searchQuery, filterTag, showFavorites, sortBy]);
+
+  // Format relative time
+  const formatRelativeTime = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+    return date.toLocaleDateString();
+  };
 
   useEffect(() => {
     fetchDashboards();
@@ -217,9 +292,58 @@ export function DashboardsPage() {
     }
   };
 
-  const filteredDashboards = dashboards.filter(d =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Toggle favorite status
+  const handleToggleFavorite = async (dashboard) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const newFavorite = !dashboard.is_favorite;
+      await axios.put(`${API_URL}/api/dashboards/${dashboard.id}`, {
+        is_favorite: newFavorite
+      }, { headers });
+      
+      setDashboards(dashboards.map(d => 
+        d.id === dashboard.id ? { ...d, is_favorite: newFavorite } : d
+      ));
+      toast.success(newFavorite ? 'Added to favorites' : 'Removed from favorites');
+    } catch (error) {
+      // Optimistic update on error
+      setDashboards(dashboards.map(d => 
+        d.id === dashboard.id ? { ...d, is_favorite: !d.is_favorite } : d
+      ));
+      toast.error('Failed to update favorite');
+    }
+  };
+
+  // Duplicate dashboard
+  const handleDuplicate = async (dashboard) => {
+    setDuplicatingDashboard(dashboard.id);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.post(`${API_URL}/api/dashboards`, {
+        name: `${dashboard.name} (Copy)`,
+        description: dashboard.description,
+        org_id: currentOrg?.id,
+        tags: dashboard.tags || []
+      }, { headers });
+      
+      toast.success('Dashboard duplicated');
+      fetchDashboards();
+    } catch (error) {
+      toast.error('Failed to duplicate dashboard');
+    } finally {
+      setDuplicatingDashboard(null);
+    }
+  };
+
+  // Track view
+  const trackDashboardView = async (dashboardId) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.post(`${API_URL}/api/dashboards/${dashboardId}/view`, {}, { headers });
+    } catch (error) {
+      // Silent fail for view tracking
+    }
+  };
 
   // Filter templates based on category
   let displayTemplates = templateTab === 'preset' ? presetTemplates : customTemplates;
@@ -263,16 +387,99 @@ export function DashboardsPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search dashboards..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        {/* Enhanced Filter Bar */}
+        {dashboards.length > 0 && (
+          <div className="space-y-4">
+            {/* Search and Actions Row */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search dashboards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="search-dashboards-input"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Sort Dropdown */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-9 px-3 py-1 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="recent">Recent</option>
+                  <option value="name">Name</option>
+                  <option value="views">Most Viewed</option>
+                  <option value="favorites">Favorites First</option>
+                </select>
+                
+                {/* Favorites Toggle */}
+                <Button
+                  variant={showFavorites ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFavorites(!showFavorites)}
+                  className={showFavorites ? "bg-amber-500 hover:bg-amber-600" : ""}
+                >
+                  <Star className={`w-4 h-4 ${showFavorites ? "fill-current" : ""}`} />
+                </Button>
+                
+                {/* View Mode Toggle */}
+                <div className="flex border rounded-md overflow-hidden">
+                  <Button
+                    variant={viewMode === 'grid' ? "secondary" : "ghost"}
+                    size="sm"
+                    className="rounded-none px-2"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? "secondary" : "ghost"}
+                    size="sm"
+                    className="rounded-none px-2"
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Tags Filter */}
+            {allTags.length > 1 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                {allTags.map(tag => (
+                  <Button
+                    key={tag}
+                    variant={filterTag === tag ? "default" : "outline"}
+                    size="sm"
+                    className={`h-7 text-xs capitalize ${filterTag === tag ? "bg-violet-600 hover:bg-violet-700" : ""}`}
+                    onClick={() => setFilterTag(tag)}
+                  >
+                    {tag === 'all' ? 'All Dashboards' : `#${tag}`}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Empty State - No Dashboards */}
+        {!loading && dashboards.length === 0 && (
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search dashboards..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        )}
 
         {/* Dashboards Grid */}
         {loading ? (
@@ -288,74 +495,249 @@ export function DashboardsPage() {
             ))}
           </div>
         ) : filteredDashboards.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDashboards.map((dashboard, index) => (
-              <motion.div
-                key={dashboard.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <Card
-                  className="overflow-hidden cursor-pointer hover:shadow-lg hover:border-violet-200 dark:hover:border-violet-800 transition-all group"
-                  data-testid={`dashboard-card-${dashboard.id}`}
-                >
-                  {/* Dashboard Preview */}
-                  <div
-                    className="aspect-video bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-900/20 dark:to-violet-800/20 flex items-center justify-center relative"
-                    onClick={() => navigate(`/dashboards/${dashboard.id}`)}
+          <div className={viewMode === 'grid' 
+            ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" 
+            : "space-y-3"
+          }>
+            {filteredDashboards.map((dashboard, index) => {
+              // Grid View Card
+              if (viewMode === 'grid') {
+                return (
+                  <motion.div
+                    key={dashboard.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="group"
                   >
-                    <Grid className="w-16 h-16 text-violet-300 dark:text-violet-700" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Button size="sm" variant="secondary">
-                        <Eye className="w-4 h-4 mr-2" />
-                        Open
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div onClick={() => navigate(`/dashboards/${dashboard.id}`)}>
-                        <h3 className="font-semibold text-foreground">{dashboard.name}</h3>
-                        {dashboard.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {dashboard.description}
-                          </p>
+                    <Card
+                      className="overflow-hidden hover:shadow-xl hover:border-violet-500/50 transition-all cursor-pointer relative"
+                      data-testid={`dashboard-card-${dashboard.id}`}
+                    >
+                      {/* Dashboard Preview / Thumbnail */}
+                      <div 
+                        className="aspect-video bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6 relative overflow-hidden"
+                        onClick={() => { navigate(`/dashboards/${dashboard.id}`); trackDashboardView(dashboard.id); }}
+                      >
+                        {dashboard.preview_image ? (
+                          <img 
+                            src={dashboard.preview_image} 
+                            alt={dashboard.name}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <>
+                            <Grid className="w-20 h-20 text-violet-400/20" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent" />
+                          </>
                         )}
-                        <p className="text-xs text-muted-foreground mt-2">
+                        
+                        {/* Overlay Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        
+                        {/* Widget Count Badge */}
+                        <Badge className="absolute top-3 right-3 bg-violet-600/90 text-xs">
+                          <LayoutDashboard className="w-3 h-3 mr-1" />
                           {dashboard.widgets?.length || 0} widgets
-                        </p>
+                        </Badge>
+                        
+                        {/* Favorite Star */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleToggleFavorite(dashboard); }}
+                          className={`absolute top-3 left-3 p-1.5 rounded-full transition-all ${
+                            dashboard.is_favorite 
+                              ? "bg-amber-500 text-white" 
+                              : "bg-black/40 text-white/60 opacity-0 group-hover:opacity-100 hover:bg-black/60"
+                          }`}
+                        >
+                          <Star className={`w-4 h-4 ${dashboard.is_favorite ? "fill-current" : ""}`} />
+                        </button>
+                        
+                        {/* Hover Quick Actions */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="flex-1 h-8 bg-white/90 hover:bg-white text-slate-900 text-xs"
+                            onClick={(e) => { e.stopPropagation(); navigate(`/dashboards/${dashboard.id}`); }}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Open
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 bg-white/90 hover:bg-white text-slate-900"
+                            onClick={(e) => { e.stopPropagation(); handleDuplicate(dashboard); }}
+                            disabled={duplicatingDashboard === dashboard.id}
+                          >
+                            {duplicatingDashboard === dashboard.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 bg-red-500/90 hover:bg-red-500 text-white"
+                            onClick={(e) => { e.stopPropagation(); setDeleteDialog(dashboard); }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
+                      
+                      {/* Card Content */}
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-foreground truncate">{dashboard.name}</h3>
+                            {dashboard.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {dashboard.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Tags */}
+                        {dashboard.tags && dashboard.tags.length > 0 && (
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            {dashboard.tags.slice(0, 3).map(tag => (
+                              <Badge 
+                                key={tag} 
+                                variant="outline" 
+                                className="text-[10px] h-5 px-1.5 bg-violet-500/10 border-violet-500/30 text-violet-400"
+                              >
+                                #{tag}
+                              </Badge>
+                            ))}
+                            {dashboard.tags.length > 3 && (
+                              <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                                +{dashboard.tags.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Footer Metadata */}
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatRelativeTime(dashboard.updated_at || dashboard.created_at)}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {(dashboard.views || 0) > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {dashboard.views}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              }
+              
+              // List View Card
+              return (
+                <motion.div
+                  key={dashboard.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.02 }}
+                >
+                  <Card className="hover:shadow-md hover:border-violet-500/30 transition-all group">
+                    <div className="flex items-center p-4 gap-4">
+                      {/* Preview Thumbnail */}
+                      <div 
+                        className="w-24 h-16 rounded-lg bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center cursor-pointer flex-shrink-0 relative overflow-hidden"
+                        onClick={() => { navigate(`/dashboards/${dashboard.id}`); trackDashboardView(dashboard.id); }}
+                      >
+                        {dashboard.preview_image ? (
+                          <img src={dashboard.preview_image} alt="" className="w-full h-full object-cover rounded-lg" />
+                        ) : (
+                          <Grid className="w-8 h-8 text-violet-400/30" />
+                        )}
+                        <div className="absolute top-1 right-1">
+                          {dashboard.is_favorite && <Star className="w-4 h-4 text-amber-500 fill-amber-500" />}
+                        </div>
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-foreground truncate">{dashboard.name}</h3>
+                          <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                            {dashboard.widgets?.length || 0} widgets
+                          </Badge>
+                        </div>
+                        {dashboard.description && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{dashboard.description}</p>
+                        )}
+                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatRelativeTime(dashboard.updated_at || dashboard.created_at)}
+                          </span>
+                          {(dashboard.views || 0) > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-3 h-3" />
+                              {dashboard.views} views
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/dashboards/${dashboard.id}`);
-                          }}
+                          onClick={() => handleToggleFavorite(dashboard)}
+                        >
+                          <Star className={`w-4 h-4 ${dashboard.is_favorite ? "fill-amber-500 text-amber-500" : ""}`} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => navigate(`/dashboards/${dashboard.id}`)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleDuplicate(dashboard)}
+                          disabled={duplicatingDashboard === dashboard.id}
+                        >
+                          {duplicatingDashboard === dashboard.id ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteDialog(dashboard);
-                          }}
+                          onClick={() => setDeleteDialog(dashboard)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         ) : (
           <Card className="border-dashed">

@@ -14,7 +14,10 @@ class DashboardService:
         name: str,
         description: str = "",
         layout: List[Dict] = None,
-        org_id: Optional[str] = None
+        org_id: Optional[str] = None,
+        tags: List[str] = None,
+        preview_image: str = None,
+        is_favorite: bool = False
     ) -> Dict[str, Any]:
         """Create a new dashboard"""
         dashboard = {
@@ -23,6 +26,10 @@ class DashboardService:
             "description": description,
             "layout": layout or [],
             "org_id": org_id,
+            "tags": tags or [],
+            "preview_image": preview_image,
+            "is_favorite": is_favorite,
+            "views": 0,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.dashboards.insert_one(dashboard)
@@ -31,7 +38,11 @@ class DashboardService:
             "id": dashboard["id"],
             "name": dashboard["name"],
             "description": dashboard["description"],
-            "layout": dashboard["layout"]
+            "layout": dashboard["layout"],
+            "tags": dashboard["tags"],
+            "preview_image": dashboard["preview_image"],
+            "is_favorite": dashboard["is_favorite"],
+            "views": dashboard["views"]
         }
     
     @staticmethod
@@ -49,30 +60,64 @@ class DashboardService:
     @staticmethod
     async def update_dashboard(
         dashboard_id: str,
-        name: str,
-        description: str = "",
+        name: str = None,
+        description: str = None,
         layout: List[Dict] = None,
-        org_id: Optional[str] = None
+        org_id: Optional[str] = None,
+        tags: List[str] = None,
+        preview_image: str = None,
+        is_favorite: bool = None
     ) -> Optional[Dict[str, Any]]:
         """Update dashboard"""
         update_data = {
-            "name": name,
-            "description": description,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
+        if name is not None:
+            update_data["name"] = name
+        if description is not None:
+            update_data["description"] = description
         if layout is not None:
             update_data["layout"] = layout
         if org_id is not None:
             update_data["org_id"] = org_id
+        if tags is not None:
+            update_data["tags"] = tags
+        if preview_image is not None:
+            update_data["preview_image"] = preview_image
+        if is_favorite is not None:
+            update_data["is_favorite"] = is_favorite
         
         result = await db.dashboards.update_one(
             {"id": dashboard_id},
             {"$set": update_data}
         )
         
-        if result.modified_count > 0:
+        if result.modified_count > 0 or result.matched_count > 0:
             return await DashboardService.get_dashboard(dashboard_id)
         return None
+    
+    @staticmethod
+    async def toggle_favorite(dashboard_id: str) -> Optional[Dict[str, Any]]:
+        """Toggle dashboard favorite status"""
+        dashboard = await DashboardService.get_dashboard(dashboard_id)
+        if not dashboard:
+            return None
+        
+        new_favorite = not dashboard.get("is_favorite", False)
+        await db.dashboards.update_one(
+            {"id": dashboard_id},
+            {"$set": {"is_favorite": new_favorite}}
+        )
+        
+        return await DashboardService.get_dashboard(dashboard_id)
+    
+    @staticmethod
+    async def increment_views(dashboard_id: str) -> None:
+        """Increment dashboard view count"""
+        await db.dashboards.update_one(
+            {"id": dashboard_id},
+            {"$inc": {"views": 1}}
+        )
     
     @staticmethod
     async def update_layout(

@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime, timezone
 
 from services.dashboard_service import DashboardService
-from schemas.dashboard import DashboardCreate, DashboardLayoutUpdate, WidgetCreate
+from schemas.dashboard import DashboardCreate, DashboardUpdate, DashboardLayoutUpdate, WidgetCreate
 from core.database import db
 
 router = APIRouter(prefix="/dashboards", tags=["Dashboards"])
@@ -19,7 +19,10 @@ async def create_dashboard(dashboard: DashboardCreate):
         name=dashboard.name,
         description=dashboard.description,
         layout=dashboard.layout,
-        org_id=dashboard.org_id
+        org_id=dashboard.org_id,
+        tags=dashboard.tags,
+        preview_image=dashboard.preview_image,
+        is_favorite=dashboard.is_favorite
     )
     return result
 
@@ -41,18 +44,36 @@ async def get_dashboard(dashboard_id: str):
 
 
 @router.put("/{dashboard_id}")
-async def update_dashboard(dashboard_id: str, dashboard: DashboardCreate):
+async def update_dashboard(dashboard_id: str, dashboard: DashboardUpdate):
     """Update dashboard"""
     result = await DashboardService.update_dashboard(
         dashboard_id=dashboard_id,
         name=dashboard.name,
         description=dashboard.description,
         layout=dashboard.layout,
-        org_id=dashboard.org_id
+        tags=dashboard.tags,
+        preview_image=dashboard.preview_image,
+        is_favorite=dashboard.is_favorite
     )
     if not result:
         raise HTTPException(status_code=404, detail="Dashboard not found")
     return result
+
+
+@router.post("/{dashboard_id}/favorite")
+async def toggle_dashboard_favorite(dashboard_id: str):
+    """Toggle dashboard favorite status"""
+    result = await DashboardService.toggle_favorite(dashboard_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    return result
+
+
+@router.post("/{dashboard_id}/view")
+async def track_dashboard_view(dashboard_id: str):
+    """Track a view on a dashboard"""
+    await DashboardService.increment_views(dashboard_id)
+    return {"message": "View tracked"}
 
 
 @router.put("/{dashboard_id}/layout")

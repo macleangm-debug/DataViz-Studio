@@ -1,0 +1,126 @@
+{
+  "summary": "Tested Phase 1B: Chart Preview Thumbnails, Tags, and Favorites for Dashboards and Charts pages. Most frontend features are working correctly including grid/list views, sorting, hover quick actions, duplicate functionality, and favorites filter. Critical backend issue found: Dashboard favorite/view endpoints return 404 because the router from /routers/dashboards.py is NOT included in server.py - routes are defined inline in server.py without these endpoints.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/dashboards/{id}/favorite",
+        "issue": "Returns 404 - Endpoint exists in /routers/dashboards.py but router is NOT imported/included in server.py. Dashboard routes are defined inline in server.py but missing /favorite and /view endpoints.",
+        "priority": "HIGH",
+        "fix_required": "Add favorite toggle endpoint to server.py inline routes OR import and include the dashboards router"
+      },
+      {
+        "endpoint": "POST /api/dashboards/{id}/view", 
+        "issue": "Returns 404 - Same as above - endpoint exists in router but router not included",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "DashboardsPage - Favorite Toggle",
+        "issue": "Shows 'Failed to update favorite' toast because backend returns 404. Optimistic update shows star but reverts.",
+        "selector": "button in dashboard card with Star icon",
+        "priority": "HIGH (blocked by backend)"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Dashboard favorite toggle",
+        "issue": "Frontend calls POST /api/dashboards/{id}/favorite but API returns 404",
+        "affected_selectors": ["star button in card", "favorites filter button"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Dashboards page",
+        "issues": ["Preview thumbnails show placeholder Grid icon - may be intentional for dashboards without preview_image"]
+      },
+      {
+        "screen": "Charts page", 
+        "issues": ["Preview thumbnails show chart type icons instead of actual chart previews - may be intentional"]
+      }
+    ]
+  },
+  "passed_tests": {
+    "dashboards_page": [
+      "PASS: Page loads with data-testid='dashboards-page'",
+      "PASS: Search input works with data-testid='search-dashboards-input'",
+      "PASS: Sort dropdown changes between Recent/Name/Views/Favorites First",
+      "PASS: Grid view toggle works",
+      "PASS: List view toggle works - shows compact list with thumbnails",
+      "PASS: Dashboard cards display widget count badges (e.g., '9 widgets')",
+      "PASS: Dashboard cards display timestamps (relative time like '2/26/2026')",
+      "PASS: Hover quick actions visible (Open, Copy, Delete buttons)",
+      "PASS: Duplicate functionality works - creates 'Dashboard Name (Copy)' with 'Just now' timestamp",
+      "PASS: Favorites filter toggle shows/hides favorites",
+      "PASS: Templates button visible",
+      "PASS: New Dashboard button visible"
+    ],
+    "charts_page": [
+      "PASS: Chart Studio page loads",
+      "PASS: Search input works",
+      "PASS: Sort dropdown changes between options",
+      "PASS: Grid view toggle works",
+      "PASS: List view toggle works",
+      "PASS: Chart cards display chart type badges (radar, line, pie, bar, area)",
+      "PASS: Chart cards display timestamps",
+      "PASS: Hover quick actions visible (View, Copy, Add to Dashboard, Delete)",
+      "PASS: Favorites filter toggle works (shows empty state when no favorites)",
+      "PASS: Export All to PDF button visible",
+      "PASS: Create Chart button visible"
+    ]
+  },
+  "failed_tests": {
+    "dashboards": [
+      "FAIL: Dashboard favorite toggle - API returns 404, shows 'Failed to update favorite' toast"
+    ],
+    "charts": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "CRITICAL: Update PUT /api/dashboards/{dashboard_id} endpoint in server.py to support is_favorite field. Currently only updates name/description/widgets but ignores is_favorite, tags, preview_image.",
+    "Fix: Add conditional updates for is_favorite, tags, preview_image in the update_doc dictionary in server.py around line 1605-1615",
+    "Consider: Use DashboardUpdate schema instead of DashboardCreate for the update endpoint"
+  ],
+  "critical_code_review_comments": [
+    "BACKEND BUG: PUT /api/dashboards/{dashboard_id} endpoint in server.py (line ~1605) uses DashboardCreate schema but only updates name, description, widgets fields. The is_favorite, tags, preview_image fields from the request body are ignored. Fix: add these fields to update_doc conditionally.",
+    "CODE DUPLICATION: Dashboard routes exist both inline in server.py AND in /routers/dashboards.py (which is not imported). The router file has more complete implementation including toggle_favorite and increment_views methods.",
+    "SCHEMA MISMATCH: DashboardUpdate schema exists with all optional fields but PUT endpoint uses DashboardCreate"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "Dashboards API: 80% (favorites endpoint fails with 404)",
+    "frontend": "95% (all UI features work, favorites toggle blocked by backend)"
+  },
+  "test_credentials": {
+    "email": "test@dataviz.com",
+    "password": "test123"
+  },
+  "seed_data_created": "Dashboard duplicate created: 'Sales Dashboard (Copy)'",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Phase 1B testing. Dashboard/Chart pages have grid/list views, sorting, hover actions, duplicate working. Main issue: Dashboard favorite toggle fails because backend endpoint not registered. The /routers/dashboards.py file has the endpoint but server.py doesn't import it. Frontend calls PUT /api/dashboards/{id} with is_favorite field - this SHOULD work since the inline PUT route in server.py has update functionality. The issue may be that frontend is calling POST /favorite endpoint which doesn't exist in server.py.",
+  "root_cause_analysis": {
+    "issue": "Dashboard favorites toggle shows 'Failed to update favorite' error",
+    "symptoms": [
+      "Toast shows 'Failed to update favorite'",
+      "Star briefly highlights then reverts (optimistic update)"
+    ],
+    "investigation": [
+      "Frontend calls axios.put('/api/dashboards/{id}', { is_favorite: true/false })",
+      "Backend PUT /api/dashboards/{id} in server.py only updates: name, description, widgets, updated_at",
+      "Schema DashboardUpdate supports is_favorite but endpoint uses DashboardCreate",
+      "The is_favorite field is NOT included in the update_doc"
+    ],
+    "root_cause": "The PUT /api/dashboards/{dashboard_id} endpoint in server.py (line ~1605) only updates name, description, widgets fields. It does NOT include is_favorite, tags, preview_image fields even though the schema DashboardUpdate supports them.",
+    "fix_options": [
+      "Option A: Update PUT endpoint to use DashboardUpdate schema and include all optional fields",
+      "Option B: Add dedicated POST /favorite endpoint for toggling",
+      "Option C: Modify update_doc to conditionally include is_favorite when present"
+    ],
+    "recommended_fix": "Option A - Update the PUT endpoint in server.py to:\n1. Use DashboardUpdate schema instead of DashboardCreate\n2. Conditionally add is_favorite, tags, preview_image to update_doc when present",
+    "code_fix_location": "server.py line ~1605 - @api_router.put('/dashboards/{dashboard_id}')"
+  }
+}
