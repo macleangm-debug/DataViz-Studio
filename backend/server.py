@@ -2034,17 +2034,25 @@ async def get_widget_data(widget_id: str):
 
 class WidgetDataFilterRequest(BaseModel):
     filters: Dict[str, Any] = {}
+    drill_level: Optional[str] = None  # Field to group by for drill-down
 
 
 @api_router.post("/widgets/{widget_id}/data")
 async def get_widget_data_filtered(widget_id: str, request: WidgetDataFilterRequest):
-    """Get filtered data for a widget (for cross-filtering)"""
+    """Get filtered data for a widget (for cross-filtering and drill-down)"""
     widget = await db.widgets.find_one({"id": widget_id}, {"_id": 0})
     if not widget:
         raise HTTPException(status_code=404, detail="Widget not found")
     
-    result = {"widget": widget, "data": None, "filtered": bool(request.filters)}
+    result = {
+        "widget": widget, 
+        "data": None, 
+        "filtered": bool(request.filters),
+        "drilled": bool(request.drill_level),
+        "drill_level": request.drill_level
+    }
     filters = request.filters
+    drill_level = request.drill_level
     
     if widget.get("dataset_id"):
         dataset_id = widget["dataset_id"]
@@ -2085,7 +2093,8 @@ async def get_widget_data_filtered(widget_id: str, request: WidgetDataFilterRequ
                     result["data"] = {"value": value, "aggregation": aggregation}
                     
                 elif widget["type"] == "chart":
-                    x_field = config.get("x_field")
+                    # Use drill_level as x_field if provided, otherwise use config x_field
+                    x_field = drill_level or config.get("x_field")
                     y_field = config.get("y_field")
                     
                     if x_field and x_field in df.columns:
@@ -2096,6 +2105,7 @@ async def get_widget_data_filtered(widget_id: str, request: WidgetDataFilterRequ
                             grouped = df.groupby(x_field).size().reset_index()
                             grouped.columns = ["name", "value"]
                         result["data"] = grouped.to_dict(orient="records")
+                        result["current_x_field"] = x_field  # Return the actual field used
                     else:
                         result["data"] = []
                         

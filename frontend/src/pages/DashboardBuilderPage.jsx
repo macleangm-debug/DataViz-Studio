@@ -59,6 +59,7 @@ import { ShareDashboardDialog } from '../components/ShareDashboardDialog';
 import SaveAsTemplateButton from '../components/SaveAsTemplateButton';
 import { DashboardFilterProvider, useDashboardFilters } from '../contexts/DashboardFilterContext';
 import ActiveFiltersBar from '../components/ActiveFiltersBar';
+import DrillBreadcrumb from '../components/DrillBreadcrumb';
 import {
   BarChart,
   Bar,
@@ -168,17 +169,42 @@ const COLOR_SCHEMES = {
 
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
 
-// Widget Component with Cross-Filtering Support
-function DashboardWidget({ widget, data, onEdit, onDelete, onDataClick, isFiltered, isLoading }) {
+// Widget Component with Cross-Filtering and Drill-Down Support
+function DashboardWidget({ 
+  widget, 
+  data, 
+  onEdit, 
+  onDelete, 
+  onDataClick, 
+  onDrillDown,
+  isFiltered, 
+  isLoading,
+  drillState,
+  onDrillNavigate,
+  onDrillReset,
+  canDrill,
+  isDrilled
+}) {
   const colorScheme = COLOR_SCHEMES[widget.config?.color_scheme] || COLOR_SCHEMES.purple;
   
-  // Handle chart click for cross-filtering
+  // Handle chart click - drill or cross-filter
   const handleChartClick = (chartData) => {
-    if (onDataClick && chartData && chartData.name !== undefined) {
-      const xField = widget.config?.x_field;
-      if (xField) {
-        onDataClick(xField, chartData.name, widget.id);
+    if (!chartData || chartData.name === undefined) return;
+    
+    const drillHierarchy = widget.config?.drilldown;
+    const xField = widget.config?.x_field;
+    
+    // If widget has drilldown hierarchy and can drill further, drill down
+    if (drillHierarchy && drillHierarchy.length > 1 && canDrill) {
+      const currentLevel = drillState?.level || 0;
+      const currentField = drillHierarchy[currentLevel];
+      if (onDrillDown) {
+        onDrillDown(widget.id, currentField, chartData.name);
       }
+    } 
+    // Otherwise, use cross-filtering
+    else if (onDataClick && xField) {
+      onDataClick(xField, chartData.name, widget.id);
     }
   };
   
@@ -657,29 +683,56 @@ function DashboardWidget({ widget, data, onEdit, onDelete, onDataClick, isFilter
     }
   };
 
+  const hasDrillHierarchy = widget.config?.drilldown && widget.config.drilldown.length > 1;
+
   return (
-    <Card className={`h-full flex flex-col overflow-hidden group bg-card/50 backdrop-blur-sm border-border/50 ${isFiltered ? 'ring-1 ring-violet-500/30' : ''}`}>
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/30 bg-muted/20">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <GripVertical className="w-4 h-4 text-muted-foreground/50 cursor-move drag-handle hover:text-muted-foreground transition-colors" />
-          <span className="font-medium text-sm text-foreground/90 truncate">{widget.title}</span>
+    <Card className={`h-full flex flex-col overflow-hidden group bg-card/50 backdrop-blur-sm border-border/50 ${isFiltered ? 'ring-1 ring-violet-500/30' : ''} ${isDrilled ? 'ring-1 ring-cyan-500/30' : ''}`}>
+      <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/30 bg-muted/20">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <GripVertical className="w-3 h-3 text-muted-foreground/50 cursor-move drag-handle hover:text-muted-foreground transition-colors flex-shrink-0" />
+          <span className="font-medium text-xs text-foreground/90 truncate">{widget.title}</span>
+          {hasDrillHierarchy && !isDrilled && (
+            <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-[9px] px-1 py-0 h-3.5 flex-shrink-0">
+              <Layers className="w-2 h-2 mr-0.5" />
+              Drill
+            </Badge>
+          )}
+          {isDrilled && (
+            <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300 text-[9px] px-1 py-0 h-3.5 flex-shrink-0">
+              <Layers className="w-2 h-2 mr-0.5" />
+              Drilled
+            </Badge>
+          )}
           {isFiltered && (
-            <Badge variant="secondary" className="bg-violet-500/20 text-violet-300 text-[10px] px-1.5 py-0 h-4">
-              <Filter className="w-2.5 h-2.5 mr-0.5" />
+            <Badge variant="secondary" className="bg-violet-500/20 text-violet-300 text-[9px] px-1 py-0 h-3.5 flex-shrink-0">
+              <Filter className="w-2 h-2 mr-0.5" />
               Filtered
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(widget)}>
-            <Settings className="w-3 h-3" />
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => onEdit(widget)}>
+            <Settings className="w-2.5 h-2.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(widget.id)}>
-            <Trash2 className="w-3 h-3" />
+          <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => onDelete(widget.id)}>
+            <Trash2 className="w-2.5 h-2.5" />
           </Button>
         </div>
       </div>
-      <div className="flex-1 p-2 overflow-hidden">
+      
+      {/* Drill Breadcrumb */}
+      {isDrilled && drillState && (
+        <div className="px-2 py-1 border-b border-border/20">
+          <DrillBreadcrumb
+            path={drillState.path}
+            hierarchy={drillState.hierarchy}
+            onNavigate={(index) => onDrillNavigate && onDrillNavigate(widget.id, index)}
+            onReset={() => onDrillReset && onDrillReset(widget.id)}
+          />
+        </div>
+      )}
+      
+      <div className="flex-1 p-1.5 overflow-hidden">
         {renderContent()}
       </div>
     </Card>
@@ -692,7 +745,11 @@ function DashboardBuilderInner() {
   const navigate = useNavigate();
   const { currentOrg } = useOrgStore();
   const { token } = useAuthStore();
-  const { filters, setFilter, hasFilters, setWidgetLoading, isWidgetLoading, filterSources } = useDashboardFilters();
+  const { 
+    filters, setFilter, hasFilters, setWidgetLoading, isWidgetLoading, filterSources,
+    initDrillState, getDrillState, drillDown, drillNavigate, drillReset, 
+    hasDrillDown, isDrilledDown, getCurrentDrillField, canDrillFurther
+  } = useDashboardFilters();
   
   const [dashboard, setDashboard] = useState(null);
   const [widgets, setWidgets] = useState([]);
@@ -727,11 +784,19 @@ function DashboardBuilderInner() {
       ]);
       
       setDashboard(dashboardRes.data);
-      setWidgets(widgetsRes.data.widgets || []);
+      const fetchedWidgets = widgetsRes.data.widgets || [];
+      setWidgets(fetchedWidgets);
       setDatasets(datasetsRes.data.datasets || []);
       
+      // Initialize drill state for widgets with drilldown hierarchy
+      fetchedWidgets.forEach(w => {
+        if (w.config?.drilldown && w.config.drilldown.length > 1) {
+          initDrillState(w.id, w.config.drilldown);
+        }
+      });
+      
       // Fetch data for each widget
-      const widgetDataPromises = (widgetsRes.data.widgets || []).map(async (w) => {
+      const widgetDataPromises = fetchedWidgets.map(async (w) => {
         try {
           const res = await axios.get(`${API_URL}/api/widgets/${w.id}/data`, { headers });
           return { id: w.id, data: res.data.data };
@@ -823,6 +888,94 @@ function DashboardBuilderInner() {
   const handleDataClick = (field, value, sourceWidgetId) => {
     setFilter(field, value, sourceWidgetId);
     toast.success(`Filtered by ${field}: ${value}`, { duration: 2000 });
+  };
+
+  // Handle drill down click
+  const handleDrillDown = async (widgetId, field, value) => {
+    drillDown(widgetId, field, value);
+    
+    // Fetch new data for the drilled widget
+    const widget = widgets.find(w => w.id === widgetId);
+    if (!widget) return;
+    
+    const drillState = getDrillState(widgetId);
+    const newPath = { ...drillState.path, [field]: value };
+    const newLevel = drillState.level + 1;
+    const nextField = widget.config?.drilldown?.[newLevel];
+    
+    setWidgetLoading(widgetId, true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.post(`${API_URL}/api/widgets/${widgetId}/data`, {
+        filters: { ...filters, ...newPath },
+        drill_level: nextField
+      }, { headers });
+      
+      setWidgetData(prev => ({ ...prev, [widgetId]: res.data.data }));
+      toast.success(`Drilled into ${field}: ${value}`, { duration: 2000 });
+    } catch (error) {
+      console.error('Error fetching drilled data:', error);
+      toast.error('Failed to drill down');
+    } finally {
+      setWidgetLoading(widgetId, false);
+    }
+  };
+
+  // Handle drill breadcrumb navigation
+  const handleDrillNavigate = async (widgetId, targetIndex) => {
+    drillNavigate(widgetId, targetIndex);
+    
+    const widget = widgets.find(w => w.id === widgetId);
+    if (!widget) return;
+    
+    const drillState = getDrillState(widgetId);
+    const pathEntries = Object.entries(drillState.path);
+    const newPath = {};
+    pathEntries.slice(0, targetIndex + 1).forEach(([k, v]) => { newPath[k] = v; });
+    
+    const newLevel = targetIndex + 1;
+    const nextField = widget.config?.drilldown?.[newLevel];
+    
+    setWidgetLoading(widgetId, true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.post(`${API_URL}/api/widgets/${widgetId}/data`, {
+        filters: { ...filters, ...newPath },
+        drill_level: nextField
+      }, { headers });
+      
+      setWidgetData(prev => ({ ...prev, [widgetId]: res.data.data }));
+    } catch (error) {
+      console.error('Error navigating drill:', error);
+    } finally {
+      setWidgetLoading(widgetId, false);
+    }
+  };
+
+  // Handle drill reset
+  const handleDrillReset = async (widgetId) => {
+    drillReset(widgetId);
+    
+    const widget = widgets.find(w => w.id === widgetId);
+    if (!widget) return;
+    
+    const originalXField = widget.config?.drilldown?.[0] || widget.config?.x_field;
+    
+    setWidgetLoading(widgetId, true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.post(`${API_URL}/api/widgets/${widgetId}/data`, {
+        filters: filters,
+        drill_level: originalXField
+      }, { headers });
+      
+      setWidgetData(prev => ({ ...prev, [widgetId]: res.data.data }));
+      toast.success('Drill reset to top level', { duration: 2000 });
+    } catch (error) {
+      console.error('Error resetting drill:', error);
+    } finally {
+      setWidgetLoading(widgetId, false);
+    }
   };
 
   const handleLayoutChange = async (newLayout) => {
@@ -983,12 +1136,13 @@ function DashboardBuilderInner() {
     );
   }
 
-  const layout = widgets.map(w => ({
+  // Layout: 3 widgets per row (w=4 for each in a 12-col grid)
+  const layout = widgets.map((w, index) => ({
     i: w.id,
-    x: w.position?.x || 0,
-    y: w.position?.y || 0,
-    w: w.position?.w || 3,
-    h: w.position?.h || 4,
+    x: w.position?.x ?? ((index % 3) * 4),  // 0, 4, 8 for 3 per row
+    y: w.position?.y ?? (Math.floor(index / 3) * 5),
+    w: w.position?.w || 4,  // 4 columns = 3 widgets per row
+    h: w.position?.h || 5,
     minW: 2,
     minH: 3
   }));
@@ -1036,8 +1190,8 @@ function DashboardBuilderInner() {
         {/* Active Filters Bar */}
         <ActiveFiltersBar />
 
-        {/* Grid Layout */}
-        <div className="bg-muted/30 rounded-xl p-3 min-h-[400px]">
+        {/* Grid Layout - 3 widgets per row */}
+        <div className="bg-muted/30 rounded-xl p-2 min-h-[400px]">
           {widgets.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[500px] text-center">
               <LayoutDashboard className="w-16 h-16 text-muted-foreground mb-4" />
@@ -1053,18 +1207,22 @@ function DashboardBuilderInner() {
               className="layout"
               layout={layout}
               cols={12}
-              rowHeight={40}
-              width={1100}
+              rowHeight={35}
+              width={1150}
               onLayoutChange={handleLayoutChange}
               draggableHandle=".drag-handle"
               compactType="vertical"
               preventCollision={false}
-              margin={[10, 10]}
+              margin={[8, 8]}
               containerPadding={[0, 0]}
             >
               {widgets.map(widget => {
                 const isSource = Object.values(filterSources).includes(widget.id);
                 const isFiltered = hasFilters && !isSource;
+                const drillState = getDrillState(widget.id);
+                const canDrill = canDrillFurther(widget.id);
+                const isDrilled = isDrilledDown(widget.id);
+                
                 return (
                   <div key={widget.id} data-testid={`widget-${widget.id}`}>
                     <DashboardWidget
@@ -1073,8 +1231,14 @@ function DashboardBuilderInner() {
                       onEdit={setEditingWidget}
                       onDelete={deleteWidget}
                       onDataClick={handleDataClick}
+                      onDrillDown={handleDrillDown}
+                      onDrillNavigate={handleDrillNavigate}
+                      onDrillReset={handleDrillReset}
                       isFiltered={isFiltered}
                       isLoading={isWidgetLoading(widget.id)}
+                      drillState={drillState}
+                      canDrill={canDrill}
+                      isDrilled={isDrilled}
                     />
                   </div>
                 );
@@ -1293,6 +1457,47 @@ function DashboardBuilderInner() {
                           ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  {/* Drill Down Hierarchy */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Layers className="w-3.5 h-3.5 text-cyan-500" />
+                      Drill Down Hierarchy (optional)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Select fields for drill-down navigation (e.g., Region → State → City)
+                    </p>
+                    <Input
+                      placeholder="e.g., Region, State, City"
+                      value={(newWidget.config.drilldown || []).join(', ')}
+                      onChange={(e) => {
+                        const fields = e.target.value.split(',').map(f => f.trim()).filter(f => f);
+                        setNewWidget({
+                          ...newWidget,
+                          config: { ...newWidget.config, drilldown: fields }
+                        });
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {getSelectedDataset(newWidget.dataset_id)?.columns?.map((col) => (
+                        <button
+                          key={col.name}
+                          onClick={() => {
+                            const current = newWidget.config.drilldown || [];
+                            if (!current.includes(col.name)) {
+                              setNewWidget({
+                                ...newWidget,
+                                config: { ...newWidget.config, drilldown: [...current, col.name] }
+                              });
+                            }
+                          }}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-muted hover:bg-violet-500/20 transition-colors"
+                        >
+                          + {col.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
