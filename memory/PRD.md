@@ -84,6 +84,28 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - Exports and shares fields added to schema
 - Backend tracks views automatically
 
+### March 6, 2026 - AI Features (Phase 2C) Implementation
+
+#### AI Insights Panel
+- **Endpoint**: `POST /api/ai/insights`
+- **Features**: Generates statistical insights from widget data
+- **Insight Types**: trend_up, trend_down, outlier, target, insight
+- **Fallback**: Basic statistical analysis if AI unavailable
+- **Component**: `/components/AIInsightsPanel.jsx`
+
+#### Natural Language to Chart
+- **Endpoint**: `POST /api/ai/generate-chart`
+- **Features**: Convert plain English to chart configuration
+- **Example Queries**: "Show sales by region", "Compare sales across quarters"
+- **Output**: chart_type, title, dataset_id, x_field, y_field, aggregation, explanation
+- **Component**: `/components/NaturalLanguageChart.jsx`
+
+#### Compact Dashboard Layout
+- **Row Height**: 32px (reduced from 40px)
+- **Widget Height**: 4 units (reduced from 5)
+- **Margin**: 6px (reduced from 10px)
+- **Widgets per Row**: 3 (using w=4 in 12-col grid)
+
 ### March 6, 2026 - Drill Down (Phase 2B) Implementation
 
 #### Drill Down MVP Features
@@ -232,14 +254,12 @@ DataViz Studio is a full-featured data visualization application built with Reac
 
 ## Pending Tasks
 
-### P0 - Immediate Priority (Phase 2 - Remaining)
-- [ ] AI Insights Panel - AI-powered textual analysis of charts
-- [ ] Natural Language to Chart - Generate charts by typing commands
+### P0 - Immediate Priority (Remaining)
 - [ ] Visual Data Explorer - Tableau-like drag-and-drop interface
+- [ ] Chart thumbnail capture on save (getDataURL integration)
 
 ### P1 - High Priority
 - [ ] Real-time collaboration (WebSocket for multi-user editing)
-- [ ] Chart Preview Thumbnails capture on save (getDataURL integration)
 - [ ] SSO Integration (Survey360, FieldForce, DataPulse)
 - [ ] Scheduled Report Delivery UI
 - [ ] Mobile responsive improvements
@@ -265,6 +285,11 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - [ ] `/recent` - Recently Viewed
 
 ## Completed Features (March 2026)
+
+### Phase 2C: AI Features ✅
+- AI Insights Panel with GPT-5.2
+- Natural Language to Chart
+- Compact 3-per-row widget layout
 
 ### Phase 2B: Drill Down ✅
 - Drill hierarchy configuration in widget
