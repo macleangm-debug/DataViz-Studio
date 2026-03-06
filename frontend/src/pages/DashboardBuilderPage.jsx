@@ -232,12 +232,15 @@ function DashboardWidget({
 
     switch (widget.type) {
       case 'stat':
+        // Compact stat card
         return (
-          <div className="h-full flex flex-col items-center justify-center">
-            <p className="text-2xl font-bold text-foreground">
-              {typeof data.value === 'number' ? data.value.toLocaleString() : data.value}
-            </p>
-            <p className="text-xs text-muted-foreground capitalize">{data.aggregation}</p>
+          <div className="h-full flex items-center justify-center py-1">
+            <div className="text-center">
+              <p className="text-xl font-bold text-foreground leading-tight">
+                {typeof data.value === 'number' ? data.value.toLocaleString() : data.value}
+              </p>
+              <p className="text-[10px] text-muted-foreground capitalize mt-0.5">{data.aggregation}</p>
+            </div>
           </div>
         );
 
@@ -245,90 +248,98 @@ function DashboardWidget({
         const chartType = widget.config?.chart_type || 'bar';
         const widgetId = widget.id;
         if (!Array.isArray(data) || data.length === 0) {
-          return <div className="h-full flex items-center justify-center text-muted-foreground">No data</div>;
+          return <div className="h-full flex items-center justify-center text-muted-foreground text-xs">No data</div>;
         }
         
-        // Common tooltip style
+        // Compact tooltip style
         const tooltipStyle = {
           contentStyle: { 
             backgroundColor: 'rgba(17, 17, 27, 0.95)', 
             border: `1px solid ${colorScheme.accent}40`,
-            borderRadius: '12px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            padding: '12px 16px'
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            padding: '6px 10px',
+            fontSize: '11px'
           },
-          labelStyle: { color: '#fff', fontWeight: 600, marginBottom: '4px' },
+          labelStyle: { color: '#fff', fontWeight: 600, marginBottom: '2px', fontSize: '10px' },
           itemStyle: { color: colorScheme.colors[1] }
         };
         
-        // Pie Chart
+        // Compact chart container height
+        const chartHeight = 130;
+        
+        // Pie Chart - compact with smaller radius
         if (chartType === 'pie') {
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <RePieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="75%"
-                  paddingAngle={2}
-                  strokeWidth={0}
-                  onClick={handleChartClick}
-                  cursor="pointer"
-                >
-                  {data.map((_, index) => (
-                    <Cell 
-                      key={index} 
-                      fill={colorScheme.colors[index % colorScheme.colors.length]} 
-                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
-              </RePieChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RePieChart>
+                  <Pie
+                    data={data}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="55%"
+                    innerRadius="0%"
+                    paddingAngle={2}
+                    strokeWidth={0}
+                    onClick={handleChartClick}
+                    cursor="pointer"
+                  >
+                    {data.map((_, index) => (
+                      <Cell 
+                        key={index} 
+                        fill={colorScheme.colors[index % colorScheme.colors.length]} 
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
+                </RePieChart>
+              </ResponsiveContainer>
+            </div>
           );
         }
         
-        // Donut Chart
+        // Donut Chart - compact
         if (chartType === 'donut') {
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <RePieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="50%"
-                  outerRadius="80%"
-                  paddingAngle={3}
-                  strokeWidth={0}
-                  onClick={handleChartClick}
-                  cursor="pointer"
-                >
-                  {data.map((_, index) => (
-                    <Cell 
-                      key={index} 
-                      fill={colorScheme.colors[index % colorScheme.colors.length]} 
-                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
-              </RePieChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RePieChart>
+                  <Pie
+                    data={data}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="35%"
+                    outerRadius="55%"
+                    paddingAngle={3}
+                    strokeWidth={0}
+                    onClick={handleChartClick}
+                    cursor="pointer"
+                  >
+                    {data.map((_, index) => (
+                      <Cell 
+                        key={index} 
+                        fill={colorScheme.colors[index % colorScheme.colors.length]} 
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
+                </RePieChart>
+              </ResponsiveContainer>
+            </div>
           );
         }
         
-        // Line Chart
+        // Line Chart - compact with tighter margins
         if (chartType === 'line') {
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <ReLineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} onClick={(e) => e?.activePayload && handleChartClick(e.activePayload[0]?.payload)}>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ReLineChart data={data} margin={{ top: 10, right: 15, left: 5, bottom: 15 }} onClick={(e) => e?.activePayload && handleChartClick(e.activePayload[0]?.payload)}>
                 <defs>
                   <linearGradient id={`lineGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor={colorScheme.gradient[0]}/>
@@ -336,27 +347,29 @@ function DashboardWidget({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
+                <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={30} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
                 <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
                   stroke={`url(#lineGradient-${widgetId})`}
-                  strokeWidth={3} 
-                  dot={{ fill: colorScheme.accent, strokeWidth: 0, r: 4, cursor: 'pointer' }}
-                  activeDot={{ fill: colorScheme.colors[1], strokeWidth: 0, r: 6, cursor: 'pointer' }}
+                  strokeWidth={2} 
+                  dot={{ fill: colorScheme.accent, strokeWidth: 0, r: 2, cursor: 'pointer' }}
+                  activeDot={{ fill: colorScheme.colors[1], strokeWidth: 0, r: 4, cursor: 'pointer' }}
                 />
               </ReLineChart>
             </ResponsiveContainer>
+            </div>
           );
         }
         
-        // Area Chart
+        // Area Chart - compact
         if (chartType === 'area') {
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <ReLineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ReLineChart data={data} margin={{ top: 10, right: 15, left: 5, bottom: 15 }}>
                 <defs>
                   <linearGradient id={`areaGradient-${widgetId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colorScheme.accent} stopOpacity={0.4}/>
@@ -364,8 +377,8 @@ function DashboardWidget({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
+                <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={30} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
                 <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
                 <Line 
                   type="monotone" 
@@ -377,60 +390,62 @@ function DashboardWidget({
                 />
               </ReLineChart>
             </ResponsiveContainer>
+            </div>
           );
         }
         
-        // Horizontal Bar Chart
+        // Horizontal Bar Chart - compact
         if (chartType === 'horizontal_bar') {
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} layout="vertical" margin={{ top: 10, right: 30, left: 60, bottom: 10 }} barCategoryGap="25%">
-                <defs>
-                  <linearGradient id={`hbarGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor={colorScheme.gradient[1]} stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor={colorScheme.gradient[0]} stopOpacity={1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} />
-                <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15` }} formatter={(value) => [value.toLocaleString(), 'Value']} />
-                <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 6, 6, 0]} maxBarSize={35} onClick={handleChartClick} cursor="pointer" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} layout="vertical" margin={{ top: 5, right: 15, left: 40, bottom: 5 }} barCategoryGap="20%">
+                  <defs>
+                    <linearGradient id={`hbarGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor={colorScheme.gradient[1]} stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor={colorScheme.gradient[0]} stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={35} />
+                  <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15` }} formatter={(value) => [value.toLocaleString(), 'Value']} />
+                  <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 4, 4, 0]} maxBarSize={18} onClick={handleChartClick} cursor="pointer" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           );
         }
 
-        // Stacked Bar Chart
+        // Stacked Bar Chart - compact
         if (chartType === 'stacked_bar') {
-          // For stacked bar, we need data with multiple value keys
-          // We'll check if data has value2, value3 etc. or use value as default
           const hasMultipleValues = data[0] && (data[0].value2 !== undefined || data[0].series);
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
-                <Tooltip {...tooltipStyle} />
-                <Bar dataKey="value" stackId="stack" fill={colorScheme.colors[0]} radius={[0, 0, 0, 0]} />
-                {hasMultipleValues && data[0].value2 !== undefined && (
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 10, right: 15, left: 5, bottom: 15 }} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
+                  <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-5} width={30} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="value" stackId="stack" fill={colorScheme.colors[0]} radius={[0, 0, 0, 0]} />
+                  {hasMultipleValues && data[0].value2 !== undefined && (
                   <Bar dataKey="value2" stackId="stack" fill={colorScheme.colors[1]} radius={[0, 0, 0, 0]} />
                 )}
                 {hasMultipleValues && data[0].value3 !== undefined && (
-                  <Bar dataKey="value3" stackId="stack" fill={colorScheme.colors[2]} radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="value3" stackId="stack" fill={colorScheme.colors[2]} radius={[4, 4, 0, 0]} />
                 )}
                 {!hasMultipleValues && (
-                  <Bar dataKey="value" fill={colorScheme.colors[0]} radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="value" fill={colorScheme.colors[0]} radius={[4, 4, 0, 0]} />
                 )}
               </BarChart>
             </ResponsiveContainer>
+            </div>
           );
         }
 
-        // Scatter Plot
+        // Scatter Plot - compact
         if (chartType === 'scatter') {
-          // Scatter expects data with x and y values, or we map from name/value
           const scatterData = data.map((d, i) => ({
             x: d.x !== undefined ? d.x : i + 1,
             y: d.y !== undefined ? d.y : d.value,
@@ -438,45 +453,49 @@ function DashboardWidget({
             z: d.z || d.value || 100
           }));
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis type="number" dataKey="x" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                <YAxis type="number" dataKey="y" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                <ZAxis type="number" dataKey="z" range={[60, 400]} />
-                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
-                <Scatter data={scatterData} fill={colorScheme.accent}>
-                  {scatterData.map((_, index) => (
-                    <Cell key={index} fill={colorScheme.colors[index % colorScheme.colors.length]} />
-                  ))}
-                </Scatter>
-              </ScatterChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 10, right: 15, left: 5, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis type="number" dataKey="x" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                  <YAxis type="number" dataKey="y" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={30} />
+                  <ZAxis type="number" dataKey="z" range={[40, 200]} />
+                  <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
+                  <Scatter data={scatterData} fill={colorScheme.accent}>
+                    {scatterData.map((_, index) => (
+                      <Cell key={index} fill={colorScheme.colors[index % colorScheme.colors.length]} />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
           );
         }
 
-        // Radar Chart
+        // Radar Chart - compact
         if (chartType === 'radar') {
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={data} margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={data} margin={{ top: 15, right: 20, left: 20, bottom: 15 }}>
                 <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                <PolarRadiusAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} />
+                <PolarAngleAxis dataKey="name" tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} />
+                <PolarRadiusAxis tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} />
                 <Radar
                   dataKey="value"
                   stroke={colorScheme.accent}
                   fill={colorScheme.accent}
                   fillOpacity={0.3}
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                 />
                 <Tooltip {...tooltipStyle} formatter={(value) => [value.toLocaleString(), 'Value']} />
               </RadarChart>
             </ResponsiveContainer>
+            </div>
           );
         }
 
-        // Treemap Chart
+        // Treemap Chart - compact
         if (chartType === 'treemap') {
           const treemapData = data.map((d, i) => ({
             name: d.name,
@@ -484,44 +503,45 @@ function DashboardWidget({
             fill: colorScheme.colors[i % colorScheme.colors.length]
           }));
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <Treemap
-                data={treemapData}
-                dataKey="size"
-                aspectRatio={4/3}
-                stroke="rgba(0,0,0,0.3)"
-                content={({ x, y, width, height, name, fill }) => (
-                  <g>
-                    <rect
-                      x={x}
-                      y={y}
-                      width={width}
-                      height={height}
-                      fill={fill}
-                      rx={4}
-                      style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
-                    />
-                    {width > 40 && height > 25 && (
-                      <text
-                        x={x + width / 2}
-                        y={y + height / 2}
-                        fill="#fff"
-                        fontSize={11}
-                        fontWeight={600}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        {name}
-                      </text>
-                    )}
-                  </g>
-                )}
-              />
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <Treemap
+                  data={treemapData}
+                  dataKey="size"
+                  aspectRatio={4/3}
+                  stroke="rgba(0,0,0,0.3)"
+                  content={({ x, y, width, height, name, fill }) => (
+                    <g>
+                      <rect
+                        x={x}
+                        y={y}
+                        width={width}
+                        height={height}
+                        fill={fill}
+                        rx={3}
+                      />
+                      {width > 30 && height > 18 && (
+                        <text
+                          x={x + width / 2}
+                          y={y + height / 2}
+                          fill="#fff"
+                          fontSize={9}
+                          fontWeight={600}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          {name}
+                        </text>
+                      )}
+                    </g>
+                  )}
+                />
+              </ResponsiveContainer>
+            </div>
           );
         }
 
-        // Funnel Chart
+        // Funnel Chart - compact
         if (chartType === 'funnel') {
           const funnelData = data.map((d, i) => ({
             name: d.name,
@@ -529,9 +549,10 @@ function DashboardWidget({
             fill: colorScheme.colors[i % colorScheme.colors.length]
           }));
           return (
-            <ResponsiveContainer width="100%" height="100%">
-              <FunnelChart margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
-                <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
+            <div style={{ width: '100%', height: chartHeight }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <FunnelChart margin={{ top: 10, right: 15, left: 15, bottom: 10 }}>
+                  <Tooltip {...tooltipStyle} formatter={(value, name) => [value.toLocaleString(), name]} />
                 <Funnel
                   data={funnelData}
                   dataKey="value"
@@ -541,9 +562,9 @@ function DashboardWidget({
                   <LabelList
                     position="center"
                     fill="#fff"
-                    fontSize={11}
+                    fontSize={9}
                     fontWeight={600}
-                    formatter={(value) => value.toLocaleString()}
+                    formatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value.toLocaleString()}
                   />
                   {funnelData.map((entry, index) => (
                     <Cell key={index} fill={entry.fill} />
@@ -551,33 +572,33 @@ function DashboardWidget({
                 </Funnel>
               </FunnelChart>
             </ResponsiveContainer>
+            </div>
           );
         }
 
-        // Gauge/KPI Chart (Custom SVG implementation)
+        // Gauge/KPI Chart - compact
         if (chartType === 'gauge') {
           const total = data.reduce((sum, d) => sum + (d.value || 0), 0);
           const maxValue = Math.max(...data.map(d => d.value || 0));
           const percentage = total > 0 ? Math.min((maxValue / total) * 100, 100) : 0;
           const value = data[0]?.value || 0;
           
-          // SVG gauge parameters
-          const size = 200;
-          const strokeWidth = 20;
+          // Compact SVG gauge
+          const size = 120;
+          const strokeWidth = 12;
           const radius = (size - strokeWidth) / 2;
-          const circumference = radius * Math.PI; // Half circle
+          const circumference = radius * Math.PI;
           const offset = circumference - (percentage / 100) * circumference;
           
           return (
-            <div className="h-full flex flex-col items-center justify-center">
-              <svg width={size} height={size / 2 + 30} viewBox={`0 0 ${size} ${size / 2 + 30}`}>
+            <div className="h-full flex flex-col items-center justify-center py-1">
+              <svg width={size} height={size / 2 + 20} viewBox={`0 0 ${size} ${size / 2 + 20}`}>
                 <defs>
                   <linearGradient id={`gaugeGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor={colorScheme.gradient[0]} />
                     <stop offset="100%" stopColor={colorScheme.gradient[1]} />
                   </linearGradient>
                 </defs>
-                {/* Background arc */}
                 <path
                   d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
                   fill="none"
@@ -585,7 +606,6 @@ function DashboardWidget({
                   strokeWidth={strokeWidth}
                   strokeLinecap="round"
                 />
-                {/* Value arc */}
                 <path
                   d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
                   fill="none"
@@ -596,23 +616,22 @@ function DashboardWidget({
                   strokeDashoffset={offset}
                   style={{ transition: 'stroke-dashoffset 0.5s ease' }}
                 />
-                {/* Center value */}
                 <text
                   x={size / 2}
-                  y={size / 2 - 5}
+                  y={size / 2 - 2}
                   textAnchor="middle"
                   fill="hsl(var(--foreground))"
-                  fontSize="28"
+                  fontSize="16"
                   fontWeight="700"
                 >
-                  {value.toLocaleString()}
+                  {value >= 1000 ? `${(value/1000).toFixed(0)}k` : value.toLocaleString()}
                 </text>
                 <text
                   x={size / 2}
-                  y={size / 2 + 20}
+                  y={size / 2 + 12}
                   textAnchor="middle"
                   fill="hsl(var(--muted-foreground))"
-                  fontSize="12"
+                  fontSize="9"
                 >
                   {data[0]?.name || 'Value'}
                 </text>
@@ -621,52 +640,54 @@ function DashboardWidget({
           );
         }
         
-        // Default: Vertical Bar Chart
+        // Default: Vertical Bar Chart - compact
         return (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} barCategoryGap="20%">
-              <defs>
-                <linearGradient id={`barGradient-${widgetId}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={colorScheme.gradient[0]} stopOpacity={1}/>
-                  <stop offset="100%" stopColor={colorScheme.gradient[1]} stopOpacity={0.8}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
-              <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15`, radius: 4 }} formatter={(value) => [value.toLocaleString(), 'Value']} />
-              <Bar 
-                dataKey="value" 
-                fill={`url(#barGradient-${widgetId})`} 
-                radius={[8, 8, 0, 0]} 
-                maxBarSize={60}
-                onClick={handleChartClick}
-                cursor="pointer"
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ width: '100%', height: chartHeight }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 15 }} barCategoryGap="25%">
+                <defs>
+                  <linearGradient id={`barGradient-${widgetId}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={colorScheme.gradient[0]} stopOpacity={1}/>
+                    <stop offset="100%" stopColor={colorScheme.gradient[1]} stopOpacity={0.8}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={5} />
+                <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={28} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15`, radius: 3 }} formatter={(value) => [value.toLocaleString(), 'Value']} />
+                <Bar 
+                  dataKey="value" 
+                  fill={`url(#barGradient-${widgetId})`} 
+                  radius={[4, 4, 0, 0]} 
+                  maxBarSize={35}
+                  onClick={handleChartClick}
+                  cursor="pointer"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         );
 
       case 'table':
         if (!Array.isArray(data) || data.length === 0) {
-          return <div className="h-full flex items-center justify-center text-muted-foreground">No data</div>;
+          return <div className="h-full flex items-center justify-center text-muted-foreground text-xs">No data</div>;
         }
         const columns = Object.keys(data[0] || {});
         return (
-          <div className="overflow-auto h-full">
-            <table className="w-full text-sm">
+          <div className="overflow-auto h-full text-xs">
+            <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b border-border/30">
                   {columns.map(col => (
-                    <th key={col} className="text-left p-2 font-medium text-muted-foreground">{col}</th>
+                    <th key={col} className="text-left px-2 py-1 font-medium text-muted-foreground text-[10px]">{col}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {data.slice(0, 10).map((row, idx) => (
-                  <tr key={idx} className="border-b border-border/50">
+                {data.slice(0, 6).map((row, idx) => (
+                  <tr key={idx} className="border-b border-border/20">
                     {columns.map(col => (
-                      <td key={col} className="p-2 text-foreground">{String(row[col] ?? '')}</td>
+                      <td key={col} className="px-2 py-1 text-foreground">{String(row[col] ?? '')}</td>
                     ))}
                   </tr>
                 ))}
@@ -1143,16 +1164,20 @@ function DashboardBuilderInner() {
   }
 
   // Layout: 3 widgets per row (w=4 for each in a 12-col grid)
-  // Reduced height (h=4) for more compact dashboard view
-  const layout = widgets.map((w, index) => ({
-    i: w.id,
-    x: w.position?.x ?? ((index % 3) * 4),  // 0, 4, 8 for 3 per row
-    y: w.position?.y ?? (Math.floor(index / 3) * 4),
-    w: w.position?.w || 4,  // 4 columns = 3 widgets per row
-    h: w.position?.h || 4,  // Compact height
-    minW: 2,
-    minH: 2
-  }));
+  // Compact heights: charts h=3, stats h=2
+  const layout = widgets.map((w, index) => {
+    const isStatWidget = w.type === 'stat';
+    const defaultH = isStatWidget ? 2 : 3;
+    return {
+      i: w.id,
+      x: w.position?.x ?? ((index % 3) * 4),  // 0, 4, 8 for 3 per row
+      y: w.position?.y ?? (Math.floor(index / 3) * 3),
+      w: w.position?.w || 4,  // 4 columns = 3 widgets per row
+      h: w.position?.h || defaultH,  // Compact: 3 for charts, 2 for stats
+      minW: 2,
+      minH: 2
+    };
+  });
 
   return (
     <DashboardLayout>
@@ -1273,7 +1298,7 @@ function DashboardBuilderInner() {
               className="layout"
               layout={layout}
               cols={12}
-              rowHeight={32}
+              rowHeight={26}
               width={1150}
               onLayoutChange={handleLayoutChange}
               draggableHandle=".drag-handle"
