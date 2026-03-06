@@ -20,9 +20,12 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - **Theme Toggle**: Dark/Light/System theme support
 - **Keyboard Shortcuts**: Global shortcuts with command palette (⌘K)
 - **Dashboard Templates**: Pre-built templates for various use cases
+- **Perfect Square Widget Layout**: Dashboard widgets now use rowHeight=80, w=4, h=4 for professional square cards
+- **Cross-Filtering**: Click chart data points to filter all widgets on dashboard
+- **Drill-Down**: Navigate hierarchical data within charts (Region → State → City)
 
 ## Tech Stack
-- **Frontend**: React 18, Recharts, ECharts, TailwindCSS, Shadcn/UI, react-colorful
+- **Frontend**: React 18, Recharts, ECharts, TailwindCSS, Shadcn/UI, react-colorful, react-grid-layout
 - **Backend**: FastAPI, Python 3.11
 - **Database**: MongoDB
 - **PDF Generation**: WeasyPrint + Jinja2 templates
@@ -45,7 +48,7 @@ DataViz Studio is a full-featured data visualization application built with Reac
 │   │   ├── public.py
 │   │   ├── reports.py
 │   │   └── users.py    # User management & profile
-│   └── server.py       # Legacy monolithic file
+│   └── server.py       # Legacy monolithic file (contains dashboard/widget/AI logic)
 ├── frontend/
 │   └── src/
 │       ├── components/
@@ -53,16 +56,38 @@ DataViz Studio is a full-featured data visualization application built with Reac
 │       │   ├── NotificationCenter.jsx  # Notifications
 │       │   ├── ThemeProvider.jsx       # Theme toggle
 │       │   ├── KeyboardShortcuts.jsx   # Shortcuts
-│       │   └── DashboardTemplates.jsx  # Templates library
+│       │   ├── DashboardTemplates.jsx  # Templates library
+│       │   ├── AIInsightsPanel.jsx     # AI insights for widgets
+│       │   ├── NaturalLanguageChart.jsx # NL to chart generation
+│       │   ├── ActiveFiltersBar.jsx    # Cross-filter display
+│       │   └── DrillBreadcrumb.jsx     # Drill-down navigation
 │       ├── pages/
 │       │   ├── ProfilePage.jsx         # User profile
 │       │   ├── UserManagementPage.jsx  # Admin user management
+│       │   ├── DashboardBuilderPage.jsx # Dashboard editor with square widgets
 │       │   └── ...
+│       ├── contexts/
+│       │   └── DashboardFilterContext.jsx # Cross-filter state
 │       └── layouts/
 │           └── DashboardLayout.jsx     # Main layout
 ```
 
 ## Recent Changes
+
+### March 6, 2026 - Dashboard Square Widget Layout (P0 UI Fix)
+
+#### Perfect Square Widget Cards
+- **GridLayout**: `rowHeight={80}`, `margin={[16, 16]}`, `cols={12}`
+- **Widget Dimensions**: `w=4, h=4` for 3 equal square widgets per row
+- **Chart Container**: `h-full w-full` with flex-1 to fill card completely
+- **Pie/Donut Charts**: Centered at `cy="55%"` with radius `["42%", "68%"]`
+- **Bar Charts**: Grid margins `{top: 16, right: 10, left: 8, bottom: 28}`
+- **Stat Cards**: Centered with `flex items-center justify-center` and `text-4xl font-bold`
+
+#### Widget Shell Styling
+- Background: `bg-[#0B1730]` with `border border-white/10`
+- Header: Compact with drag handle, title, and hover actions
+- Chart area: `h-[calc(100%-44px)] p-3` for proper spacing
 
 ### March 6, 2026 - Chart Studio Phase 1B (Thumbnails, Tags, Analytics)
 
