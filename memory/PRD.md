@@ -84,6 +84,29 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - Exports and shares fields added to schema
 - Backend tracks views automatically
 
+### March 6, 2026 - Dashboards Page Phase 1B Enhancement
+
+#### Enhanced Dashboards Page (Matching Charts Page)
+- **Favorites System**: Star dashboards, toggle favorite filter
+- **Sorting Options**: Sort by Recent, Name, Most Viewed, Favorites First
+- **View Modes**: Grid view (cards) and List view toggle
+- **Hover Quick Actions**: Open, Duplicate, Delete
+- **View Tracking**: Track dashboard views with `POST /api/dashboards/{id}/view`
+- **Preview Thumbnails**: Support for dashboard screenshots
+- **Tags System**: Tags input and display on dashboard cards
+- **Improved Card Design**:
+  - Widget count badges
+  - Timestamp footer (relative time)
+  - View count display
+  - Hover animations
+  
+#### Backend Enhancements
+- `POST /api/dashboards/{id}/favorite` - Toggle dashboard favorite
+- `POST /api/dashboards/{id}/view` - Track dashboard view
+- `POST /api/charts/{id}/favorite` - Toggle chart favorite  
+- `POST /api/charts/{id}/view` - Track chart view
+- Updated schemas: DashboardCreate, ChartCreate with tags, preview_image, is_favorite, views fields
+
 ### March 6, 2026 - Chart Studio Phase 1A (BI Platform Upgrade)
 
 #### Enhanced Charts Page
@@ -160,17 +183,39 @@ DataViz Studio is a full-featured data visualization application built with Reac
 
 ## Pending Tasks
 
+### P0 - Immediate Priority (Phase 2)
+- [ ] Cross Filtering - Click data point in one chart to filter all others
+- [ ] Drill Down - Hierarchical data exploration (Region → Country → City)
+- [ ] AI Insights Panel - AI-powered textual analysis of charts
+- [ ] Natural Language to Chart - Generate charts by typing commands
+- [ ] Visual Data Explorer - Tableau-like drag-and-drop interface
+
 ### P1 - High Priority
 - [ ] Real-time collaboration (WebSocket for multi-user editing)
+- [ ] Chart Preview Thumbnails capture on save (getDataURL integration)
 - [ ] SSO Integration (Survey360, FieldForce, DataPulse)
 - [ ] Scheduled Report Delivery UI
 - [ ] Mobile responsive improvements
 
-### P2 - Medium Priority
+### P2 - Medium Priority (Phase 3)
+- [ ] Chart Version History
+- [ ] Chart Comments
+- [ ] Embeddable Charts
+- [ ] Real-time Data Refresh
 - [ ] Advanced Data Connectors
 - [ ] Team Collaboration (permissions system)
-- [ ] Load Testing with locustfile.py
 - [ ] Complete backend refactoring (migrate remaining server.py endpoints)
+
+### P3 - Additional Pages to Build
+- [ ] `/data-explorer` - Visual Data Explorer (drag & drop)
+- [ ] `/scheduled-reports` - Scheduled Reports Management
+- [ ] `/workspaces` - Workspace Management
+- [ ] `/data-lineage` - Data Lineage View
+- [ ] `/audit-log` - Audit Log Page
+- [ ] `/alerts` - Data Alerts Page
+- [ ] `/embed-manager` - Embed Code Manager
+- [ ] `/favorites` - Favorites Hub
+- [ ] `/recent` - Recently Viewed
 
 ## Test Credentials
 - **Email**: `test@dataviz.com`
@@ -185,4 +230,4 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - **resend**: Email delivery (requires user API key)
 
 ## Last Updated
-March 2, 2026
+March 6, 2026
