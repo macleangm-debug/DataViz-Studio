@@ -24,12 +24,14 @@ import {
   LayoutGrid,
   Filter,
   Gauge,
-  Layers
+  Layers,
+  Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Badge } from '../components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -49,13 +51,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from '../components/ui/sheet';
-import { Badge } from '../components/ui/badge';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { useOrgStore, useAuthStore } from '../store';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { ShareDashboardDialog } from '../components/ShareDashboardDialog';
 import SaveAsTemplateButton from '../components/SaveAsTemplateButton';
+import { DashboardFilterProvider, useDashboardFilters } from '../contexts/DashboardFilterContext';
+import ActiveFiltersBar from '../components/ActiveFiltersBar';
 import {
   BarChart,
   Bar,
@@ -165,11 +168,30 @@ const COLOR_SCHEMES = {
 
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
 
-// Widget Component
-function DashboardWidget({ widget, data, onEdit, onDelete }) {
+// Widget Component with Cross-Filtering Support
+function DashboardWidget({ widget, data, onEdit, onDelete, onDataClick, isFiltered, isLoading }) {
   const colorScheme = COLOR_SCHEMES[widget.config?.color_scheme] || COLOR_SCHEMES.purple;
   
+  // Handle chart click for cross-filtering
+  const handleChartClick = (chartData) => {
+    if (onDataClick && chartData && chartData.name !== undefined) {
+      const xField = widget.config?.x_field;
+      if (xField) {
+        onDataClick(xField, chartData.name, widget.id);
+      }
+    }
+  };
+  
   const renderContent = () => {
+    // Show loading state
+    if (isLoading) {
+      return (
+        <div className="h-full flex items-center justify-center text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+        </div>
+      );
+    }
+    
     if (!data) {
       return (
         <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -223,6 +245,8 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
                   outerRadius="75%"
                   paddingAngle={2}
                   strokeWidth={0}
+                  onClick={handleChartClick}
+                  cursor="pointer"
                 >
                   {data.map((_, index) => (
                     <Cell 
@@ -253,6 +277,8 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
                   outerRadius="80%"
                   paddingAngle={3}
                   strokeWidth={0}
+                  onClick={handleChartClick}
+                  cursor="pointer"
                 >
                   {data.map((_, index) => (
                     <Cell 
@@ -272,7 +298,7 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
         if (chartType === 'line') {
           return (
             <ResponsiveContainer width="100%" height="100%">
-              <ReLineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+              <ReLineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} onClick={(e) => e?.activePayload && handleChartClick(e.activePayload[0]?.payload)}>
                 <defs>
                   <linearGradient id={`lineGradient-${widgetId}`} x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor={colorScheme.gradient[0]}/>
@@ -288,8 +314,8 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
                   dataKey="value" 
                   stroke={`url(#lineGradient-${widgetId})`}
                   strokeWidth={3} 
-                  dot={{ fill: colorScheme.accent, strokeWidth: 0, r: 4 }}
-                  activeDot={{ fill: colorScheme.colors[1], strokeWidth: 0, r: 6 }}
+                  dot={{ fill: colorScheme.accent, strokeWidth: 0, r: 4, cursor: 'pointer' }}
+                  activeDot={{ fill: colorScheme.colors[1], strokeWidth: 0, r: 6, cursor: 'pointer' }}
                 />
               </ReLineChart>
             </ResponsiveContainer>
@@ -339,7 +365,7 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
                 <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} />
                 <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15` }} formatter={(value) => [value.toLocaleString(), 'Value']} />
-                <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 6, 6, 0]} maxBarSize={35} />
+                <Bar dataKey="value" fill={`url(#hbarGradient-${widgetId})`} radius={[0, 6, 6, 0]} maxBarSize={35} onClick={handleChartClick} cursor="pointer" />
               </BarChart>
             </ResponsiveContainer>
           );
@@ -579,7 +605,14 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dy={10} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} dx={-10} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
               <Tooltip {...tooltipStyle} cursor={{ fill: `${colorScheme.accent}15`, radius: 4 }} formatter={(value) => [value.toLocaleString(), 'Value']} />
-              <Bar dataKey="value" fill={`url(#barGradient-${widgetId})`} radius={[8, 8, 0, 0]} maxBarSize={60} />
+              <Bar 
+                dataKey="value" 
+                fill={`url(#barGradient-${widgetId})`} 
+                radius={[8, 8, 0, 0]} 
+                maxBarSize={60}
+                onClick={handleChartClick}
+                cursor="pointer"
+              />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -625,11 +658,17 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
   };
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden group bg-card/50 backdrop-blur-sm border-border/50">
+    <Card className={`h-full flex flex-col overflow-hidden group bg-card/50 backdrop-blur-sm border-border/50 ${isFiltered ? 'ring-1 ring-violet-500/30' : ''}`}>
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/30 bg-muted/20">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <GripVertical className="w-4 h-4 text-muted-foreground/50 cursor-move drag-handle hover:text-muted-foreground transition-colors" />
           <span className="font-medium text-sm text-foreground/90 truncate">{widget.title}</span>
+          {isFiltered && (
+            <Badge variant="secondary" className="bg-violet-500/20 text-violet-300 text-[10px] px-1.5 py-0 h-4">
+              <Filter className="w-2.5 h-2.5 mr-0.5" />
+              Filtered
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(widget)}>
@@ -647,11 +686,13 @@ function DashboardWidget({ widget, data, onEdit, onDelete }) {
   );
 }
 
-export function DashboardBuilderPage() {
+// Inner component that uses filter context
+function DashboardBuilderInner() {
   const { dashboardId } = useParams();
   const navigate = useNavigate();
   const { currentOrg } = useOrgStore();
   const { token } = useAuthStore();
+  const { filters, setFilter, hasFilters, setWidgetLoading, isWidgetLoading, filterSources } = useDashboardFilters();
   
   const [dashboard, setDashboard] = useState(null);
   const [widgets, setWidgets] = useState([]);
@@ -710,6 +751,78 @@ export function DashboardBuilderPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Cross-filter effect: Re-fetch widget data when filters change
+  useEffect(() => {
+    if (!hasFilters || widgets.length === 0) return;
+    
+    const fetchFilteredData = async () => {
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Fetch filtered data for all widgets except the source widget
+      const fetchPromises = widgets.map(async (w) => {
+        // Skip if this widget is the source of the filter
+        const isSource = Object.values(filterSources).includes(w.id);
+        if (isSource) {
+          return { id: w.id, data: widgetData[w.id], filtered: false };
+        }
+        
+        setWidgetLoading(w.id, true);
+        try {
+          const res = await axios.post(`${API_URL}/api/widgets/${w.id}/data`, {
+            filters: filters
+          }, { headers });
+          return { id: w.id, data: res.data.data, filtered: res.data.filtered };
+        } catch (error) {
+          console.error(`Error fetching filtered data for widget ${w.id}:`, error);
+          return { id: w.id, data: widgetData[w.id], filtered: false };
+        } finally {
+          setWidgetLoading(w.id, false);
+        }
+      });
+      
+      const results = await Promise.all(fetchPromises);
+      const newDataMap = { ...widgetData };
+      results.forEach(r => { newDataMap[r.id] = r.data; });
+      setWidgetData(newDataMap);
+    };
+    
+    fetchFilteredData();
+  }, [filters, filterSources]);
+
+  // Re-fetch all data when filters are cleared
+  useEffect(() => {
+    if (!hasFilters && widgets.length > 0) {
+      const fetchUnfilteredData = async () => {
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        const fetchPromises = widgets.map(async (w) => {
+          try {
+            const res = await axios.get(`${API_URL}/api/widgets/${w.id}/data`, { headers });
+            return { id: w.id, data: res.data.data };
+          } catch {
+            return { id: w.id, data: null };
+          }
+        });
+        
+        const results = await Promise.all(fetchPromises);
+        const newDataMap = {};
+        results.forEach(r => { newDataMap[r.id] = r.data; });
+        setWidgetData(newDataMap);
+      };
+      
+      // Only refetch if we had filters before
+      if (Object.keys(widgetData).length > 0) {
+        fetchUnfilteredData();
+      }
+    }
+  }, [hasFilters]);
+
+  // Handle chart click for cross-filtering
+  const handleDataClick = (field, value, sourceWidgetId) => {
+    setFilter(field, value, sourceWidgetId);
+    toast.success(`Filtered by ${field}: ${value}`, { duration: 2000 });
   };
 
   const handleLayoutChange = async (newLayout) => {
@@ -920,6 +1033,9 @@ export function DashboardBuilderPage() {
           </div>
         </div>
 
+        {/* Active Filters Bar */}
+        <ActiveFiltersBar />
+
         {/* Grid Layout */}
         <div className="bg-muted/30 rounded-xl p-3 min-h-[400px]">
           {widgets.length === 0 ? (
@@ -946,16 +1062,23 @@ export function DashboardBuilderPage() {
               margin={[10, 10]}
               containerPadding={[0, 0]}
             >
-              {widgets.map(widget => (
-                <div key={widget.id} data-testid={`widget-${widget.id}`}>
-                  <DashboardWidget
-                    widget={widget}
-                    data={widgetData[widget.id]}
-                    onEdit={setEditingWidget}
-                    onDelete={deleteWidget}
-                  />
-                </div>
-              ))}
+              {widgets.map(widget => {
+                const isSource = Object.values(filterSources).includes(widget.id);
+                const isFiltered = hasFilters && !isSource;
+                return (
+                  <div key={widget.id} data-testid={`widget-${widget.id}`}>
+                    <DashboardWidget
+                      widget={widget}
+                      data={widgetData[widget.id]}
+                      onEdit={setEditingWidget}
+                      onDelete={deleteWidget}
+                      onDataClick={handleDataClick}
+                      isFiltered={isFiltered}
+                      isLoading={isWidgetLoading(widget.id)}
+                    />
+                  </div>
+                );
+              })}
             </GridLayout>
           )}
         </div>
@@ -1359,6 +1482,15 @@ export function DashboardBuilderPage() {
         token={token}
       />
     </DashboardLayout>
+  );
+}
+
+// Main wrapper component with Filter Provider
+export function DashboardBuilderPage() {
+  return (
+    <DashboardFilterProvider>
+      <DashboardBuilderInner />
+    </DashboardFilterProvider>
   );
 }
 

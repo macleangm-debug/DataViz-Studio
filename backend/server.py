@@ -2031,6 +2031,94 @@ async def get_widget_data(widget_id: str):
     
     return result
 
+
+class WidgetDataFilterRequest(BaseModel):
+    filters: Dict[str, Any] = {}
+
+
+@api_router.post("/widgets/{widget_id}/data")
+async def get_widget_data_filtered(widget_id: str, request: WidgetDataFilterRequest):
+    """Get filtered data for a widget (for cross-filtering)"""
+    widget = await db.widgets.find_one({"id": widget_id}, {"_id": 0})
+    if not widget:
+        raise HTTPException(status_code=404, detail="Widget not found")
+    
+    result = {"widget": widget, "data": None, "filtered": bool(request.filters)}
+    filters = request.filters
+    
+    if widget.get("dataset_id"):
+        dataset_id = widget["dataset_id"]
+        config = widget.get("config", {})
+        
+        # Build query with filters
+        query = {"dataset_id": dataset_id}
+        for field, value in filters.items():
+            query[field] = value
+        
+        data = await db.dataset_data.find(
+            query,
+            {"_id": 0, "dataset_id": 0, "_dataset_row_id": 0}
+        ).limit(1000).to_list(1000)
+        
+        if data:
+            try:
+                df = pd.DataFrame(data)
+                
+                if widget["type"] == "stat":
+                    field = config.get("field")
+                    aggregation = config.get("aggregation", "count")
+                    
+                    if field and field in df.columns:
+                        if aggregation == "sum":
+                            value = float(df[field].sum())
+                        elif aggregation == "mean":
+                            value = float(df[field].mean())
+                        elif aggregation == "max":
+                            value = float(df[field].max())
+                        elif aggregation == "min":
+                            value = float(df[field].min())
+                        else:
+                            value = len(df)
+                    else:
+                        value = len(df)
+                    
+                    result["data"] = {"value": value, "aggregation": aggregation}
+                    
+                elif widget["type"] == "chart":
+                    x_field = config.get("x_field")
+                    y_field = config.get("y_field")
+                    
+                    if x_field and x_field in df.columns:
+                        if y_field and y_field in df.columns:
+                            grouped = df.groupby(x_field)[y_field].sum().reset_index()
+                            grouped.columns = ["name", "value"]
+                        else:
+                            grouped = df.groupby(x_field).size().reset_index()
+                            grouped.columns = ["name", "value"]
+                        result["data"] = grouped.to_dict(orient="records")
+                    else:
+                        result["data"] = []
+                        
+                elif widget["type"] == "table":
+                    limit = config.get("limit", 10)
+                    columns = config.get("columns")
+                    if columns:
+                        valid_cols = [c for c in columns if c in df.columns]
+                        if valid_cols:
+                            result["data"] = df[valid_cols].head(limit).to_dict(orient="records")
+                        else:
+                            result["data"] = df.head(limit).to_dict(orient="records")
+                    else:
+                        result["data"] = df.head(limit).to_dict(orient="records")
+                else:
+                    result["data"] = data[:100]
+            except Exception as e:
+                logger.error(f"Widget filtered data processing error: {str(e)}")
+                result["data"] = data[:100] if data else []
+    
+    return result
+
+
 @api_router.put("/widgets/{widget_id}")
 async def update_widget(widget_id: str, widget: WidgetCreate):
     """Update a widget"""
