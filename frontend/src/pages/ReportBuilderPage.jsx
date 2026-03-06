@@ -524,6 +524,10 @@ const ReportBuilderPage = () => {
     try {
       toast.info('Preparing PDF export...', { duration: 2000 });
       
+      // Wait for DOM to finish rendering
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      
       // Step 1: Capture chart images from the DOM (high resolution)
       const sectionsWithImages = await Promise.all(
         sections.map(async (section) => {
@@ -532,8 +536,13 @@ const ReportBuilderPage = () => {
           // Only capture images for chart sections
           if (['bar_chart', 'line_chart', 'pie_chart'].includes(section.type)) {
             try {
-              // Find the chart element in the DOM
-              const chartElement = document.querySelector(`[data-section-id="${section.id}"] .recharts-wrapper`);
+              // Find the section element first
+              const sectionElement = document.querySelector(`[data-section-id="${section.id}"]`);
+              // Then find the chart preview container, or fallback to section content
+              const chartElement = sectionElement?.querySelector('.chart-preview-container') 
+                || sectionElement?.querySelector('.p-4')
+                || sectionElement;
+              
               if (chartElement) {
                 const canvas = await html2canvas(chartElement, {
                   scale: 3, // High resolution for crisp charts
@@ -541,6 +550,7 @@ const ReportBuilderPage = () => {
                   logging: false,
                   useCORS: true,
                   allowTaint: true,
+                  removeContainer: true,
                 });
                 chartImage = canvas.toDataURL('image/png', 0.95);
               }
@@ -558,7 +568,7 @@ const ReportBuilderPage = () => {
             stats: section.stats || null,
             chartData: section.chartData || null,
             tableData: section.tableData || null,
-            chartImage: chartImage,
+            chartImage: chartImage, // Frontend key
             labelField: section.labelField || null,
             valueField: section.valueField || null,
           };

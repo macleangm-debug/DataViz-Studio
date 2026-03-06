@@ -48,7 +48,7 @@ export const BarChartPreview = ({ theme, data = SAMPLE_BAR_DATA }) => {
   const maxValue = Math.max(...chartData.map(d => d.value || 0));
   
   return (
-    <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '12px', padding: '16px' }}>
+    <div className="chart-preview-container" style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '12px', padding: '16px', backgroundColor: '#ffffff' }}>
       {chartData.slice(0, 8).map((item, i) => (
         <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
           <div 
@@ -88,7 +88,7 @@ export const PieChartPreview = ({ theme, data }) => {
   const colors = [theme.primary, theme.accent, theme.secondary, '#94a3b8', '#64748b'];
   
   return (
-    <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="chart-preview-container" style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
       <svg viewBox="0 0 100 100" style={{ width: '128px', height: '128px' }}>
         {chartData.map((item, i) => {
           const percentage = (item.value || 0) / total;
@@ -133,7 +133,7 @@ export const LineChartPreview = ({ theme, data }) => {
   }).join(' ');
   
   return (
-    <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="chart-preview-container" style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '128px' }}>
         <polyline
           fill="none"

@@ -3130,22 +3130,26 @@ async def export_report_builder_pdf(request: ReportBuilderPdfRequest):
         
         template = Template(template_str)
         
-        # Load the DataViz Studio logo SVG
+        # Load the DataViz Studio logo SVG - Light version for gradient covers
         def load_logo_svg():
+            # Priority: light version for report covers (works on gradient backgrounds)
             logo_paths = [
+                Path("/app/frontend/public/icons/report-logo-light.svg"),
                 Path("/app/frontend/public/icons/icon-192x192.svg"),
                 Path("/app/frontend/src/assets/logo.svg"),
             ]
             for logo_path in logo_paths:
                 if logo_path.exists():
                     svg = logo_path.read_text(encoding="utf-8")
-                    # Add class to SVG if not present
-                    if "<svg" in svg and 'class="' not in svg.split("<svg", 1)[1][:200]:
+                    # Add style to SVG if not present
+                    if "<svg" in svg and 'style="' not in svg.split("<svg", 1)[1][:100]:
                         svg = svg.replace("<svg", '<svg style="width:100%;height:100%"', 1)
                     return svg
-            # Fallback: simple chart icon SVG
-            return '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:100%;height:100%;color:#3b82f6">
-                <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            # Fallback: simple chart icon SVG (light version)
+            return '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" style="width:100%;height:100%">
+                <circle cx="50" cy="50" r="38" stroke="rgba(255,255,255,0.9)" stroke-width="3" fill="none"/>
+                <circle cx="50" cy="50" r="26" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" fill="none"/>
+                <circle cx="50" cy="50" r="8" fill="rgba(255,255,255,0.95)"/>
             </svg>'''
         
         logo_svg = load_logo_svg()
@@ -3166,9 +3170,12 @@ async def export_report_builder_pdf(request: ReportBuilderPdfRequest):
             "watermark_text": config.watermarkText,
         }
         
-        # Prepare sections for template
+        # Prepare sections for template - normalize chartImage/chart_image key
         template_sections = []
         for section in request.sections:
+            # Normalize chart image key (frontend sends chartImage, template expects chart_image)
+            chart_image = section.chartImage
+            
             sec_data = {
                 "id": section.id,
                 "type": section.type,
@@ -3178,7 +3185,7 @@ async def export_report_builder_pdf(request: ReportBuilderPdfRequest):
                 "stats": [{"value": s.value, "label": s.label, "iconType": s.iconType} for s in section.stats] if section.stats else None,
                 "chart_data": section.chartData,
                 "table_data": section.tableData,
-                "chart_image": section.chartImage,
+                "chart_image": chart_image,  # Normalized key for template
                 "label_field": section.labelField,
                 "value_field": section.valueField,
             }
@@ -3200,11 +3207,15 @@ async def export_report_builder_pdf(request: ReportBuilderPdfRequest):
         # Return as base64
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
+        # Count charts with images for debugging
+        charts_with_images = sum(1 for s in template_sections if s.get("chart_image"))
+        
         return {
             "status": "success",
             "pdf_base64": pdf_base64,
             "filename": f"{config.title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf",
             "sections_count": len(template_sections),
+            "charts_with_images": charts_with_images,
             "pages_estimated": max(1, len(template_sections) // 3)
         }
         
