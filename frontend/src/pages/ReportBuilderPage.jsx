@@ -518,8 +518,120 @@ const ReportBuilderPage = () => {
     } : { r: 59, g: 130, b: 246 }; // Default blue
   };
 
-  // Export PDF using client-side generation with proper multi-page support
+  // Export PDF using WeasyPrint backend (production-grade)
   const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      toast.info('Preparing PDF export...', { duration: 2000 });
+      
+      // Step 1: Capture chart images from the DOM
+      const sectionsWithImages = await Promise.all(
+        sections.map(async (section) => {
+          let chartImage = null;
+          
+          // Only capture images for chart sections
+          if (['bar_chart', 'line_chart', 'pie_chart'].includes(section.type)) {
+            try {
+              // Find the chart element in the DOM
+              const chartElement = document.querySelector(`[data-section-id="${section.id}"] .recharts-wrapper`);
+              if (chartElement) {
+                const canvas = await html2canvas(chartElement, {
+                  scale: 2,
+                  backgroundColor: '#ffffff',
+                  logging: false,
+                  useCORS: true,
+                });
+                chartImage = canvas.toDataURL('image/png', 0.9);
+              }
+            } catch (err) {
+              console.warn(`Could not capture chart image for ${section.id}:`, err);
+            }
+          }
+          
+          return {
+            id: section.id,
+            type: section.type,
+            title: section.title,
+            width: section.width || 100,
+            content: section.content || null,
+            stats: section.stats || null,
+            chartData: section.chartData || null,
+            tableData: section.tableData || null,
+            chartImage: chartImage,
+            labelField: section.labelField || null,
+            valueField: section.valueField || null,
+          };
+        })
+      );
+      
+      // Step 2: Build the request payload
+      const payload = {
+        config: {
+          title: reportConfig.title,
+          subtitle: reportConfig.subtitle,
+          companyName: reportConfig.companyName,
+          reportDate: reportConfig.reportDate,
+          theme: reportConfig.theme,
+          primaryColor: theme.primary,
+          accentColor: theme.accent,
+          fontFamily: reportConfig.fontFamily,
+          fontSize: reportConfig.fontSize,
+          showCoverPage: reportConfig.showCoverPage,
+          watermarkEnabled: reportConfig.watermark?.enabled || false,
+          watermarkText: reportConfig.watermark?.text || 'CONFIDENTIAL',
+        },
+        sections: sectionsWithImages,
+      };
+      
+      // Step 3: Send to backend WeasyPrint endpoint
+      const response = await fetch(`${API_URL}/api/reports/builder/export-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'PDF generation failed');
+      }
+      
+      const result = await response.json();
+      
+      // Step 4: Download the PDF
+      if (result.pdf_base64) {
+        const byteCharacters = atob(result.pdf_base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = result.filename || `Report_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        
+        toast.success(`PDF exported successfully! (${result.sections_count} sections)`);
+      } else {
+        throw new Error('No PDF data received');
+      }
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error(`Failed to export PDF: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  // Legacy export using html2canvas + jsPDF (kept as fallback)
+  const handleExportPDFLegacy = async () => {
     setIsExporting(true);
     try {
       const reportElement = reportCanvasRef.current;

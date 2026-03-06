@@ -122,6 +122,25 @@ DataViz Studio is a full-featured data visualization application built with Reac
 - **Route**: `/data-explorer` under Visualize menu
 - **API Integration**: Fetches datasets from `/api/datasets`, data from `/api/datasets/{id}/data`
 
+### March 6, 2026 - Report Builder WeasyPrint PDF Export
+
+#### Problem Solved
+- Previous export used `html2canvas + jsPDF` which produced screenshot-based PDFs
+- Screenshots caused: blurry text, bad page breaks, font issues, layout mismatch
+
+#### New Architecture
+- **Frontend**: Collects report config + sections, captures chart images, sends to backend
+- **Backend**: Renders HTML template with Jinja2, generates PDF with WeasyPrint
+- **Endpoint**: `POST /api/reports/builder/export-pdf`
+
+#### Features
+- **Print-first HTML template**: `/app/backend/templates/report_pdf.html`
+- **Proper pagination**: Using `@page` CSS rules
+- **Section support**: stat_cards, bar_chart, pie_chart, line_chart, data_table, text
+- **Theme colors**: Primary/accent color variables in template
+- **Chart images**: Frontend captures Recharts as PNG, embeds in PDF
+- **Watermark support**: Optional watermark overlay
+
 ### March 6, 2026 - Chart Studio Phase 1B (Thumbnails, Tags, Analytics)
 
 #### Chart Preview Thumbnails

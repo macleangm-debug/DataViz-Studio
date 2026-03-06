@@ -340,6 +340,7 @@ const ReportSection = ({
         userSelect: isDragging ? 'none' : 'auto'
       }}
       data-testid={`report-section-${index}`}
+      data-section-id={section.id}
     >
       {/* Drag Handle - Right Edge (only in edit mode) */}
       {!isPreview && section.width !== 100 && (

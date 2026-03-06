@@ -3067,6 +3067,133 @@ async def get_summary_service_status():
         "provider": "OpenAI GPT-4o" if api_key else "Template Engine"
     }
 
+
+# =============================================================================
+# Report Builder WeasyPrint PDF Export
+# =============================================================================
+
+class ReportBuilderStatItem(BaseModel):
+    value: str
+    label: str
+    iconType: Optional[str] = "percent"
+
+class ReportBuilderSection(BaseModel):
+    id: str
+    type: str  # stat_cards, bar_chart, pie_chart, line_chart, data_table, intro, text_block, conclusion
+    title: str
+    width: int = 100  # 25, 50, 75, 100
+    content: Optional[str] = None
+    stats: Optional[List[ReportBuilderStatItem]] = None
+    chartData: Optional[List[Dict[str, Any]]] = None
+    tableData: Optional[List[Dict[str, Any]]] = None
+    chartImage: Optional[str] = None  # base64 PNG from frontend
+    labelField: Optional[str] = None
+    valueField: Optional[str] = None
+
+class ReportBuilderConfig(BaseModel):
+    title: str = "Report"
+    subtitle: Optional[str] = None
+    companyName: Optional[str] = None
+    reportDate: Optional[str] = None
+    theme: str = "professional"
+    primaryColor: str = "#3B82F6"
+    accentColor: str = "#EF4444"
+    fontFamily: str = "Inter"
+    fontSize: str = "medium"  # small, medium, large
+    showCoverPage: bool = True
+    watermarkEnabled: bool = False
+    watermarkText: str = "CONFIDENTIAL"
+
+class ReportBuilderPdfRequest(BaseModel):
+    config: ReportBuilderConfig
+    sections: List[ReportBuilderSection]
+
+@api_router.post("/reports/builder/export-pdf")
+async def export_report_builder_pdf(request: ReportBuilderPdfRequest):
+    """
+    Generate PDF from Report Builder using WeasyPrint.
+    Receives structured sections from frontend and renders a print-optimized HTML template.
+    """
+    try:
+        from jinja2 import Template
+        from weasyprint import HTML, CSS
+        from pathlib import Path
+        
+        # Load the template
+        template_path = Path(__file__).parent / "templates" / "report_pdf.html"
+        
+        if not template_path.exists():
+            raise HTTPException(status_code=500, detail="PDF template not found")
+        
+        with open(template_path, "r") as f:
+            template_str = f.read()
+        
+        template = Template(template_str)
+        
+        # Prepare config for template
+        config = request.config
+        template_config = {
+            "title": config.title,
+            "subtitle": config.subtitle,
+            "company_name": config.companyName,
+            "report_date": config.reportDate or datetime.now().strftime("%B %d, %Y"),
+            "primary_color": config.primaryColor,
+            "accent_color": config.accentColor,
+            "font_family": config.fontFamily,
+            "font_size": config.fontSize,
+            "show_cover_page": config.showCoverPage,
+            "watermark_enabled": config.watermarkEnabled,
+            "watermark_text": config.watermarkText,
+        }
+        
+        # Prepare sections for template
+        template_sections = []
+        for section in request.sections:
+            sec_data = {
+                "id": section.id,
+                "type": section.type,
+                "title": section.title,
+                "width": section.width,
+                "content": section.content,
+                "stats": [{"value": s.value, "label": s.label, "iconType": s.iconType} for s in section.stats] if section.stats else None,
+                "chart_data": section.chartData,
+                "table_data": section.tableData,
+                "chart_image": section.chartImage,
+                "label_field": section.labelField,
+                "value_field": section.valueField,
+            }
+            template_sections.append(sec_data)
+        
+        # Render HTML
+        html_content = template.render(
+            config=template_config,
+            sections=template_sections
+        )
+        
+        # Generate PDF with WeasyPrint
+        pdf_bytes = HTML(
+            string=html_content,
+            base_url=str(Path(__file__).parent)
+        ).write_pdf(presentational_hints=True)
+        
+        # Return as base64
+        pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+        
+        return {
+            "status": "success",
+            "pdf_base64": pdf_base64,
+            "filename": f"{config.title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf",
+            "sections_count": len(template_sections),
+            "pages_estimated": max(1, len(template_sections) // 3)
+        }
+        
+    except Exception as e:
+        logger.error(f"Report Builder PDF export failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+
 @api_router.get("/exports/{dataset_id}/csv")
 async def export_csv(dataset_id: str):
     """Export dataset as CSV"""
