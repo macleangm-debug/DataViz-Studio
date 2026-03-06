@@ -204,6 +204,9 @@ class DashboardCreate(BaseModel):
     description: Optional[str] = None
     org_id: Optional[str] = None
     widgets: List[Dict[str, Any]] = []
+    tags: List[str] = []
+    preview_image: Optional[str] = None
+    is_favorite: bool = False
 
 class ChartCreate(BaseModel):
     name: str
@@ -211,6 +214,9 @@ class ChartCreate(BaseModel):
     dataset_id: str
     config: Dict[str, Any] = {}
     org_id: Optional[str] = None
+    tags: List[str] = []
+    preview_image: Optional[str] = None
+    is_favorite: bool = False
 
 class AIQueryRequest(BaseModel):
     query: str
@@ -1611,6 +1617,14 @@ async def update_dashboard(dashboard_id: str, dashboard: DashboardCreate):
         "widgets": dashboard.widgets,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+    # Add optional fields if present
+    if dashboard.tags is not None:
+        update_doc["tags"] = dashboard.tags
+    if dashboard.preview_image is not None:
+        update_doc["preview_image"] = dashboard.preview_image
+    if dashboard.is_favorite is not None:
+        update_doc["is_favorite"] = dashboard.is_favorite
+    
     await db.dashboards.update_one({"id": dashboard_id}, {"$set": update_doc})
     return {"status": "updated"}
 
@@ -1621,6 +1635,29 @@ async def delete_dashboard(dashboard_id: str):
     # Also delete widgets
     await db.widgets.delete_many({"dashboard_id": dashboard_id})
     return {"status": "deleted"}
+
+@api_router.post("/dashboards/{dashboard_id}/favorite")
+async def toggle_dashboard_favorite(dashboard_id: str):
+    """Toggle dashboard favorite status"""
+    dashboard = await db.dashboards.find_one({"id": dashboard_id})
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    
+    new_favorite = not dashboard.get("is_favorite", False)
+    await db.dashboards.update_one(
+        {"id": dashboard_id},
+        {"$set": {"is_favorite": new_favorite}}
+    )
+    return {"is_favorite": new_favorite}
+
+@api_router.post("/dashboards/{dashboard_id}/view")
+async def track_dashboard_view(dashboard_id: str):
+    """Track a view on a dashboard"""
+    await db.dashboards.update_one(
+        {"id": dashboard_id},
+        {"$inc": {"views": 1}}
+    )
+    return {"status": "view tracked"}
 
 @api_router.put("/dashboards/{dashboard_id}/layout")
 async def update_dashboard_layout(dashboard_id: str, layout: DashboardLayoutUpdate):
@@ -2028,6 +2065,12 @@ async def create_chart(chart: ChartCreate):
         "dataset_id": chart.dataset_id,
         "config": chart.config,
         "org_id": chart.org_id,
+        "tags": chart.tags,
+        "preview_image": chart.preview_image,
+        "is_favorite": chart.is_favorite,
+        "views": 0,
+        "exports": 0,
+        "shares": 0,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.charts.insert_one(chart_doc)
@@ -2066,6 +2109,14 @@ async def update_chart(chart_id: str, chart: ChartCreate):
         "config": chart.config,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+    # Add optional fields if present
+    if chart.tags is not None:
+        update_doc["tags"] = chart.tags
+    if chart.preview_image is not None:
+        update_doc["preview_image"] = chart.preview_image
+    if chart.is_favorite is not None:
+        update_doc["is_favorite"] = chart.is_favorite
+    
     await db.charts.update_one({"id": chart_id}, {"$set": update_doc})
     return {"status": "updated", "id": chart_id}
 
@@ -2137,6 +2188,29 @@ async def delete_chart(chart_id: str):
     """Delete a chart"""
     await db.charts.delete_one({"id": chart_id})
     return {"status": "deleted"}
+
+@api_router.post("/charts/{chart_id}/favorite")
+async def toggle_chart_favorite(chart_id: str):
+    """Toggle chart favorite status"""
+    chart = await db.charts.find_one({"id": chart_id})
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    
+    new_favorite = not chart.get("is_favorite", False)
+    await db.charts.update_one(
+        {"id": chart_id},
+        {"$set": {"is_favorite": new_favorite}}
+    )
+    return {"is_favorite": new_favorite}
+
+@api_router.post("/charts/{chart_id}/view")
+async def track_chart_view(chart_id: str):
+    """Track a view on a chart"""
+    await db.charts.update_one(
+        {"id": chart_id},
+        {"$inc": {"views": 1}}
+    )
+    return {"status": "view tracked"}
 
 # =============================================================================
 # AI Copilot Routes

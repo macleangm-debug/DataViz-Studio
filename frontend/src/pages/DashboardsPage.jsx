@@ -294,21 +294,20 @@ export function DashboardsPage() {
 
   // Toggle favorite status
   const handleToggleFavorite = async (dashboard) => {
+    // Optimistic update
+    const newFavorite = !dashboard.is_favorite;
+    setDashboards(dashboards.map(d => 
+      d.id === dashboard.id ? { ...d, is_favorite: newFavorite } : d
+    ));
+    
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const newFavorite = !dashboard.is_favorite;
-      await axios.put(`${API_URL}/api/dashboards/${dashboard.id}`, {
-        is_favorite: newFavorite
-      }, { headers });
-      
-      setDashboards(dashboards.map(d => 
-        d.id === dashboard.id ? { ...d, is_favorite: newFavorite } : d
-      ));
+      await axios.post(`${API_URL}/api/dashboards/${dashboard.id}/favorite`, {}, { headers });
       toast.success(newFavorite ? 'Added to favorites' : 'Removed from favorites');
     } catch (error) {
-      // Optimistic update on error
+      // Revert optimistic update on error
       setDashboards(dashboards.map(d => 
-        d.id === dashboard.id ? { ...d, is_favorite: !d.is_favorite } : d
+        d.id === dashboard.id ? { ...d, is_favorite: !newFavorite } : d
       ));
       toast.error('Failed to update favorite');
     }

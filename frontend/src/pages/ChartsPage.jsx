@@ -2359,23 +2359,22 @@ export function ChartsPage() {
 
   // Toggle favorite
   const handleToggleFavorite = async (chart) => {
+    // Optimistic update
+    const newFavorite = !chart.is_favorite;
+    setCharts(charts.map(c => 
+      c.id === chart.id ? { ...c, is_favorite: newFavorite } : c
+    ));
+    
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const newFavorite = !chart.is_favorite;
-      await axios.put(`${API_URL}/api/charts/${chart.id}`, {
-        ...chart,
-        is_favorite: newFavorite
-      }, { headers });
-      
-      setCharts(charts.map(c => 
-        c.id === chart.id ? { ...c, is_favorite: newFavorite } : c
-      ));
+      await axios.post(`${API_URL}/api/charts/${chart.id}/favorite`, {}, { headers });
       toast.success(newFavorite ? 'Added to favorites' : 'Removed from favorites');
     } catch (error) {
-      // Optimistic update even if API fails
+      // Revert optimistic update on error
       setCharts(charts.map(c => 
-        c.id === chart.id ? { ...c, is_favorite: !c.is_favorite } : c
+        c.id === chart.id ? { ...c, is_favorite: !newFavorite } : c
       ));
+      toast.error('Failed to update favorite');
     }
   };
 
